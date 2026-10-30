@@ -2131,6 +2131,54 @@
   grid-column: 1 / -1;
 }
 
+/* Read-only summary of what the canvas currently feeds. */
+.ccw-bind-summary {
+  display: grid;
+  gap: 2px;
+  margin: var(--ccw-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ccw-bind-summary > li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ccw-space-2);
+  padding: 3px 0;
+  border-bottom: 1px solid var(--ccw-border);
+  font-size: var(--ccw-text-ui);
+}
+
+.ccw-bind-summary > li:last-child {
+  border-bottom: 0;
+}
+
+.ccw-bind-key {
+  color: var(--ccw-text-secondary);
+  white-space: nowrap;
+}
+
+.ccw-bind-node {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ccw-text);
+  font-family: var(--ccw-font-mono);
+  font-size: 11px;
+}
+
+.ccw-bind-node.is-empty {
+  color: var(--ccw-text-dimmed);
+  font-family: var(--ccw-font-ui);
+  font-size: var(--ccw-text-ui);
+}
+
+.ccw-role-field {
+  margin-top: var(--ccw-space-2);
+}
+
 /* -------------------------------------------------------------- run panel */
 
 .ccw-run-controls {

@@ -91,6 +91,13 @@ export function patchWorkflow(sessionId, patch) {
   })
 }
 
+export function setNodeRole(sessionId, nodeId, role) {
+  return request('/doc/workflow/node-role', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), nodeId: String(nodeId), role }),
+  })
+}
+
 export function upsertBox(sessionId, box) {
   return request('/doc/box', {
     method: 'PUT',
