@@ -1,3 +1,5 @@
+中文 · [English](REQUIREMENTS.en.md) · [日本語](REQUIREMENTS.ja.md)
+
 # DSH Comfy协同 产品需求
 
 - 版本：v1.0（已确认）；本文描述 v1.0 的行为。

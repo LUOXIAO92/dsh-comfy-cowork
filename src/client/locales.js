@@ -1,6 +1,6 @@
 export const en = {
   'tab.title': 'Comfy canvas',
-  'tab.noSession': 'Open this canvas from a chat: a tab in a session-less pane has no canvas to edit.',
+  'tab.noSession': 'Open this canvas from a chat: a tab in a pane with no session has no canvas to edit.',
   'command.label': 'DSH Comfy cowork',
   'command.description': 'Open the canvas here and give this chat the canvas tools',
   'guide.description': 'Open the Comfy canvas',
@@ -63,7 +63,7 @@ export const en = {
   'comment.user': "you",
   'comment.agent': "agent",
   'comment.delete': "Delete",
-  'comment.sourceHint': "Saved for the agent; the source stays as it is.",
+  'comment.sourceHint': "Synced to the agent; the source stays unchanged.",
   'captionEditor.commentTitle': "Comment",
 
   'tool.pan': "Pan",
@@ -78,7 +78,7 @@ export const en = {
   'mask.visible': "Show",
   'mask.clear': "Clear mask",
   'brush.size': "Size",
-  'brush.hardness': "Hard",
+  'brush.hardness': "Hardness",
   'brush.opacity': "Opacity",
   'layout.canvas': "Canvas",
   'layout.width': "Width",
