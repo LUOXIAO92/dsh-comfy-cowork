@@ -75,7 +75,7 @@ export function drawStrokeSegment(ctx, from, to, { size, hardness, opacity, eras
  * a mask canvas. Shapes stay editable objects; the eraser layer cuts them at
  * composite time instead of destroying them.
  */
-export function fillMaskShape(ctx, shape, opacity = 1, composite = 'source-over') {
+export function fillMaskShape(ctx, shape, opacity = 1, composite = 'source-over', withHoles = false) {
   const bbox = Array.isArray(shape?.bbox) ? shape.bbox.map(Number) : []
   if (bbox.length !== 4 || !bbox.every(Number.isFinite)) return
   const x = Math.min(bbox[0], bbox[2])
@@ -91,6 +91,49 @@ export function fillMaskShape(ctx, shape, opacity = 1, composite = 'source-over'
   if (shape.kind === 'ellipse') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
   else ctx.rect(x, y, w, h)
   ctx.fill()
+  ctx.restore()
+  if (withHoles) drawShapeHoles(ctx, shape, bbox)
+}
+
+/**
+ * Erase strokes cut a shape while keeping its bbox: the hole is stored on the
+ * shape in normalized coordinates so it moves and scales with the shape and
+ * never acts as a canvas-wide stencil.
+ */
+function drawShapeHoles(ctx, shape, bbox) {
+  const holes = Array.isArray(shape?.holes) ? shape.holes : []
+  if (holes.length === 0) return
+  const x = Math.min(bbox[0], bbox[2])
+  const y = Math.min(bbox[1], bbox[3])
+  const w = Math.abs(bbox[2] - bbox[0])
+  const h = Math.abs(bbox[3] - bbox[1])
+  const unit = Math.max(1, Math.max(w, h))
+  ctx.save()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.strokeStyle = '#ffffff'
+  ctx.fillStyle = '#ffffff'
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  for (const hole of holes) {
+    const points = Array.isArray(hole?.points) ? hole.points : []
+    if (points.length === 0) continue
+    const diameter = Math.max(1, (Number(hole.width) || 0) * unit)
+    ctx.lineWidth = diameter
+    const mapped = points
+      .filter((point) => Array.isArray(point) && point.length === 2)
+      .map((point) => [x + point[0] * w, y + point[1] * h])
+    if (mapped.length === 0) continue
+    if (mapped.length === 1) {
+      ctx.beginPath()
+      ctx.arc(mapped[0][0], mapped[0][1], diameter / 2, 0, Math.PI * 2)
+      ctx.fill()
+      continue
+    }
+    ctx.beginPath()
+    ctx.moveTo(mapped[0][0], mapped[0][1])
+    for (let index = 1; index < mapped.length; index += 1) ctx.lineTo(mapped[index][0], mapped[index][1])
+    ctx.stroke()
+  }
   ctx.restore()
 }
 

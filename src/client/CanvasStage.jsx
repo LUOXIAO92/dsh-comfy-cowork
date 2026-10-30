@@ -323,7 +323,6 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   const maskDisplayRef = useRef(null)
   const overlayRef = useRef(null)
   const paintRef = useRef(null)
-  const eraseRef = useRef(null)
   const compositeRef = useRef(null)
   const processedRef = useRef(null)
   const undoRef = useRef([])
@@ -388,24 +387,22 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   }
 
   /**
-   * The mask is three layers: brush strokes, vector rect/ellipse shapes and
-   * eraser cuts. Shapes stay editable objects even when part of them is erased.
+   * The mask is brush pixels plus vector rect/ellipse shapes. The eraser cuts
+   * pixels directly (never a global stencil) and stores holes on the shapes, so
+   * erasing empty canvas leaves nothing behind and moving a mask never gets cut
+   * by where the eraser happened to pass.
    */
   function buildComposite(draft = null) {
     const paint = paintRef.current
-    const erase = eraseRef.current
-    if (!paint || !erase) return null
+    if (!paint) return null
     const composite = createCanvas(limit.width, limit.height)
     const ctx = composite.getContext('2d')
     ctx.drawImage(paint, 0, 0)
     for (const shape of shapesRef.current) {
       const live = draft !== null && draft.id === shape.id ? { ...shape, bbox: draft.bbox } : shape
-      fillMaskShape(ctx, live, live.opacity ?? 1)
+      fillMaskShape(ctx, live, live.opacity ?? 1, 'source-over', true)
     }
-    if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, draft.opacity ?? 1)
-    ctx.globalCompositeOperation = 'destination-out'
-    ctx.drawImage(erase, 0, 0)
-    ctx.globalCompositeOperation = 'source-over'
+    if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, draft.opacity ?? 1, 'source-over', true)
     compositeRef.current = composite
     return composite
   }
@@ -504,7 +501,42 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     const paint = paintRef.current
     if (!paint) return
     const ctx = paint.getContext('2d')
-    for (const shape of shapesRef.current) fillMaskShape(ctx, shape, 1, 'destination-out')
+    for (const shape of shapesRef.current) fillMaskShape(ctx, shape, 1, 'destination-out', true)
+  }
+
+  /** Which shapes the eraser is currently cutting, with their hole strokes. */
+  function beginShapeHoles(point) {
+    const radius = brush.size / 2
+    const touched = []
+    for (const shape of shapesRef.current) {
+      const [x1, y1, x2, y2] = shape.bbox
+      if (point.x < x1 - radius || point.x > x2 + radius || point.y < y1 - radius || point.y > y2 + radius) continue
+      const width = Math.max(1, x2 - x1)
+      const height = Math.max(1, y2 - y1)
+      if (!Array.isArray(shape.holes)) shape.holes = []
+      const hole = {
+        width: brush.size / Math.max(1, Math.max(x2 - x1, y2 - y1)),
+        points: [[(point.x - x1) / width, (point.y - y1) / height]],
+      }
+      shape.holes.push(hole)
+      touched.push({ shape, hole, x1, y1, width, height })
+    }
+    return touched
+  }
+
+  function appendShapeHoles(touched, point) {
+    if (!Array.isArray(touched)) return
+    for (const entry of touched) {
+      entry.hole.points.push([(point.x - entry.x1) / entry.width, (point.y - entry.y1) / entry.height])
+    }
+  }
+
+  function cloneShapes(list) {
+    return list.map((shape) => ({
+      ...shape,
+      bbox: shape.bbox.slice(),
+      holes: (shape.holes ?? []).map((hole) => ({ ...hole, points: hole.points.map((point) => point.slice()) })),
+    }))
   }
 
   function setDraft(value) {
@@ -555,7 +587,6 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   useEffect(() => {
     paintRef.current = createCanvas(limit.width, limit.height)
-    eraseRef.current = createCanvas(limit.width, limit.height)
     compositeRef.current = createCanvas(limit.width, limit.height)
     processedRef.current = createCanvas(limit.width, limit.height)
     undoRef.current = []
@@ -720,19 +751,17 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   function snapshot() {
     const paint = paintRef.current
-    const erase = eraseRef.current
-    if (!paint || !erase) return null
+    if (!paint) return null
     return {
       paint: paint.getContext('2d').getImageData(0, 0, paint.width, paint.height),
-      erase: erase.getContext('2d').getImageData(0, 0, erase.width, erase.height),
-      shapes: shapesRef.current.map((shape) => ({ ...shape, bbox: shape.bbox.slice() })),
+      shapes: shapesRef.current.map((shape) => ({ ...shape, bbox: shape.bbox.slice(), holes: (shape.holes ?? []).map((hole) => ({ ...hole, points: hole.points.map((point) => point.slice()) })) })),
     }
   }
 
   function pushUndo() {
     const next = snapshot()
     if (next === null) return
-    const bytesPerSnapshot = next.paint.data.length + next.erase.data.length
+    const bytesPerSnapshot = next.paint.data.length
     const cap = clamp(Math.floor((192 * 1024 * 1024) / Math.max(1, bytesPerSnapshot)), 4, 12)
     undoRef.current.push(next)
     while (undoRef.current.length > cap) undoRef.current.shift()
@@ -741,10 +770,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   function restore(next) {
     const paint = paintRef.current
-    const erase = eraseRef.current
-    if (!paint || !erase || !next) return
+    if (!paint || !next) return
     paint.getContext('2d').putImageData(next.paint, 0, 0)
-    erase.getContext('2d').putImageData(next.erase, 0, 0)
     setShapeList(next.shapes)
     commitShapes(next.shapes, { silent: true })
     refreshProcessed()
@@ -782,11 +809,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   function clearMask() {
     const paint = paintRef.current
-    const erase = eraseRef.current
-    if (!paint || !erase) return
+    if (!paint) return
     pushUndo()
     paint.getContext('2d').clearRect(0, 0, paint.width, paint.height)
-    erase.getContext('2d').clearRect(0, 0, erase.width, erase.height)
     setSelectedShape(null)
     setShapeList([])
     commitShapes([], { silent: true })
@@ -802,15 +827,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     const maskBlob = await canvasToBlob(processed)
     // The brush layer is exported separately so reloading restores exactly the
     // strokes that were drawn, without the vector shapes baked in.
-    const brushOnly = createCanvas(limit.width, limit.height)
-    const brushCtx = brushOnly.getContext('2d')
-    if (paintRef.current) brushCtx.drawImage(paintRef.current, 0, 0)
-    if (eraseRef.current) {
-      brushCtx.globalCompositeOperation = 'destination-out'
-      brushCtx.drawImage(eraseRef.current, 0, 0)
-      brushCtx.globalCompositeOperation = 'source-over'
-    }
-    const brushBlob = await canvasToBlob(brushOnly)
+    const brushBlob = await canvasToBlob(paintRef.current ?? createCanvas(limit.width, limit.height))
     let rgbaBlob = null
     if (imageRef.current && imageRef.current.complete && imageRef.current.naturalWidth > 0) {
       const rgba = composeRgba(imageRef.current, processed, limit.width, limit.height)
@@ -914,7 +931,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
 
     if (tool === 'brush' || tool === 'eraser') {
-      const layer = tool === 'eraser' ? eraseRef.current : paintRef.current
+      const layer = paintRef.current
       if (!layer) return
       pushUndo()
       const stroke = {
@@ -922,11 +939,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         erase: tool === 'eraser',
         last: point,
       }
+      if (stroke.erase) stroke.holes = beginShapeHoles(point)
       gestureRef.current = stroke
       drawDot(layer.getContext('2d'), point, {
         size: brush.size,
         opacity: brush.opacity,
-        erase: false,
+        erase: stroke.erase,
       })
       buildComposite()
       drawMaskPreview(true)
@@ -1002,14 +1020,15 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
     const point = pointOf(event)
     if (gesture.kind === 'stroke') {
-      const layer = gesture.erase ? eraseRef.current : paintRef.current
+      const layer = paintRef.current
       if (layer === null) return
       drawStrokeSegment(layer.getContext('2d'), gesture.last, point, {
         size: brush.size,
         hardness: brush.hardness,
         opacity: brush.opacity,
-        erase: false,
+        erase: gesture.erase,
       })
+      if (gesture.erase) appendShapeHoles(gesture.holes, point)
       gesture.last = point
       buildComposite()
       drawMaskPreview(true)
@@ -1143,6 +1162,11 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
 
     if (gesture.kind === 'stroke') {
+      if (gesture.erase && Array.isArray(gesture.holes) && gesture.holes.length > 0) {
+        const next = cloneShapes(shapesRef.current)
+        setShapeList(next)
+        commitShapes(next)
+      }
       refreshProcessed()
       scheduleMaskExport()
       return

@@ -174,6 +174,7 @@ window.fetch = async (url, options = {}) => {
   if (text.includes('/object_info')) return json({ nodes: infos })
   if (text.includes('/models/')) return json({ folders: ['checkpoints', 'vae'], files: ['Illustrious/miaomiaoHarem_v20.safetensors', 'flux1-dev-fp8.safetensors'] })
   if (text.includes('/models')) return json({ folders: ['checkpoints', 'vae', 'loras'], files: [] })
+  if (method === 'PUT' && text.includes('/asset')) return json({ name: 'ok' })
   if (text.includes('/asset')) return new Response('', { status: 404 })
   return json({ doc: current })
 }
