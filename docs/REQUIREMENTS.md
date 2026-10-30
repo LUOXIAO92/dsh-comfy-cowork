@@ -266,24 +266,29 @@ DSH Host
 | Q6 MOSS 提示词形态 | **A. 文本框始终放最终编译后的单行 layout JSON**；旁边编辑 summary / 逐框 caption。 |
 | Q7 视频 | **A. 不做视频 UI；已有视频工作流可加载、运行、预览输出**。 |
 
-## 13. 实现状态（截至 2026-10-30）
+## 13. 实现状态（截至 2026-10-31）
 
-已验证：
+在真实 DSH 页面（自动登录的 headless Chromium，同一个 `dsh web` 进程）里逐项验证：
 
-- DSH bundle 安装、Host 工具注册、右栏 tab 注册、客户端 bundle 加载（mock loader）。
-- 文档持久化、SSE 同步、Agent 工具写提示词/布局。
-- UI workflow → API prompt 转换：`moss_template.json`、`coworking_smoke.json`、`coworking_inpaint.json`、`coworking_moss_layout.json`。
-- 真实 ComfyUI 运行：MOSS-Image 文生图、MOSS layout（bbox 注入）、SDXL inpaint（蒙版注入）均出图。
-- 浏览器内画笔 → 蒙版导出（headless Chromium 验证 `hasMask=true`，生成 PNG）。
-- MOSS 编译与 ComfyUI 节点逐字节一致（单测 16 项）。
-- 蒙版 alpha 兼容：`LoadImage` 的 MASK = 1 - alpha，插件导出的 RGBA 已按此反转；独立 `mask.png` 保持白色=编辑区。
+- **右栏 tab**：输入框「画布」按钮打开右侧标签页（实测宽 691–709px），新版编辑器版面：左侧工具轨、中间画板 + 状态栏、右侧可折叠检查器。
+- **画布数据**：本会话 agent 写入的 MOSS layout prompt（675 字符）出现在提示词文本框；画布图与 3 个 bbox 正确显示，无报错。
+- **蒙版链路**：真实页面里画笔描边 → `PUT /asset?name=mask.png` 200 → `PUT /doc/canvas` 200 → 文档 `mask.hasMask=true`、`assets/mask.png` 落盘，状态栏显示「蒙版就绪」。
+- **工作流浏览**：真实 ComfyUI 的 workflow 列表 → 加载 `coworking_smoke.json`，渲染 13 个节点 / 15 条连线；注入绑定自动识别 `#104 moss-image Positive`、`#106 EmptyFlux2LatentImage`、`#116 KSampler`。
+- **模型列表**：`/models` 返回 checkpoints / configs / loras / vae / text_encoders，选 checkpoints 后列出真实文件名。
+- **真实出图**：MOSS-Image 文生图、MOSS layout（bbox 注入）、SDXL inpaint（蒙版注入）均出图。
+- **单测 25 项**：MOSS 编译、工作流转换、文档存储、HTTP 路由（鉴权、body-only session、错误记录）。
 
-待人工确认：
+本轮修复：
 
-- 刷新 DSH 页面后，输入框左侧「画布」按钮是否出现、右栏 tab 是否可打开。
-- 真实浏览器中的画笔/矩形/椭圆交互、羽化滑杆、撤销重做。
-- 工作流图在窄栏中的可读性；可滚轮缩放/拖动。
-- Agent 调用 `comfy_coworking_open_canvas` 目前只设置打开请求，不强制切换 UI；用户需点「画布」按钮。
+- 路由在读取请求体之前就校验 session，导致所有把 sessionId 放在 body 的写接口（提示词/布局/画布/框/选择/运行）一律 400；改为先读 body 再校验，并补了回归测试。
+- 路由鉴权改为 `connection.admit()`（Host/Origin 信任 + 浏览器 cookie），无 cookie 401、伪造 Origin 403。
+- 客户端加构建指纹（`x-ccw-build`），`/health` 的 `errors[]` 记录失败请求的 URL、body 与 build，便于分辨旧页面。
+- 视觉改版：PS/GIMP 式分区 + ComfyUI 图编辑器密度，全部使用 DSH 主题 token。
+
+仍建议人工扫一眼：
+
+- 新版面在你屏幕上的手感（字体、间距、配色）。
+- 大工作流图在窄栏中的可读性：自动适配后约 28%–43%，可滚轮缩放、拖动平移、点「适应」重算。
 
 ## 14. 已知限制
 
