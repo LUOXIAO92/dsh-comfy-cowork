@@ -429,3 +429,25 @@ if (new URLSearchParams(location.search).get('errortest') === '1') {
   }
   run()
 }
+
+// ?sizetest=1 applies the 3:4 preset and reports the canvas size the host saw.
+if (new URLSearchParams(location.search).get('sizetest') === '1') {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const run = async () => {
+    for (let i = 0; i < 60 && document.querySelector('#canvas-root .ccw-preset') === null; i += 1) await sleep(100)
+    const preset = Array.from(document.querySelectorAll('#canvas-root .ccw-preset')).find((el) => el.textContent.trim() === '3:4')
+    preset?.click()
+    await sleep(900)
+    const inputs = document.querySelectorAll('#canvas-root .ccw-size-grid input')
+    const pre = document.createElement('pre')
+    pre.id = 'sizetest-report'
+    pre.textContent = JSON.stringify({
+      clicked: Boolean(preset),
+      widthField: inputs[0]?.value ?? null,
+      heightField: inputs[1]?.value ?? null,
+      status: document.querySelector('#canvas-root .ccw-statusbar')?.textContent?.slice(0, 30) ?? null,
+    })
+    document.body.appendChild(pre)
+  }
+  run()
+}
