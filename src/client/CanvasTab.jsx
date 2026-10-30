@@ -22,12 +22,17 @@ import { Icon, IconButton, Section } from './ui.jsx'
 
 /** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
 const CANVAS_PRESETS = [
-  { key: 'square-1024', label: '1:1 1024', width: 1024, height: 1024 },
-  { key: 'square-768', label: '1:1 768', width: 768, height: 768 },
-  { key: 'landscape', label: '4:3', width: 1152, height: 864 },
-  { key: 'portrait', label: '3:4', width: 864, height: 1152 },
-  { key: 'wide', label: '16:9', width: 1344, height: 768 },
+  { key: '1:1', label: '1:1', width: 1024, height: 1024 },
+  { key: '4:3', label: '4:3', width: 1152, height: 864 },
+  { key: '3:4', label: '3:4', width: 864, height: 1152 },
+  { key: '16:9', label: '16:9', width: 1280, height: 720 },
+  { key: '9:16', label: '9:16', width: 720, height: 1280 },
 ]
+
+/** Round a pixel count onto the 8-pixel grid and keep it inside the bounds. */
+function snapSize(value) {
+  return Math.min(16384, Math.max(16, Math.round(value / 8) * 8))
+}
 
 function useDoc(sessionId, setError) {
   const [doc, setDoc] = useState(null)
@@ -264,6 +269,14 @@ export function CanvasTab(props) {
   const negativeFocusedRef = useRef(false)
   const negativeTimer = useRef(null)
   const [heightInput, setHeightInput] = useState(null)
+  const [lockRatio, setLockRatio] = useState(() => {
+    try {
+      return window.localStorage.getItem('ccw.lockRatio') === '1'
+    } catch {
+      return false
+    }
+  })
+  const ratioRef = useRef(null)
   const [tool, setTool] = useState('brush')
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
   const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
@@ -525,9 +538,52 @@ export function CanvasTab(props) {
     setCanvasSize(nextWidth, nextHeight)
   }
 
+  /** Current canvas aspect ratio, used the moment the ratio lock is enabled. */
+  function canvasRatio() {
+    const canvasWidth = Number(docRef.current?.canvas?.width ?? 1024)
+    const canvasHeight = Number(docRef.current?.canvas?.height ?? 1024)
+    return canvasWidth > 0 && canvasHeight > 0 ? canvasWidth / canvasHeight : 1
+  }
+
+  /**
+   * While the ratio is locked, typing one side fills the other side with the
+   * matching value, so the canvas never leaves the chosen aspect ratio.
+   */
+  function changeWidth(raw) {
+    setWidthInput(raw)
+    if (!lockRatio) return
+    const width = Number(raw)
+    if (!Number.isFinite(width) || width < 16) return
+    const ratio = ratioRef.current ?? canvasRatio()
+    setHeightInput(String(snapSize(width / ratio)))
+  }
+
+  function changeHeight(raw) {
+    setHeightInput(raw)
+    if (!lockRatio) return
+    const height = Number(raw)
+    if (!Number.isFinite(height) || height < 16) return
+    const ratio = ratioRef.current ?? canvasRatio()
+    setWidthInput(String(snapSize(height * ratio)))
+  }
+
+  function toggleLockRatio() {
+    setLockRatio((current) => {
+      const next = !current
+      if (next) ratioRef.current = canvasRatio()
+      try {
+        window.localStorage.setItem('ccw.lockRatio', next ? '1' : '0')
+      } catch {
+        /* storage may be unavailable; the lock still works for this page */
+      }
+      return next
+    })
+  }
+
   function applyPreset(preset) {
     setWidthInput(null)
     setHeightInput(null)
+    ratioRef.current = preset.width / preset.height
     setCanvasSize(preset.width, preset.height)
   }
 
@@ -658,6 +714,16 @@ export function CanvasTab(props) {
   const items = doc?.layout?.items ?? []
   const selected = items.find((item) => item.id === doc?.selected?.id) ?? null
   const image = doc?.canvas?.image ?? null
+  // The ratio chips stay highlighted whenever the canvas sits on their ratio,
+  // not only on the exact preset resolution.
+  const canvasWidthValue = Number(widthInput ?? doc?.canvas?.width ?? 1024)
+  const canvasHeightValue = Number(heightInput ?? doc?.canvas?.height ?? 1024)
+  const activePresetKey =
+    canvasWidthValue > 0 && canvasHeightValue > 0
+      ? CANVAS_PRESETS.find(
+          (preset) => Math.abs(preset.width / preset.height - canvasWidthValue / canvasHeightValue) < 0.01,
+        )?.key
+      : undefined
   const imageUrl = image ? assetUrl(sessionId, image.asset, image.rev) : null
   const hasBoxes = items.length > 0
   const compiled = hasBoxes && doc?.promptSource === 'layout'
@@ -878,50 +944,63 @@ export function CanvasTab(props) {
               </div>
             ) : (
               <>
-                <div className="ccw-size-grid">
-                  <label className="ccw-field ccw-size-field">
-                    <span>{t('canvasSize.width')}</span>
-                    <input
-                      type="number"
-                      min={16}
-                      max={16384}
-                      step={8}
-                      value={widthInput ?? doc?.canvas?.width ?? 1024}
-                      onChange={(event) => setWidthInput(event.target.value)}
-                      onBlur={applyCanvasSize}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') applyCanvasSize()
-                      }}
-                    />
-                  </label>
-                  <label className="ccw-field ccw-size-field">
-                    <span>{t('canvasSize.height')}</span>
-                    <input
-                      type="number"
-                      min={16}
-                      max={16384}
-                      step={8}
-                      value={heightInput ?? doc?.canvas?.height ?? 1024}
-                      onChange={(event) => setHeightInput(event.target.value)}
-                      onBlur={applyCanvasSize}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') applyCanvasSize()
-                      }}
-                    />
-                  </label>
-                </div>
-                <div className="ccw-presets" role="group" aria-label={t('canvasSize.presets')}>
-                  {CANVAS_PRESETS.map((preset) => (
+                <div className="ccw-size-bar">
+                  <div className="ccw-size-grid">
+                    <label className="ccw-field ccw-size-field">
+                      <span>{t('canvasSize.width')}</span>
+                      <input
+                        type="number"
+                        min={16}
+                        max={16384}
+                        step={8}
+                        value={widthInput ?? doc?.canvas?.width ?? 1024}
+                        onChange={(event) => changeWidth(event.target.value)}
+                        onBlur={applyCanvasSize}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') applyCanvasSize()
+                        }}
+                      />
+                    </label>
+                    <label className="ccw-field ccw-size-field">
+                      <span>{t('canvasSize.height')}</span>
+                      <input
+                        type="number"
+                        min={16}
+                        max={16384}
+                        step={8}
+                        value={heightInput ?? doc?.canvas?.height ?? 1024}
+                        onChange={(event) => changeHeight(event.target.value)}
+                        onBlur={applyCanvasSize}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') applyCanvasSize()
+                        }}
+                      />
+                    </label>
                     <button
-                      key={preset.key}
                       type="button"
-                      className="ccw-preset"
-                      title={`${preset.width} × ${preset.height}`}
-                      onClick={() => applyPreset(preset)}
+                      className={`ccw-ratio-lock ${lockRatio ? 'is-on' : ''}`}
+                      aria-pressed={lockRatio}
+                      title={t('canvasSize.lock')}
+                      aria-label={t('canvasSize.lock')}
+                      onClick={toggleLockRatio}
                     >
-                      {preset.label}
+                      <Icon name="lock" size={14} />
                     </button>
-                  ))}
+                  </div>
+                  <div className="ccw-presets" role="group" aria-label={t('canvasSize.presets')}>
+                    {CANVAS_PRESETS.map((preset) => (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        className={`ccw-preset ${activePresetKey === preset.key ? 'is-active' : ''}`}
+                        aria-pressed={activePresetKey === preset.key}
+                        title={`${preset.label} · ${preset.width} × ${preset.height}`}
+                        onClick={() => applyPreset(preset)}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <p className="ccw-hint">{t('canvasSize.hint')}</p>
               </>

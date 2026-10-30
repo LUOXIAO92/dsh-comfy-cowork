@@ -1270,8 +1270,17 @@
   gap: var(--ccw-space-2);
 }
 
+.ccw-size-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ccw-space-2);
+  margin-top: var(--ccw-space-2);
+}
+
 .ccw-size-field {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 6px;
   flex: none;
@@ -1421,11 +1430,46 @@
   margin-top: var(--ccw-space-2);
 }
 
+.ccw-size-bar .ccw-size-grid {
+  margin-top: 0;
+}
+
+.ccw-ratio-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text-tertiary);
+  cursor: pointer;
+}
+
+.ccw-ratio-lock:hover {
+  border-color: var(--ccw-border-bright);
+  color: var(--ccw-text-secondary);
+}
+
+.ccw-ratio-lock.is-on {
+  border-color: var(--ccw-accent);
+  background: color-mix(in srgb, var(--ccw-accent) 14%, transparent);
+  color: var(--ccw-accent);
+}
+
 .ccw-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: var(--ccw-space-2);
+}
+
+.ccw-size-bar .ccw-presets {
+  margin-top: 0;
+  margin-left: auto;
 }
 
 .ccw-preset {
@@ -1445,6 +1489,12 @@
   border-color: color-mix(in srgb, var(--ccw-accent) 55%, var(--ccw-border-strong));
   background: var(--ccw-surface-raised);
   color: var(--ccw-text);
+}
+
+.ccw-preset.is-active {
+  border-color: color-mix(in srgb, var(--ccw-accent) 62%, var(--ccw-border-strong));
+  background: color-mix(in srgb, var(--ccw-accent) 12%, var(--ccw-surface-panel));
+  color: var(--ccw-accent);
 }
 
 .ccw-section-canvas .ccw-hint {
@@ -1882,6 +1932,7 @@
   cursor: pointer;
   box-shadow:
     0 8px 20px color-mix(in srgb, var(--ccw-surface-base) 55%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 color-mix(in srgb, var(--ccw-text) 4%, transparent);
 }
 
@@ -1913,7 +1964,9 @@
   min-width: 0;
   padding: 5px 7px;
   border-bottom: 1px solid var(--ccw-border);
-  background: color-mix(in srgb, var(--ccw-surface-active) 48%, var(--ccw-surface-panel));
+  /* A tint of the label ink keeps the title bar readable in both themes; the
+     layer tokens are nearly white-on-white in light mode. */
+  background: color-mix(in srgb, var(--ccw-text) 7%, var(--ccw-surface-panel));
 }
 
 .ccw-gnode-title {
