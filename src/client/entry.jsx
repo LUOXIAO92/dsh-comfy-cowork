@@ -8,7 +8,7 @@ const PACKAGE_ID = 'dsh-comfy-coworking'
 const NS = 'comfy-coworking'
 const TAB_ID = 'comfy-coworking'
 const TAB_KIND = 'comfy-coworking'
-const COMMAND = 'dsh-comfy-coworks'
+const COMMAND = 'dsh-comfy-cowork'
 
 export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'layout']
 

@@ -37,7 +37,7 @@ pipeline that writes every prompt into the plugin prompt box.
 - The plugin mounts dormant: no tool and no prompt section exists until one chat opens
   the canvas. Enabling is strictly per session — the host attaches `comfy_coworking_*`
   through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see them.
-- The only way in is the `/dsh-comfy-coworks` slash-menu row (label `DSH Comfy协同` /
+- The only way in is the `/dsh-comfy-cowork` slash-menu row (label `DSH Comfy协同` /
   `DSH Comfy cowork`). It is a client command contribution (`ctx.commandUi.register`), not a
   host command — that is the only way a menu row gets a localized label and an icon, and its
   whole effect (enable the session + open the tab) is client-side. There is no composer button.
