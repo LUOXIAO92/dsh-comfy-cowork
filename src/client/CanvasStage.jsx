@@ -10,6 +10,7 @@ import {
   processMask,
   tintedMask,
 } from './mask.js'
+import { remapPathPoints, splitShapePieces } from './shapes.js'
 
 const { forwardRef, useEffect, useImperativeHandle, useRef, useState } = React
 
@@ -399,7 +400,11 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     const ctx = composite.getContext('2d')
     ctx.drawImage(paint, 0, 0)
     for (const shape of shapesRef.current) {
-      const live = draft !== null && draft.id === shape.id ? { ...shape, bbox: draft.bbox } : shape
+      let live = shape
+      if (draft !== null && draft.id === shape.id) {
+        live = { ...shape, bbox: draft.bbox }
+        if (shape.kind === 'path') live.points = remapPathPoints(shape, shape.bbox, draft.bbox)
+      }
       fillMaskShape(ctx, live, live.opacity ?? 1, 'source-over', true)
     }
     if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, draft.opacity ?? 1, 'source-over', true)
@@ -524,8 +529,29 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     return touched
   }
 
-  function appendShapeHoles(touched, point) {
+  function appendShapeHoles(touched, point, previous) {
     if (!Array.isArray(touched)) return
+    const tracked = new Set(touched.map((entry) => entry.shape.id))
+    const radius = brush.size / 2
+    const from = previous ?? point
+    // A stroke that starts outside a shape and crosses it must start cutting
+    // where it enters, not only where it began.
+    for (const shape of shapesRef.current) {
+      if (tracked.has(shape.id)) continue
+      const [x1, y1, x2, y2] = shape.bbox
+      if (Math.max(point.x, from.x) + radius < x1) continue
+      if (Math.min(point.x, from.x) - radius > x2) continue
+      if (Math.max(point.y, from.y) + radius < y1) continue
+      if (Math.min(point.y, from.y) - radius > y2) continue
+      const width = Math.max(1, x2 - x1)
+      const height = Math.max(1, y2 - y1)
+      if (!Array.isArray(shape.holes)) shape.holes = []
+      const hole = { width: brush.size / Math.max(1, Math.max(x2 - x1, y2 - y1)), points: [] }
+      const startPoint = { x: Math.min(Math.max(from.x, x1), x2), y: Math.min(Math.max(from.y, y1), y2) }
+      hole.points.push([(startPoint.x - x1) / width, (startPoint.y - y1) / height])
+      shape.holes.push(hole)
+      touched.push({ shape, hole, x1, y1, width, height })
+    }
     for (const entry of touched) {
       entry.hole.points.push([(point.x - entry.x1) / entry.width, (point.y - entry.y1) / entry.height])
     }
@@ -1028,7 +1054,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         opacity: brush.opacity,
         erase: gesture.erase,
       })
-      if (gesture.erase) appendShapeHoles(gesture.holes, point)
+      if (gesture.erase) appendShapeHoles(gesture.holes, point, gesture.last)
       gesture.last = point
       buildComposite()
       drawMaskPreview(true)
@@ -1163,7 +1189,19 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
     if (gesture.kind === 'stroke') {
       if (gesture.erase && Array.isArray(gesture.holes) && gesture.holes.length > 0) {
-        const next = cloneShapes(shapesRef.current)
+        // A cut rect/ellipse becomes independent pieces, like erased strokes do.
+        const touchedIds = new Set(gesture.holes.map((entry) => entry.shape.id))
+        const next = []
+        for (const shape of cloneShapes(shapesRef.current)) {
+          if (!touchedIds.has(shape.id)) {
+            next.push(shape)
+            continue
+          }
+          const pieces = splitShapePieces(shape, limit.width, limit.height, () => `ms-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`)
+          if (pieces === null) next.push(shape)
+          else next.push(...pieces)
+        }
+        setSelectedShape(null)
         setShapeList(next)
         commitShapes(next)
       }
@@ -1201,7 +1239,13 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       draftShapeRef.current = null
       if (draft !== null) {
         pushUndo()
-        const next = shapesRef.current.map((shape) => (shape.id === draft.id ? { ...shape, bbox: draft.bbox } : shape))
+        const next = shapesRef.current.map((shape) => {
+          if (shape.id !== draft.id) return shape
+          if (shape.kind === 'path') {
+            return { ...shape, bbox: draft.bbox, points: remapPathPoints(shape, shape.bbox, draft.bbox) }
+          }
+          return { ...shape, bbox: draft.bbox }
+        })
         setShapeList(next)
         commitShapes(next)
         refreshProcessed()

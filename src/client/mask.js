@@ -88,8 +88,19 @@ export function fillMaskShape(ctx, shape, opacity = 1, composite = 'source-over'
   ctx.globalAlpha = Math.max(0, Math.min(1, Number(opacity) || 0))
   ctx.fillStyle = '#ffffff'
   ctx.beginPath()
-  if (shape.kind === 'ellipse') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
-  else ctx.rect(x, y, w, h)
+  const points = Array.isArray(shape.points) ? shape.points : []
+  if (shape.kind === 'path' && points.length >= 3) {
+    const first = points[0]
+    ctx.moveTo(Number(first[0]) || 0, Number(first[1]) || 0)
+    for (let index = 1; index < points.length; index += 1) {
+      ctx.lineTo(Number(points[index][0]) || 0, Number(points[index][1]) || 0)
+    }
+    ctx.closePath()
+  } else if (shape.kind === 'ellipse') {
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
+  } else {
+    ctx.rect(x, y, w, h)
+  }
   ctx.fill()
   ctx.restore()
   if (withHoles) drawShapeHoles(ctx, shape, bbox)
