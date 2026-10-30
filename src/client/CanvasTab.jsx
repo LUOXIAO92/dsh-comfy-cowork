@@ -71,10 +71,12 @@ const TOOL_ICONS = {
 }
 
 function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
+  const span = max - min
+  const ratio = span > 0 ? Math.min(1, Math.max(0, (value - min) / span)) : 0
   return (
     <label className="ccw-range">
       <span className="ccw-range-head">
-        <span>{label}</span>
+        <span className="ccw-range-label">{label}</span>
         <span className="ccw-range-value">{value}{suffix}</span>
       </span>
       <input
@@ -85,6 +87,7 @@ function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
         step={step}
         value={value}
         aria-label={label}
+        style={{ '--ccw-range-fill-pct': `${(ratio * 100).toFixed(2)}%` }}
         onChange={(event) => onChange(Number(event.target.value))}
       />
     </label>

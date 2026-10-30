@@ -39,6 +39,8 @@
   --ccw-warning: var(--dsw-alias-state-warn-primary);
   --ccw-idle: var(--dsw-alias-state-idle-primary);
   --ccw-checker: color-mix(in srgb, var(--dsw-alias-bg-layer-4) 70%, transparent);
+  --ccw-range-track: color-mix(in srgb, var(--dsw-alias-border-l2) 70%, transparent);
+  --ccw-range-fill: var(--dsw-alias-brand-primary);
   color-scheme: dark;
   color: var(--ccw-text);
   font-family: var(--ccw-font-ui);
@@ -1031,35 +1033,61 @@
   appearance: none;
 }
 
+.ccw-range-input:focus-visible {
+  outline: 2px solid var(--ccw-accent);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+/* The filled part of the track is what makes a slider legible: an unfilled
+   native track disappears on light surfaces and the thumb reads as a stray dot. */
 .ccw-range-input::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 2px;
-  background: var(--ccw-surface-strong);
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--ccw-range-fill) 0,
+    var(--ccw-range-fill) var(--ccw-range-fill-pct, 0%),
+    var(--ccw-range-track) var(--ccw-range-fill-pct, 0%),
+    var(--ccw-range-track) 100%
+  );
 }
 
 .ccw-range-input::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   margin-top: -4.5px;
-  border: 1px solid color-mix(in srgb, var(--ccw-accent) 68%, var(--ccw-border-strong));
+  border: 2px solid var(--ccw-range-fill);
   border-radius: 50%;
-  background: var(--ccw-accent);
+  background: var(--ccw-surface-base);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--dsw-alias-bg-mask-1) 55%, transparent);
   -webkit-appearance: none;
   appearance: none;
+  transition: transform 0.12s ease;
+}
+
+.ccw-range-input:active::-webkit-slider-thumb {
+  transform: scale(1.12);
 }
 
 .ccw-range-input::-moz-range-track {
-  height: 3px;
-  border-radius: 2px;
-  background: var(--ccw-surface-strong);
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ccw-range-track);
+}
+
+.ccw-range-input::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ccw-range-fill);
 }
 
 .ccw-range-input::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border: 1px solid color-mix(in srgb, var(--ccw-accent) 68%, var(--ccw-border-strong));
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--ccw-range-fill);
   border-radius: 50%;
-  background: var(--ccw-accent);
+  background: var(--ccw-surface-base);
 }
 
 .ccw-range-input:focus-visible {
@@ -2445,6 +2473,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ccw-range-input::-webkit-slider-thumb {
+    transition: none;
+  }
+
   .ccw-root *,
   .ccw-workflow * {
     scroll-behavior: auto !important;
