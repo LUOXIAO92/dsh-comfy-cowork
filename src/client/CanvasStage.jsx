@@ -83,6 +83,31 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
   })
 }
 
+/**
+ * Live preview of a mask rectangle/ellipse while dragging: mask tint plus a
+ * dashed outline in the mask colour and no index badge, so it never reads as a
+ * layout box.
+ */
+function drawShapePreview(ctx, gesture, scale, color) {
+  const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
+  const width = x2 - x1
+  const height = y2 - y1
+  if (width < 1 || height < 1) return
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = 1.5 / scale
+  ctx.setLineDash([5 / scale, 4 / scale])
+  ctx.beginPath()
+  if (gesture.shape === 'ellipse') ctx.ellipse(x1 + width / 2, y1 + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2)
+  else ctx.rect(x1, y1, width, height)
+  ctx.globalAlpha = 0.16
+  ctx.fill()
+  ctx.globalAlpha = 1
+  ctx.stroke()
+  ctx.restore()
+}
+
 function hitTest(boxes, point, scale, selectedId) {
   const threshold = 9 / scale
   const selected = boxes.find((box) => box.id === selectedId)
@@ -124,6 +149,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     onBoxSelect,
     onMaskReady,
     onMessage,
+    onDeleteKey,
   } = props
 
   const containerRef = useRef(null)
@@ -202,13 +228,19 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   function drawOverlay() {
     const overlay = overlayRef.current
     if (!overlay) return
+    const ctx = overlay.getContext('2d')
     const gesture = gestureRef.current
     let draft = draftBoxRef.current
-    if (gesture?.kind === 'shape' || gesture?.kind === 'newbox') {
+    if (gesture?.kind === 'newbox') {
       const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
       draft = { id: '__draft__', bbox: [x1, y1, x2, y2], label: 'object' }
     }
-    drawBoxOverlay(overlay.getContext('2d'), boxes, selectedId, viewRef.current.scale, draft)
+    drawBoxOverlay(ctx, boxes, selectedId, viewRef.current.scale, draft)
+    // A mask rectangle/ellipse is not a layout box: it gets the mask tint and
+    // no index badge, so the two never read as the same object.
+    if (gesture?.kind === 'shape') {
+      drawShapePreview(ctx, gesture, viewRef.current.scale, maskSettings.color ?? '#ff3b30')
+    }
   }
 
   useEffect(() => {
@@ -582,7 +614,17 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   return React.createElement('div', {
     className: `ccw-stage-wrap ccw-tool-${tool} ${imageUrl ? 'has-image' : 'is-empty'}`,
     ref: containerRef,
-    onPointerDown,
+    tabIndex: 0,
+    onPointerDown: (event) => {
+      // Focus the stage so Delete/Backspace reach the canvas instead of the page.
+      containerRef.current?.focus?.()
+      onPointerDown(event)
+    },
+    onKeyDown: (event) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      event.preventDefault()
+      onDeleteKey?.()
+    },
     onPointerMove,
     onPointerUp,
     onPointerCancel: onPointerUp,

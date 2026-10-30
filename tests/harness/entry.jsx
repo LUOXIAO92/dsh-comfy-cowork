@@ -14,6 +14,7 @@ const items = [
   { id: 'box-1', label: 'object', caption: 'A glossy red apple on the linen surface.', text: '', bbox: [120, 320, 460, 760], palette: ['#b3121b'] },
   { id: 'box-2', label: 'object', caption: 'A matte blue ceramic cup with a rounded handle.', text: '', bbox: [560, 360, 900, 760], palette: ['#245a8d'] },
   { id: 'box-3', label: 'text', caption: 'Small dark-green Chinese caption in the lower left.', text: '安静的午后', bbox: [120, 800, 520, 900], palette: [] },
+  { id: 'box-4', label: 'object', caption: '', text: '', bbox: [620, 800, 900, 940], palette: [] },
 ]
 const prompt = JSON.stringify({
   summary: { caption: 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.' },
@@ -58,6 +59,15 @@ const doc = {
   ui: { openSeq: 0, notice: null },
 }
 
+// ?noimage=1 previews the blank-canvas state (size controls, no artboard image).
+if (new URLSearchParams(location.search).get('noimage') === '1') {
+  doc.canvas.image = null
+  doc.mode = 'layout'
+}
+
+// Mask-shape previews are an image-mode tool, so that mode starts in image mode.
+if (new URLSearchParams(location.search).get('shape')) doc.mode = 'image'
+
 const infos = {
   CheckpointLoaderSimple: { input: { required: { ckpt_name: [['Illustrious/miaomiaoHarem_v20.safetensors'], {}] } }, input_order: { required: ['ckpt_name'] } },
   LoadImage: { input: { required: { image: [['canvas.png'], {}] } }, input_order: { required: ['image'] } },
@@ -80,11 +90,58 @@ class MockEventSource {
 }
 
 const nativeFetch = window.fetch.bind(window)
+// The mock keeps a mutable document so interactions (select / delete / write)
+// behave like the host instead of echoing the initial state forever.
+let current = JSON.parse(JSON.stringify(doc))
+const json = (value) => new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } })
+const bodyOf = (options) => {
+  try {
+    return JSON.parse(options?.body ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
 window.EventSource = MockEventSource
-window.fetch = async (url, options) => {
+window.fetch = async (url, options = {}) => {
   const text = String(url)
-  const json = (value) => new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } })
-  if (text.includes('/doc') && !text.includes('/doc/')) return json({ doc })
+  const method = (options.method ?? 'GET').toUpperCase()
+  if (method === 'PUT' && text.includes('/doc/selection')) {
+    current.selected = bodyOf(options).selection ?? null
+    return json({ doc: current })
+  }
+  if (method === 'DELETE' && text.includes('/doc/box/')) {
+    const id = decodeURIComponent(text.split('/doc/box/')[1].split('?')[0])
+    current.layout.items = current.layout.items.filter((item) => item.id !== id)
+    if (current.selected?.id === id) current.selected = null
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/box')) {
+    const box = bodyOf(options).box
+    const index = current.layout.items.findIndex((item) => item.id === box.id)
+    if (index === -1) current.layout.items = [...current.layout.items, { ...box, id: box.id ?? `box-${current.layout.items.length + 1}` }]
+    else current.layout.items[index] = { ...current.layout.items[index], ...box }
+    current.selected = { kind: 'box', id: box.id }
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/canvas')) {
+    const patch = bodyOf(options)
+    if (patch.mode) current.mode = patch.mode
+    if (Number.isInteger(patch.width)) current.canvas.width = patch.width
+    if (Number.isInteger(patch.height)) current.canvas.height = patch.height
+    if (patch.mask) current.mask = { ...current.mask, ...patch.mask }
+    if (patch.image !== undefined) current.canvas.image = patch.image
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/prompt')) {
+    current.prompt = bodyOf(options).prompt ?? current.prompt
+    current.promptSource = 'agent'
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/layout')) {
+    return json({ doc: current })
+  }
+  if (method === 'GET' && text.includes('/doc') && !text.includes('/doc/')) return json({ doc: current })
   if (text.includes('/health')) return json({ ok: true, comfy: { connected: true, version: '0.41.0' } })
   if (text.includes('/workflows') && !text.includes('/load') && !text.includes('/save')) {
     return json({ workflows: [{ path: 'coworking_inpaint.json' }, { path: 'upscale_detail.json' }] })
@@ -92,13 +149,9 @@ window.fetch = async (url, options) => {
   if (text.includes('/object_info')) return json({ nodes: infos })
   if (text.includes('/models/')) return json({ folders: ['checkpoints', 'vae'], files: ['Illustrious/miaomiaoHarem_v20.safetensors', 'flux1-dev-fp8.safetensors'] })
   if (text.includes('/models')) return json({ folders: ['checkpoints', 'vae', 'loras'], files: [] })
-  if (text.includes('/asset')) {
-    return new Response('', { status: 404, statusText: 'not found' })
-  }
-  if (text.includes('/workflows/load') || text.includes('/workflows/save') || text.includes('/doc/')) return json({ doc })
-  return json({})
+  if (text.includes('/asset')) return new Response('', { status: 404 })
+  return json({ doc: current })
 }
-
 
 function mountApp() {
   createRoot(document.getElementById('canvas-root')).render(
@@ -297,4 +350,82 @@ function runSmoke() {
   }).catch((error) => {
     document.body.setAttribute('data-smoke', `failed: ${error?.message ?? error}`)
   })
+}
+
+// ?shape=rect|ellipse leaves a mask drag in progress so a screenshot shows the
+// live preview (dashed mask tint, no layout-box badge).
+const shapeMode = new URLSearchParams(location.search).get('shape')
+if (shapeMode === 'rect' || shapeMode === 'ellipse') {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const runShape = async () => {
+    let wrap = null
+    for (let i = 0; i < 60; i += 1) {
+      wrap = document.querySelector('#canvas-root .ccw-stage-wrap')
+      if (wrap !== null) break
+      await sleep(100)
+    }
+    if (wrap === null) return
+    const scriptTab = Array.from(document.querySelectorAll('#canvas-root .ccw-viewtab')).find((el) => el.textContent.trim() === '画布')
+    scriptTab?.click()
+    await sleep(300)
+    const toolButton = Array.from(document.querySelectorAll('#canvas-root button'))
+      .find((el) => (el.getAttribute('aria-label') || '') === (shapeMode === 'rect' ? '矩形' : '椭圆'))
+    toolButton?.click()
+    await sleep(300)
+    const rect = wrap.getBoundingClientRect()
+    const fire = (type, x, y) => wrap.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1, pointerId: 3, isPrimary: true,
+    }))
+    fire('pointerdown', rect.left + 120, rect.top + 190)
+    await sleep(60)
+    fire('pointermove', rect.left + 430, rect.top + 470)
+  }
+  runShape()
+}
+
+// ?keytest=1 verifies Delete/Backspace removes the selected box.
+if (new URLSearchParams(location.search).get('keytest') === '1') {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const run = async () => {
+    for (let i = 0; i < 60 && document.querySelectorAll('#canvas-root .ccw-box-row').length === 0; i += 1) await sleep(100)
+    const rows = () => document.querySelectorAll('#canvas-root .ccw-box-row').length
+    const report = { before: rows(), calls: [] }
+    const second = document.querySelectorAll('#canvas-root .ccw-box-row')[1]
+    second?.click()
+    await sleep(500)
+    const stage = document.querySelector('#canvas-root .ccw-stage-wrap')
+    stage?.focus?.()
+    stage?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, cancelable: true }))
+    await sleep(700)
+    report.afterStageDelete = rows()
+    const first = document.querySelector('#canvas-root .ccw-box-row')
+    first?.focus?.()
+    first?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
+    await sleep(700)
+    report.afterRowBackspace = rows()
+    const pre = document.createElement('pre')
+    pre.id = 'keytest-report'
+    pre.textContent = JSON.stringify(report)
+    pre.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;background:#000;color:#0f0;font-size:12px'
+    document.body.appendChild(pre)
+  }
+  run()
+}
+
+// ?errortest=1 compiles with an empty caption and reports the message the user sees.
+if (new URLSearchParams(location.search).get('errortest') === '1') {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const run = async () => {
+    for (let i = 0; i < 60 && document.querySelector('#canvas-root .ccw-btn-compile') === null; i += 1) await sleep(100)
+    document.querySelector('#canvas-root .ccw-btn-compile')?.click()
+    await sleep(900)
+    const pre = document.createElement('pre')
+    pre.id = 'errortest-report'
+    pre.textContent = JSON.stringify({
+      error: document.querySelector('#canvas-root .ccw-error')?.textContent ?? null,
+      selectedRow: document.querySelector('#canvas-root .ccw-box-item.is-selected .ccw-box-index')?.textContent ?? null,
+    })
+    document.body.appendChild(pre)
+  }
+  run()
 }

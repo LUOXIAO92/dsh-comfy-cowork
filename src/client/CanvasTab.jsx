@@ -17,6 +17,15 @@ import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
 import { Icon, IconButton, Section } from './ui.jsx'
 
+/** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
+const CANVAS_PRESETS = [
+  { key: 'square-1024', label: '1:1 1024', width: 1024, height: 1024 },
+  { key: 'square-768', label: '1:1 768', width: 768, height: 768 },
+  { key: 'landscape', label: '4:3', width: 1152, height: 864 },
+  { key: 'portrait', label: '3:4', width: 864, height: 1152 },
+  { key: 'wide', label: '16:9', width: 1344, height: 768 },
+]
+
 function useDoc(sessionId, setError) {
   const [doc, setDoc] = useState(null)
   const [status, setStatus] = useState('connecting')
@@ -237,6 +246,8 @@ export function CanvasTab(props) {
   const [comfy, setComfy] = useState(null)
   const [probeError, setProbeError] = useState('')
   const [view, setView] = useState('canvas')
+  const [widthInput, setWidthInput] = useState(null)
+  const [heightInput, setHeightInput] = useState(null)
   const [tool, setTool] = useState('brush')
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
   const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
@@ -359,6 +370,12 @@ export function CanvasTab(props) {
 
   async function recompile() {
     if (!doc) return
+    const incomplete = doc.layout.items.findIndex((item) => String(item.caption ?? '').trim() === '')
+    if (incomplete !== -1) {
+      await selectBox(doc.layout.items[incomplete].id)
+      setError(t('layout.captionRequired').replace('{n}', String(incomplete + 1)))
+      return
+    }
     try {
       const result = await saveLayout(sessionId, summary, doc.layout.items)
       setDoc(result.doc)
@@ -419,6 +436,43 @@ export function CanvasTab(props) {
     }
   }
 
+  /** Commit the width/height fields (Enter or blur), rounding to the 16px grid. */
+  function applyCanvasSize() {
+    const width = Number(widthInput ?? docRef.current?.canvas?.width ?? 1024)
+    const height = Number(heightInput ?? docRef.current?.canvas?.height ?? 1024)
+    setWidthInput(null)
+    setHeightInput(null)
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return
+    const nextWidth = Math.min(16384, Math.max(16, Math.round(width / 16) * 16))
+    const nextHeight = Math.min(16384, Math.max(16, Math.round(height / 16) * 16))
+    if (nextWidth === docRef.current?.canvas?.width && nextHeight === docRef.current?.canvas?.height) return
+    setCanvasSize(nextWidth, nextHeight)
+  }
+
+  function applyPreset(preset) {
+    setWidthInput(null)
+    setHeightInput(null)
+    setCanvasSize(preset.width, preset.height)
+  }
+
+  async function removeBox(id) {
+    if (!id) return
+    try {
+      const result = await deleteBox(sessionId, id)
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  /** Delete/Backspace on a focused box row removes that row's box. */
+  function handleBoxRowKey(event, id) {
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return
+    event.preventDefault()
+    event.stopPropagation()
+    removeBox(id)
+  }
+
   async function updateSelected(patch) {
     const selected = doc?.layout?.items?.find((item) => item.id === doc?.selected?.id)
     if (selected === undefined) return
@@ -431,13 +485,7 @@ export function CanvasTab(props) {
   }
 
   async function removeSelected() {
-    if (!doc?.selected?.id) return
-    try {
-      const result = await deleteBox(sessionId, doc.selected.id)
-      setDoc(result.doc)
-    } catch (caught) {
-      setError(caught.message)
-    }
+    await removeBox(docRef.current?.selected?.id)
   }
 
   async function selectBox(id) {
@@ -524,6 +572,9 @@ export function CanvasTab(props) {
     }
   }
 
+  const workflowNodeTypes = (doc?.workflow?.json?.nodes ?? []).map((node) => String(node?.type ?? ''))
+  const hasWorkflowNodes = workflowNodeTypes.length > 0
+  const hasMossNodes = workflowNodeTypes.some((type) => /MOSS|CreateBoundingBoxes/i.test(type))
   const items = doc?.layout?.items ?? []
   const selected = items.find((item) => item.id === doc?.selected?.id) ?? null
   const image = doc?.canvas?.image ?? null
@@ -705,6 +756,7 @@ export function CanvasTab(props) {
               onBoxSelect={selectBox}
               onMaskReady={handleMaskReady}
               onMessage={setError}
+              onDeleteKey={removeSelected}
             />
           </div>
 
@@ -726,6 +778,64 @@ export function CanvasTab(props) {
         </section>
 
         <aside className="ccw-inspector" aria-label={t('inspector.label')}>
+          <Section title={t('canvasSize.title')} icon="maximize" className="ccw-section-canvas">
+            {image ? (
+              <div className="ccw-size-readout">
+                <span className="ccw-size-value">{image.width} × {image.height}</span>
+                <span className="ccw-hint">{t('canvasSize.fromImage')}</span>
+              </div>
+            ) : (
+              <>
+                <div className="ccw-size-grid">
+                  <label className="ccw-field">
+                    <span>{t('canvasSize.width')}</span>
+                    <input
+                      type="number"
+                      min={16}
+                      max={16384}
+                      step={16}
+                      value={widthInput ?? doc?.canvas?.width ?? 1024}
+                      onChange={(event) => setWidthInput(event.target.value)}
+                      onBlur={applyCanvasSize}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') applyCanvasSize()
+                      }}
+                    />
+                  </label>
+                  <label className="ccw-field">
+                    <span>{t('canvasSize.height')}</span>
+                    <input
+                      type="number"
+                      min={16}
+                      max={16384}
+                      step={16}
+                      value={heightInput ?? doc?.canvas?.height ?? 1024}
+                      onChange={(event) => setHeightInput(event.target.value)}
+                      onBlur={applyCanvasSize}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') applyCanvasSize()
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="ccw-presets" role="group" aria-label={t('canvasSize.presets')}>
+                  {CANVAS_PRESETS.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      className="ccw-preset"
+                      title={`${preset.width} × ${preset.height}`}
+                      onClick={() => applyPreset(preset)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="ccw-hint">{t('canvasSize.hint')}</p>
+              </>
+            )}
+          </Section>
+
           {showMaskTools ? (
             <Section title={t('mask.title')} icon="sliders" className="ccw-section-mask">
               <MaskSliders
@@ -801,102 +911,70 @@ export function CanvasTab(props) {
               <IconButton icon="plus" label={t('layout.add')} onClick={addBox} />
             )}
           >
-            <div className="ccw-subsection">
-              <div className="ccw-subhead">{t('layout.settings')}</div>
-              {image ? (
-                <div className="ccw-size-readout">
-                  <span className="ccw-size-value">{image.width} × {image.height}</span>
-                  <span className="ccw-hint">{image.name ?? ''}</span>
-                </div>
-              ) : (
-                <div className="ccw-size-grid">
-                  <label className="ccw-field">
-                    <span>{t('layout.width')}</span>
-                    <input
-                      type="number"
-                      min={16}
-                      max={16384}
-                      step={16}
-                      value={doc?.canvas?.width ?? 1024}
-                      onChange={(event) => setCanvasSize(Number(event.target.value), doc?.canvas?.height ?? 1024)}
-                    />
-                  </label>
-                  <label className="ccw-field">
-                    <span>{t('layout.height')}</span>
-                    <input
-                      type="number"
-                      min={16}
-                      max={16384}
-                      step={16}
-                      value={doc?.canvas?.height ?? 1024}
-                      onChange={(event) => setCanvasSize(doc?.canvas?.width ?? 1024, Number(event.target.value))}
-                    />
-                  </label>
-                </div>
-              )}
-              <label className="ccw-field">
-                <span>{t('layout.summary')}</span>
-                <textarea
-                  rows={2}
-                  value={summary}
-                  placeholder={t('layout.summaryPlaceholder')}
-                  onChange={(event) => saveSummary(event.target.value)}
-                />
-              </label>
+            <p className="ccw-hint ccw-layout-hint">
+              <Icon name="info" size={13} />
+              <span>{t('layout.mossOnly')}</span>
+            </p>
+            {hasWorkflowNodes && !hasMossNodes ? (
+              <p className="ccw-hint ccw-warn-hint" role="status">
+                <Icon name="alert" size={13} />
+                <span>{t('layout.mossMismatch')}</span>
+              </p>
+            ) : null}
+            <label className="ccw-field">
+              <span>{t('layout.summary')}</span>
+              <textarea
+                rows={3}
+                value={summary}
+                placeholder={t('layout.summaryPlaceholder')}
+                onChange={(event) => saveSummary(event.target.value)}
+              />
+            </label>
+            <div className="ccw-subhead-row">
+              <div className="ccw-subhead">{t('layout.list')}</div>
+              <span className="ccw-subhead-meta">{items.length}</span>
             </div>
-
-            <div className="ccw-subsection">
-              <div className="ccw-subhead-row">
-                <div className="ccw-subhead">{t('layout.selected')}</div>
-                {selected ? (
-                  <span className="ccw-subhead-meta">#{items.findIndex((item) => item.id === selected.id) + 1}</span>
-                ) : null}
-              </div>
-              {selected ? (
-                <BoxEditor
-                  selected={selected}
-                  updateSelected={updateSelected}
-                  removeSelected={removeSelected}
-                  t={t}
-                />
-              ) : (
-                <p className="ccw-hint ccw-select-hint">
-                  <Icon name="pointer" size={14} />
-                  <span>{t('layout.selectHint')}</span>
-                </p>
-              )}
-            </div>
-
-            <div className="ccw-subsection">
-              <div className="ccw-subhead-row">
-                <div className="ccw-subhead">{t('layout.list')}</div>
-                <span className="ccw-subhead-meta">{items.length}</span>
-              </div>
-              {items.length === 0 ? (
-                <p className="ccw-hint">{t('layout.empty')}</p>
-              ) : (
-                <ul className="ccw-boxes">
-                  {items.map((item, index) => (
-                    <li key={item.id || index}>
+            {items.length === 0 ? (
+              <p className="ccw-hint">{t('layout.empty')}</p>
+            ) : (
+              <ul className="ccw-boxes">
+                {items.map((item, index) => {
+                  const isSelected = doc?.selected?.id === item.id
+                  const missingCaption = String(item.caption ?? '').trim() === ''
+                  return (
+                    <li key={item.id || index} className={`ccw-box-item ${isSelected ? 'is-selected' : ''}`}>
                       <button
                         type="button"
-                        className={`ccw-box-row ${doc?.selected?.id === item.id ? 'is-selected' : ''}`}
-                        aria-pressed={doc?.selected?.id === item.id}
+                        className={`ccw-box-row ${isSelected ? 'is-selected' : ''}`}
+                        aria-pressed={isSelected}
+                        aria-expanded={isSelected}
                         title={item.caption || undefined}
-                        onClick={() => selectBox(item.id)}
+                        onClick={() => selectBox(isSelected ? null : item.id)}
+                        onKeyDown={(event) => handleBoxRowKey(event, item.id)}
                       >
                         <span className="ccw-box-index">{String(index + 1).padStart(2, '0')}</span>
                         <span className="ccw-box-main">
                           <span className="ccw-box-label">{item.label}</span>
-                          <span className="ccw-box-caption">{item.caption || t('layout.caption')}</span>
+                          <span className={`ccw-box-caption ${missingCaption ? 'is-missing' : ''}`}>
+                            {item.caption || t('layout.captionMissing')}
+                          </span>
                         </span>
-                        <Icon name="chevronRight" size={13} className="ccw-box-chevron" />
+                        {missingCaption ? <span className="ccw-box-badge">{t('layout.captionBadge')}</span> : null}
+                        <Icon name={isSelected ? 'chevronDown' : 'chevronRight'} size={13} className="ccw-box-chevron" />
                       </button>
+                      {isSelected ? (
+                        <BoxEditor
+                          selected={item}
+                          updateSelected={updateSelected}
+                          removeSelected={removeSelected}
+                          t={t}
+                        />
+                      ) : null}
                     </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                  )
+                })}
+              </ul>
+            )}
           </Section>
         </aside>
       </div>
