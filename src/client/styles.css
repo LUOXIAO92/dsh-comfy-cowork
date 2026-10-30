@@ -2895,3 +2895,121 @@
     transition: none;
   }
 }
+
+/* ------------------------------------------------------- canvas comments */
+
+.ccw-section-comment .ccw-hint {
+  margin-top: var(--ccw-space-2);
+}
+
+.ccw-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--ccw-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ccw-comment {
+  border: 1px solid var(--ccw-border);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-panel);
+  overflow: hidden;
+}
+
+.ccw-comment.is-selected {
+  border-color: color-mix(in srgb, #f59e0b 62%, var(--ccw-border-strong));
+  background: color-mix(in srgb, #f59e0b 8%, var(--ccw-surface-panel));
+}
+
+.ccw-comment-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 7px;
+  border: none;
+  background: none;
+  color: var(--ccw-text);
+  font: inherit;
+  font-size: var(--ccw-text-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ccw-comment-row:hover {
+  background: var(--ccw-surface-raised);
+}
+
+.ccw-comment-index {
+  flex: none;
+  color: #b45309;
+  font-family: var(--ccw-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ccw-comment-source {
+  flex: none;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--ccw-border-strong);
+  color: var(--ccw-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.ccw-comment-source.is-agent {
+  border-color: color-mix(in srgb, var(--ccw-accent) 55%, var(--ccw-border-strong));
+  color: var(--ccw-accent);
+}
+
+.ccw-comment-text {
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ccw-comment-text.is-empty {
+  color: var(--ccw-text-tertiary);
+  font-style: italic;
+}
+
+.ccw-comment-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 7px 7px;
+}
+
+.ccw-comment-editor textarea {
+  width: 100%;
+  min-height: 58px;
+  padding: 5px 6px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text);
+  font: inherit;
+  font-size: var(--ccw-text-ui);
+  line-height: 1.4;
+  resize: vertical;
+  outline: none;
+}
+
+.ccw-comment-editor textarea:focus {
+  border-color: #f59e0b;
+}
+
+.ccw-comment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ccw-space-2);
+}
+
+.ccw-comment-actions .ccw-hint {
+  margin: 0;
+}

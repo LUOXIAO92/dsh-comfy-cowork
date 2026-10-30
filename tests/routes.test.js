@@ -237,3 +237,68 @@ test('stores the negative prompt separately from the canvas prompt', async () =>
     await cleanup()
   }
 })
+
+test('writes and deletes a canvas comment (session in body then query)', async () => {
+  const { routes, store, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-route-comments'
+    const put = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+      sessionId: session,
+      comment: { bbox: [10, 10, 200, 200], text: '这个图不行 这里细节不好' },
+      source: 'user',
+    }))
+    assert.equal(put.status, 200)
+    let body = JSON.parse(put.body)
+    assert.equal(body.sessionId, session)
+    assert.equal(body.doc.comments.length, 1)
+    assert.equal(body.doc.comments[0].source, 'user')
+    assert.equal(body.doc.comments[0].text, '这个图不行 这里细节不好')
+    const id = body.doc.comments[0].id
+
+    // The comment object may also arrive at the top level; the session comes from the query.
+    const update = await call(routes, makeReq('PUT', `/api/comfy-coworking/doc/comment?session=${session}`, {
+      id,
+      bbox: [20, 20, 220, 220],
+      text: '把手指改好',
+    }))
+    assert.equal(update.status, 200)
+    body = JSON.parse(update.body)
+    assert.equal(body.doc.comments.length, 1)
+    assert.deepEqual(body.doc.comments[0].bbox, [20, 20, 220, 220])
+    assert.equal(body.doc.comments[0].text, '把手指改好')
+    assert.equal(body.doc.comments[0].source, 'user')
+
+    const invalid = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+      sessionId: session,
+      comment: { bbox: [0, 0], text: 'bad' },
+    }))
+    assert.equal(invalid.status, 400)
+    assert.match(JSON.parse(invalid.body).error, /bbox/)
+
+    const remove = await call(routes, makeReq('DELETE', `/api/comfy-coworking/doc/comment/${encodeURIComponent(id)}?session=${session}`))
+    assert.equal(remove.status, 200)
+    body = JSON.parse(remove.body)
+    assert.deepEqual(body.doc.comments, [])
+    assert.deepEqual((await store.snapshot(session)).comments, [])
+
+    const again = await call(routes, makeReq('DELETE', `/api/comfy-coworking/doc/comment/${encodeURIComponent(id)}?session=${session}`))
+    assert.equal(again.status, 200)
+    assert.deepEqual(JSON.parse(again.body).doc.comments, [])
+  } finally {
+    await cleanup()
+  }
+})
+
+test('rejects a canvas comment write the connection does not admit', async () => {
+  const { routes, store, cleanup } = await makeRoutes({ rejection: 401 })
+  try {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+      sessionId: 'session-comment-denied',
+      comment: { bbox: [0, 0, 10, 10], text: 'nope' },
+    }))
+    assert.equal(res.status, 401)
+    await assert.rejects(fs.access(path.join(store.sessionDir('session-comment-denied'), 'document.json')))
+  } finally {
+    await cleanup()
+  }
+})

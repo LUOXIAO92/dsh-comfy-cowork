@@ -117,7 +117,6 @@ function hitTestShapes(shapes, point, scale, selectedId) {
 
 /** Dashed outline per mask shape plus resize handles for the selected one. */
 function drawShapeObjects(ctx, shapes, selectedId, scale, color, draft) {
-  const line = 1.4 / scale
   const all = draft === null
     ? shapes
     : draft.id === '__draft__'
@@ -127,11 +126,13 @@ function drawShapeObjects(ctx, shapes, selectedId, scale, color, draft) {
     const [x1, y1, x2, y2] = shape.bbox
     const isDraft = draft !== null && shape.id === draft.id
     const selected = shape.id === selectedId || isDraft
+    // A mask is painted, not a layout box: no dashed frame. Only the selected
+    // shape gets a thin outline so its handles have something to attach to.
+    if (!selected) continue
     ctx.save()
     ctx.strokeStyle = color
-    ctx.globalAlpha = selected ? 0.95 : 0.5
-    ctx.lineWidth = selected ? 1.8 / scale : line
-    ctx.setLineDash(isDraft ? [6 / scale, 4 / scale] : [5 / scale, 4 / scale])
+    ctx.globalAlpha = 0.95
+    ctx.lineWidth = 1.4 / scale
     ctx.beginPath()
     if (shape.kind === 'ellipse') {
       ctx.ellipse(x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2)
@@ -140,7 +141,7 @@ function drawShapeObjects(ctx, shapes, selectedId, scale, color, draft) {
     }
     ctx.stroke()
     ctx.restore()
-    if (selected && !isDraft) {
+    if (!isDraft) {
       const r = 4 / scale
       for (const [hx, hy] of [
         [x1, y1], [(x1 + x2) / 2, y1], [x2, y1],
@@ -157,6 +158,108 @@ function drawShapeObjects(ctx, shapes, selectedId, scale, color, draft) {
       }
     }
   }
+}
+
+const COMMENT_COLOR = '#f59e0b'
+
+/** Comment boxes: an amber annotation with the note drawn right on the image. */
+function drawComments(ctx, comments, selectedId, scale, draft) {
+  const all = draft === null
+    ? comments
+    : draft.id === '__draft__'
+      ? [...comments, draft]
+      : comments.map((comment) => (comment.id === draft.id ? { ...comment, bbox: draft.bbox } : comment))
+  const line = 1.5 / scale
+  all.forEach((comment, index) => {
+    const [x1, y1, x2, y2] = comment.bbox
+    const selected = comment.id === selectedId || (draft !== null && comment.id === draft.id)
+    ctx.save()
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.14)'
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1)
+    ctx.strokeStyle = COMMENT_COLOR
+    ctx.lineWidth = selected ? 2.2 / scale : line
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
+    const label = `C${index + 1}`
+    const fontPx = 11 / scale
+    ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`
+    const chipWidth = ctx.measureText(label).width + 8 / scale
+    ctx.fillStyle = COMMENT_COLOR
+    ctx.fillRect(x1, y1, chipWidth, fontPx + 6 / scale)
+    ctx.fillStyle = '#3a2400'
+    ctx.fillText(label, x1 + 4 / scale, y1 + fontPx + 1 / scale)
+    const text = String(comment.text ?? '').trim()
+    if (text !== '') {
+      ctx.font = `${fontPx}px ui-sans-serif, system-ui, sans-serif`
+      ctx.lineWidth = 2.4 / scale
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
+      ctx.fillStyle = '#ffffff'
+      const pad = 5 / scale
+      const chipHeight = fontPx + 6 / scale
+      const top = y1 + chipHeight + fontPx + 4 / scale
+      const maxLines = Math.max(1, Math.floor((y2 - top - pad) / (fontPx * 1.35)))
+      if (maxLines >= 1) {
+        const lines = []
+        let lineText = ''
+        for (const char of text) {
+          const candidate = lineText + char
+          if (ctx.measureText(candidate).width > Math.max(20 / scale, x2 - x1 - pad * 2) && lineText !== '') {
+            lines.push(lineText)
+            lineText = char
+          } else {
+            lineText = candidate
+          }
+        }
+        if (lineText !== '') lines.push(lineText)
+        lines.slice(0, maxLines).forEach((value, row) => {
+          const ty = top + row * fontPx * 1.35
+          ctx.strokeText(value, x1 + pad, ty)
+          ctx.fillText(value, x1 + pad, ty)
+        })
+      }
+    }
+    if (selected) {
+      const r = 4 / scale
+      for (const [hx, hy] of [
+        [x1, y1], [(x1 + x2) / 2, y1], [x2, y1],
+        [x2, (y1 + y2) / 2], [x2, y2], [(x1 + x2) / 2, y2],
+        [x1, y2], [x1, (y1 + y2) / 2],
+      ]) {
+        ctx.fillStyle = '#ffffff'
+        ctx.strokeStyle = COMMENT_COLOR
+        ctx.lineWidth = 1 / scale
+        ctx.beginPath()
+        ctx.rect(hx - r, hy - r, r * 2, r * 2)
+        ctx.fill()
+        ctx.stroke()
+      }
+    }
+    ctx.restore()
+  })
+}
+
+function hitTestComments(comments, point, scale, selectedId) {
+  const threshold = 9 / scale
+  const selected = comments.find((comment) => comment.id === selectedId)
+  if (selected !== undefined) {
+    const [x1, y1, x2, y2] = selected.bbox
+    const handles = [
+      ['nw', x1, y1], ['n', (x1 + x2) / 2, y1], ['ne', x2, y1],
+      ['e', x2, (y1 + y2) / 2], ['se', x2, y2], ['s', (x1 + x2) / 2, y2],
+      ['sw', x1, y2], ['w', x1, (y1 + y2) / 2],
+    ]
+    for (const [handle, hx, hy] of handles) {
+      if (Math.abs(point.x - hx) <= threshold && Math.abs(point.y - hy) <= threshold) {
+        return { kind: 'resize', handle, comment: selected }
+      }
+    }
+  }
+  for (let index = comments.length - 1; index >= 0; index -= 1) {
+    const [x1, y1, x2, y2] = comments[index].bbox
+    if (point.x >= x1 && point.x <= x2 && point.y >= y1 && point.y <= y2) {
+      return { kind: 'move', comment: comments[index] }
+    }
+  }
+  return null
 }
 
 function hitTest(boxes, point, scale, selectedId) {
@@ -197,6 +300,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     selectedId,
     shapes,
     onShapesChange,
+    comments,
+    selectedComment,
+    onCommentCreate,
+    onCommentCommit,
+    onCommentText,
+    onCommentSelect,
     onBoxCreate,
     onBoxCommit,
     onBoxCaption,
@@ -231,6 +340,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   const [captionEdit, setCaptionEdit] = useState(null)
   const ringRef = useRef(null)
   const draftShapeRef = useRef(null)
+  const draftCommentRef = useRef(null)
+  const commentListRef = useRef([])
+  const selectedCommentRef = useRef(null)
   const shapeListRef = useRef([])
   const selectedShapeRef = useRef(null)
   const [overlayTick, setOverlayTick] = useState(0)
@@ -249,6 +361,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   viewRef.current = view
   shapeListRef.current = shapeList
   selectedShapeRef.current = selectedShape
+  commentListRef.current = Array.isArray(comments) ? comments : []
+  selectedCommentRef.current = selectedComment ?? null
 
   const limit = { width: Math.max(1, width), height: Math.max(1, height) }
 
@@ -277,14 +391,18 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
    * The mask is three layers: brush strokes, vector rect/ellipse shapes and
    * eraser cuts. Shapes stay editable objects even when part of them is erased.
    */
-  function buildComposite() {
+  function buildComposite(draft = null) {
     const paint = paintRef.current
     const erase = eraseRef.current
     if (!paint || !erase) return null
     const composite = createCanvas(limit.width, limit.height)
     const ctx = composite.getContext('2d')
     ctx.drawImage(paint, 0, 0)
-    for (const shape of shapesRef.current) fillMaskShape(ctx, shape, shape.opacity ?? 1)
+    for (const shape of shapesRef.current) {
+      const live = draft !== null && draft.id === shape.id ? { ...shape, bbox: draft.bbox } : shape
+      fillMaskShape(ctx, live, live.opacity ?? 1)
+    }
+    if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, draft.opacity ?? 1)
     ctx.globalCompositeOperation = 'destination-out'
     ctx.drawImage(erase, 0, 0)
     ctx.globalCompositeOperation = 'source-over'
@@ -314,6 +432,81 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     setOverlayTick((value) => value + 1)
   }
 
+  /**
+   * Pull the connected painted region under a point out of the brush layer.
+   * Dragging then moves only that stroke, even though every stroke is raster.
+   */
+  function extractPaintRegion(point) {
+    const paint = paintRef.current
+    if (!paint) return null
+    const ctx = paint.getContext('2d')
+    const width = paint.width
+    const height = paint.height
+    const image = ctx.getImageData(0, 0, width, height)
+    const data = image.data
+    const sx = Math.round(point.x)
+    const sy = Math.round(point.y)
+    if (sx < 0 || sy < 0 || sx >= width || sy >= height) return null
+    if ((data[(sy * width + sx) * 4 + 3] ?? 0) < 12) return null
+    const seen = new Uint8Array(width * height)
+    const stack = [sy * width + sx]
+    let minX = sx
+    let maxX = sx
+    let minY = sy
+    let maxY = sy
+    let count = 0
+    while (stack.length > 0) {
+      const index = stack.pop()
+      if (seen[index] === 1) continue
+      if ((data[index * 4 + 3] ?? 0) < 12) continue
+      seen[index] = 1
+      count += 1
+      const x = index % width
+      const y = (index - x) / width
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+      if (x > 0) stack.push(index - 1)
+      if (x + 1 < width) stack.push(index + 1)
+      if (y > 0) stack.push(index - width)
+      if (y + 1 < height) stack.push(index + width)
+    }
+    if (count === 0) return null
+    const regionWidth = maxX - minX + 1
+    const regionHeight = maxY - minY + 1
+    const region = createCanvas(regionWidth, regionHeight)
+    const regionCtx = region.getContext('2d')
+    const regionImage = regionCtx.createImageData(regionWidth, regionHeight)
+    const base = new ImageData(new Uint8ClampedArray(data), width, height)
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        const source = y * width + x
+        if (seen[source] !== 1) continue
+        const target = ((y - minY) * regionWidth + (x - minX)) * 4
+        regionImage.data[target] = data[source * 4]
+        regionImage.data[target + 1] = data[source * 4 + 1]
+        regionImage.data[target + 2] = data[source * 4 + 2]
+        regionImage.data[target + 3] = data[source * 4 + 3]
+        base.data[source * 4 + 3] = 0
+      }
+    }
+    regionCtx.putImageData(regionImage, 0, 0)
+    return { base, region, bbox: [minX, minY, maxX, maxY] }
+  }
+
+  /**
+   * mask.png bakes shapes into pixels. Shapes are also kept as editable vector
+   * objects, so cut them back out of the loaded raster or deleting a shape
+   * would leave its paint behind.
+   */
+  function eraseShapesFromPaint() {
+    const paint = paintRef.current
+    if (!paint) return
+    const ctx = paint.getContext('2d')
+    for (const shape of shapesRef.current) fillMaskShape(ctx, shape, 1, 'destination-out')
+  }
+
   function setDraft(value) {
     draftBoxRef.current = value
     setDraftBox(value)
@@ -336,11 +529,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       shapeDraft = { id: '__draft__', kind: gesture.shape, bbox: [x1, y1, x2, y2] }
     }
     drawShapeObjects(ctx, shapeListRef.current, selectedShapeRef.current, viewRef.current.scale, maskSettings.color ?? '#ff3b30', shapeDraft)
+    drawComments(ctx, commentListRef.current, selectedCommentRef.current, viewRef.current.scale, draftCommentRef.current)
   }
 
   useEffect(() => {
     drawOverlay()
-  }, [boxes, selectedId, draftBox, overlayTick, view.scale, shapeList, selectedShape])
+  }, [boxes, selectedId, draftBox, overlayTick, view.scale, shapeList, selectedShape, comments, selectedComment])
 
   useEffect(() => {
     paintRef.current = createCanvas(limit.width, limit.height)
@@ -362,12 +556,18 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       loadedKeyRef.current = key
       if (imageUrl) {
         let cancelled = false
-        fetch(`/api/comfy-coworking/asset?session=${encodeURIComponent(sessionId)}&name=mask.png&v=${Date.now()}`)
+        const asset = (name) => `/api/comfy-coworking/asset?session=${encodeURIComponent(sessionId)}&name=${name}&v=${Date.now()}`
+        fetch(asset('mask-brush.png'))
           .then((response) => (response.ok ? response.blob() : null))
-          .then((blob) => (blob === null ? null : createImageBitmap(blob)))
-          .then((bitmap) => {
+          .then(async (blob) => {
+            const brushOnly = blob !== null
+            const source = blob ?? (await (await fetch(asset('mask.png'))).blob())
+            return { bitmap: blob === null && source.size === 0 ? null : await createImageBitmap(source), brushOnly }
+          })
+          .then(({ bitmap, brushOnly }) => {
             if (cancelled || bitmap === null || paintRef.current === null) return
             paintRef.current.getContext('2d').drawImage(bitmap, 0, 0, limit.width, limit.height)
+            if (!brushOnly) eraseShapesFromPaint()
             refreshProcessed()
           })
           .catch(() => {})
@@ -453,19 +653,38 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   /** Double-clicking a box opens its caption in place; empty space still fits. */
   function onStageDoubleClick(event) {
     const point = pointOf(event)
+    if (tool === 'comment') {
+      const hitComment = hitTestComments(commentListRef.current, point, viewRef.current.scale, selectedCommentRef.current)
+      if (hitComment !== null) {
+        onCommentSelect?.(hitComment.comment.id)
+        setCaptionEdit({
+          kind: 'comment',
+          id: hitComment.comment.id,
+          value: String(hitComment.comment.text ?? ''),
+          bbox: hitComment.comment.bbox.slice(),
+        })
+        return
+      }
+    }
     const hit = hitTest(boxes, point, viewRef.current.scale, selectedId)
     if (hit === null) {
       fit()
       return
     }
     onBoxSelect?.(hit.box.id)
-    setCaptionEdit({ id: hit.box.id, value: String(hit.box.caption ?? ''), bbox: hit.box.bbox.slice() })
+    setCaptionEdit({ kind: 'box', id: hit.box.id, value: String(hit.box.caption ?? ''), bbox: hit.box.bbox.slice() })
   }
 
   function commitCaption() {
     const edit = captionEdit
     setCaptionEdit(null)
     if (edit === null) return
+    if (edit.kind === 'comment') {
+      const comment = commentListRef.current.find((item) => item.id === edit.id)
+      if (comment === undefined || String(comment.text ?? '') === edit.value) return
+      onCommentText?.(edit.id, edit.value)
+      return
+    }
     const box = boxes.find((item) => item.id === edit.id)
     if (box === undefined || String(box.caption ?? '') === edit.value) return
     onBoxCaption?.(box, edit.value)
@@ -564,12 +783,23 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     const processed = processMask(composite, settingsRef.current)
     processedRef.current = processed
     const maskBlob = await canvasToBlob(processed)
+    // The brush layer is exported separately so reloading restores exactly the
+    // strokes that were drawn, without the vector shapes baked in.
+    const brushOnly = createCanvas(limit.width, limit.height)
+    const brushCtx = brushOnly.getContext('2d')
+    if (paintRef.current) brushCtx.drawImage(paintRef.current, 0, 0)
+    if (eraseRef.current) {
+      brushCtx.globalCompositeOperation = 'destination-out'
+      brushCtx.drawImage(eraseRef.current, 0, 0)
+      brushCtx.globalCompositeOperation = 'source-over'
+    }
+    const brushBlob = await canvasToBlob(brushOnly)
     let rgbaBlob = null
     if (imageRef.current && imageRef.current.complete && imageRef.current.naturalWidth > 0) {
       const rgba = composeRgba(imageRef.current, processed, limit.width, limit.height)
       rgbaBlob = await canvasToBlob(rgba)
     }
-    return { maskBlob, rgbaBlob, hasMask: hasMaskPixels(processed), canvas: processed, shapes: shapesRef.current }
+    return { maskBlob, brushBlob, rgbaBlob, hasMask: hasMaskPixels(processed), canvas: processed, shapes: shapesRef.current }
   }
 
   /** Persist the vector shapes; `silent` skips the round trip (undo/redo). */
@@ -644,6 +874,28 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       containerRef.current?.setPointerCapture(event.pointerId)
     } catch {}
 
+    if (tool === 'comment') {
+      const hit = hitTestComments(commentListRef.current, point, viewRef.current.scale, selectedCommentRef.current)
+      if (hit !== null) {
+        onCommentSelect?.(hit.comment.id)
+        onBoxSelect?.(null)
+        setSelectedShape(null)
+        gestureRef.current = {
+          kind: 'comment-edit',
+          mode: hit.kind,
+          handle: hit.handle,
+          comment: hit.comment,
+          original: hit.comment.bbox.slice(),
+          start: point,
+        }
+        return
+      }
+      onCommentSelect?.(null)
+      gestureRef.current = { kind: 'comment-new', start: point, current: point }
+      setOverlayTick((value) => value + 1)
+      return
+    }
+
     if (tool === 'brush' || tool === 'eraser') {
       const layer = tool === 'eraser' ? eraseRef.current : paintRef.current
       if (!layer) return
@@ -709,6 +961,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         setOverlayTick((value) => value + 1)
       } else {
         onBoxSelect?.(null)
+        // Grabbing painted mask (brush/eraser result) lets the whole mask move.
+        const region = extractPaintRegion(point)
+        if (region !== null) {
+          pushUndo()
+          gestureRef.current = { kind: 'paint-move', start: point, ...region }
+        }
       }
     }
   }
@@ -740,7 +998,44 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       drawMaskPreview(true)
       return
     }
-    if (gesture.kind === 'shape' || gesture.kind === 'newbox') {
+    if (gesture.kind === 'comment-new') {
+      gesture.current = point
+      const [x1, y1, x2, y2] = normalizeBox(gesture.start, point)
+      draftCommentRef.current = { id: '__draft__', bbox: [x1, y1, x2, y2], text: '' }
+      setOverlayTick((value) => value + 1)
+      return
+    }
+    if (gesture.kind === 'comment-edit') {
+      const original = gesture.original
+      let next
+      if (gesture.mode === 'move') {
+        const dx = point.x - gesture.start.x
+        const dy = point.y - gesture.start.y
+        next = [original[0] + dx, original[1] + dy, original[2] + dx, original[3] + dy]
+        const w = next[2] - next[0]
+        const h = next[3] - next[1]
+        if (next[0] < 0) next = [0, next[1], w, next[3]]
+        if (next[1] < 0) next = [next[0], 0, next[2], h]
+        if (next[2] > limit.width) next = [limit.width - w, next[1], limit.width, next[3]]
+        if (next[3] > limit.height) next = [next[0], limit.height - h, next[2], limit.height]
+      } else {
+        next = resizeBox(original, gesture.handle, point, limit)
+      }
+      draftCommentRef.current = { ...gesture.comment, bbox: next }
+      setOverlayTick((value) => value + 1)
+      return
+    }
+    if (gesture.kind === 'shape') {
+      gesture.current = point
+      const [x1, y1, x2, y2] = normalizeBox(gesture.start, point)
+      const draft = { id: '__draft__', kind: gesture.shape, bbox: [x1, y1, x2, y2], opacity: brush.opacity }
+      draftShapeRef.current = draft
+      buildComposite(draft)
+      drawMaskPreview(true)
+      setOverlayTick((value) => value + 1)
+      return
+    }
+    if (gesture.kind === 'newbox') {
       gesture.current = point
       setOverlayTick((value) => value + 1)
       return
@@ -761,8 +1056,24 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       } else {
         next = resizeBox(original, gesture.handle, point, limit)
       }
-      draftShapeRef.current = { ...gesture.shape, bbox: next }
+      const draft = { ...gesture.shape, bbox: next }
+      draftShapeRef.current = draft
+      buildComposite(draft)
+      drawMaskPreview(true)
       setOverlayTick((value) => value + 1)
+      return
+    }
+    if (gesture.kind === 'paint-move') {
+      const paint = paintRef.current
+      if (!paint) return
+      const ctx = paint.getContext('2d')
+      const [bx1, by1, bx2, by2] = gesture.bbox
+      const dx = clamp(Math.round(point.x - gesture.start.x), -bx1, Math.max(-bx1, limit.width - 1 - bx2))
+      const dy = clamp(Math.round(point.y - gesture.start.y), -by1, Math.max(-by1, limit.height - 1 - by2))
+      ctx.putImageData(gesture.base, 0, 0)
+      ctx.drawImage(gesture.region, gesture.bbox[0] + dx, gesture.bbox[1] + dy)
+      buildComposite()
+      drawMaskPreview(true)
       return
     }
     if (gesture.kind === 'box') {
@@ -792,12 +1103,40 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     gestureRef.current = null
     setCursor('crosshair')
     if (gesture === null) return
+    if (gesture.kind === 'comment-new') {
+      draftCommentRef.current = null
+      const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
+      setOverlayTick((value) => value + 1)
+      if (x2 - x1 >= 6 && y2 - y1 >= 6) {
+        await onCommentCreate?.([Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2)])
+      }
+      return
+    }
+    if (gesture.kind === 'comment-edit') {
+      const draft = draftCommentRef.current
+      draftCommentRef.current = null
+      setOverlayTick((value) => value + 1)
+      if (draft !== null) {
+        const bbox = draft.bbox.map((value) => Math.round(value))
+        if (bbox[0] !== Math.round(gesture.comment.bbox[0]) || bbox[1] !== Math.round(gesture.comment.bbox[1]) || bbox[2] !== Math.round(gesture.comment.bbox[2]) || bbox[3] !== Math.round(gesture.comment.bbox[3])) {
+          await onCommentCommit?.({ ...gesture.comment, bbox })
+        }
+      }
+      return
+    }
+
     if (gesture.kind === 'stroke') {
       refreshProcessed()
       scheduleMaskExport()
       return
     }
+    if (gesture.kind === 'paint-move') {
+      refreshProcessed()
+      scheduleMaskExport()
+      return
+    }
     if (gesture.kind === 'shape') {
+      draftShapeRef.current = null
       const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
       if (x2 - x1 >= 2 && y2 - y1 >= 2) {
         pushUndo()
@@ -860,13 +1199,13 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       onPointerDown: (event) => event.stopPropagation(),
       onDoubleClick: (event) => event.stopPropagation(),
     }, [
-      React.createElement('span', { className: 'ccw-caption-editor-title', key: 'title' }, tr('captionEditor.title')),
+      React.createElement('span', { className: 'ccw-caption-editor-title', key: 'title' }, captionEdit.kind === 'comment' ? tr('captionEditor.commentTitle') : tr('captionEditor.title')),
       React.createElement('textarea', {
         key: 'input',
         autoFocus: true,
         rows: 3,
         value: captionEdit.value,
-        placeholder: tr('layout.caption'),
+        placeholder: captionEdit.kind === 'comment' ? tr('comment.placeholder') : tr('layout.caption'),
         onChange: (event) => setCaptionEdit({ ...captionEdit, value: event.target.value }),
         onKeyDown: (event) => {
           event.stopPropagation()

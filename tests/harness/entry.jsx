@@ -53,6 +53,10 @@ const doc = {
   promptManual: false,
   promptError: null,
   layout: { summary: 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.', items },
+  comments: [
+    { id: 'cm-1', bbox: [120, 320, 460, 760], text: '这个苹果可以改成绿色的', source: 'user', createdAt: 1, updatedAt: 1 },
+    { id: 'cm-2', bbox: [560, 120, 900, 320], text: '', source: 'agent', createdAt: 2, updatedAt: 2 },
+  ],
   selected: { kind: 'box', id: 'box-1' },
   workflow: { name: 'coworking_inpaint.json', json: { nodes, links }, bindings: { prompt: '4', image: '2', mask: '2', width: '', height: '', seed: '6', bboxes: '' }, dirty: false, loadedAt: 1 },
   runs: [],
@@ -122,6 +126,22 @@ window.fetch = async (url, options = {}) => {
     if (index === -1) current.layout.items = [...current.layout.items, { ...box, id: box.id ?? `box-${current.layout.items.length + 1}` }]
     else current.layout.items[index] = { ...current.layout.items[index], ...box }
     current.selected = { kind: 'box', id: box.id }
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/comment')) {
+    const input = bodyOf(options).comment ?? {}
+    const index = current.comments.findIndex((item) => item.id === input.id)
+    if (index === -1) {
+      const id = input.id ?? `cm-${current.comments.length + 1}`
+      current.comments = [...current.comments, { id, bbox: input.bbox, text: input.text ?? '', source: 'user', createdAt: Date.now(), updatedAt: Date.now() }]
+    } else {
+      current.comments[index] = { ...current.comments[index], ...input }
+    }
+    return json({ doc: current })
+  }
+  if (method === 'DELETE' && text.includes('/doc/comment/')) {
+    const id = decodeURIComponent(text.split('/doc/comment/')[1].split('?')[0])
+    current.comments = current.comments.filter((item) => item.id !== id)
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/canvas')) {

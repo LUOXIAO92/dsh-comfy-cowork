@@ -8,10 +8,12 @@ import {
   health,
   saveCanvas,
   patchWorkflow,
+  saveComment,
   saveLayout,
   saveNegative,
   savePrompt,
   saveSelection,
+  removeComment,
   upsertBox,
   uploadAsset,
 } from './api.js'
@@ -19,6 +21,7 @@ import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
 import { setNodeWidget } from './workflow-ui.js'
 import { Icon, IconButton, Section } from './ui.jsx'
+import { embedPngText } from './png.js'
 
 /** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
 const CANVAS_PRESETS = [
@@ -314,6 +317,7 @@ export function CanvasTab(props) {
   const t = typeof props.t === 'function' ? props.t : (key) => key
   const [error, setError] = useState('')
   const { doc, setDoc, status } = useDoc(sessionId, setError)
+  const comments = doc?.comments ?? []
   const [draft, setDraft] = useState('')
   const [focused, setFocused] = useState(false)
   const [incoming, setIncoming] = useState('')
@@ -340,6 +344,10 @@ export function CanvasTab(props) {
   const negativeFocusedRef = useRef(false)
   const negativeTimer = useRef(null)
   const [heightInput, setHeightInput] = useState(null)
+  const [selectedComment, setSelectedComment] = useState(null)
+  const [commentDraft, setCommentDraft] = useState(null)
+  const commentTimer = useRef(null)
+  const assetTimer = useRef(null)
   const [lockRatio, setLockRatio] = useState(() => {
     try {
       return window.localStorage.getItem('ccw.lockRatio') === '1'
@@ -410,6 +418,12 @@ export function CanvasTab(props) {
         setBrush((current) => ({ ...current, size: Math.min(400, Math.max(1, current.size + delta)) }))
         return
       }
+      if (key === 'c') {
+        event.preventDefault()
+        if (docRef.current?.mode === 'layout') setMode('image')
+        setTool('comment')
+        return
+      }
       const nextTool = toolKeys[key]
       if (nextTool === undefined) return
       const allowed = docRef.current?.mode === 'layout'
@@ -423,8 +437,20 @@ export function CanvasTab(props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  const commentsKey = comments.map((comment) => `${comment.id}:${comment.bbox.join(',')}:${comment.text}`).join('|')
+  const commentsLoaded = useRef(false)
+  useEffect(() => {
+    if (!commentsLoaded.current) {
+      commentsLoaded.current = true
+      return
+    }
+    scheduleCommentAssets(comments)
+  }, [commentsKey])
+
   useEffect(() => () => {
     if (sizeTimer.current !== null) clearTimeout(sizeTimer.current)
+    if (commentTimer.current !== null) clearTimeout(commentTimer.current)
+    if (assetTimer.current !== null) clearTimeout(assetTimer.current)
   }, [])
 
   useEffect(() => {
@@ -780,7 +806,58 @@ export function CanvasTab(props) {
     }
   }
 
+  async function createComment(bbox) {
+    try {
+      const result = await saveComment(sessionId, { bbox, text: '' })
+      setDoc(result.doc)
+      const created = (result.doc.comments ?? []).slice(-1)[0]
+      setSelectedComment(created?.id ?? null)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  async function commitComment(comment) {
+    try {
+      const result = await saveComment(sessionId, { id: comment.id, bbox: comment.bbox, text: comment.text })
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  /** Typing in the comment editor is local-first and saved after a pause. */
+  function editCommentText(id, text) {
+    setCommentDraft({ id, text })
+    if (commentTimer.current !== null) clearTimeout(commentTimer.current)
+    commentTimer.current = setTimeout(() => {
+      commentTimer.current = null
+      setCommentDraft(null)
+      updateCommentText(id, text)
+    }, 600)
+  }
+
+  async function updateCommentText(id, text) {
+    const comment = (docRef.current?.comments ?? []).find((item) => item.id === id)
+    if (comment === undefined) return
+    await commitComment({ ...comment, text })
+  }
+
+  async function deleteComment(id) {
+    try {
+      const result = await removeComment(sessionId, id)
+      setDoc(result.doc)
+      if (selectedComment === id) setSelectedComment(null)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
   async function removeSelected() {
+    if (selectedComment !== null) {
+      await deleteComment(selectedComment)
+      return
+    }
     await removeBox(docRef.current?.selected?.id)
   }
 
@@ -847,19 +924,103 @@ export function CanvasTab(props) {
     if (!sessionId) return
     if (!Number.isInteger(nextWidth) || !Number.isInteger(nextHeight)) return
     if (nextWidth < 16 || nextHeight < 16 || nextWidth > 16384 || nextHeight > 16384) return
+    const current = docRef.current
+    const previousWidth = Number(current?.canvas?.width ?? nextWidth)
+    const previousHeight = Number(current?.canvas?.height ?? nextHeight)
+    if (!(previousWidth > 0) || !(previousHeight > 0)) return
+    const scaleX = nextWidth / previousWidth
+    const scaleY = nextHeight / previousHeight
+    const scaled = scaleX !== 1 || scaleY !== 1
+    const scaleBbox = (bbox) => bbox.map((value, index) => Math.round(value * (index % 2 === 0 ? scaleX : scaleY)))
+    const items = current?.layout?.items ?? []
+    const nextItems = scaled ? items.map((item) => ({ ...item, bbox: scaleBbox(item.bbox) })) : items
+    const shapes = current?.mask?.shapes ?? []
+    const nextShapes = scaled ? shapes.map((shape) => ({ ...shape, bbox: scaleBbox(shape.bbox) })) : shapes
+    const comments = current?.comments ?? []
+    const nextComments = scaled ? comments.map((comment) => ({ ...comment, bbox: scaleBbox(comment.bbox) })) : comments
     try {
-      const result = await saveCanvas(sessionId, { width: nextWidth, height: nextHeight })
+      const result = await saveCanvas(sessionId, {
+        width: nextWidth,
+        height: nextHeight,
+        ...(scaled ? { mask: { shapes: nextShapes } } : {}),
+      })
       setDoc(result.doc)
+      if (scaled && items.length > 0) {
+        const layoutResult = await saveLayout(sessionId, current?.layout?.summary ?? '', nextItems)
+        setDoc(layoutResult.doc)
+      }
+      if (scaled) {
+        for (const comment of nextComments) {
+          const commentResult = await saveComment(sessionId, { id: comment.id, bbox: comment.bbox, text: comment.text })
+          setDoc(commentResult.doc)
+        }
+      }
     } catch (caught) {
       setError(caught.message)
     }
   }
 
-  async function handleMaskReady({ maskBlob, rgbaBlob, hasMask, shapes }) {
+  /** Comments travel inside the exported PNG as a tEXt/iTXt chunk. */
+  async function annotatePng(blob, sessionComments) {
+    if (!blob || sessionComments.length === 0) return blob
+    try {
+      return await embedPngText(blob, 'ccw-comments', JSON.stringify(sessionComments))
+    } catch {
+      return blob
+    }
+  }
+
+  /**
+   * Comments need server-side crops so the agent can look at the exact region.
+   * The canvas is the only place that can crop, so it exports one PNG per
+   * comment (plus a comments.json) whenever the list changes.
+   */
+  async function exportCommentAssets(sessionComments) {
+    if (!sessionId) return
+    try {
+      await uploadAsset(sessionId, 'comments.json', new Blob([JSON.stringify(sessionComments, null, 2)], { type: 'application/json' }))
+    } catch {
+      // Comments still live in the document; the asset copy is a convenience.
+      return
+    }
+    if (!image || sessionComments.length === 0) return
+    try {
+      const response = await fetch(assetUrl(sessionId, image.asset, image.rev))
+      const bitmap = await createImageBitmap(await response.blob())
+      for (const comment of sessionComments) {
+        const [x1, y1, x2, y2] = comment.bbox
+        const width = Math.max(1, Math.round(x2 - x1))
+        const height = Math.max(1, Math.round(y2 - y1))
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(bitmap, x1, y1, width, height, 0, 0, width, height)
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+        if (blob !== null) await uploadAsset(sessionId, `comment-${comment.id}.png`, blob)
+      }
+    } catch {
+      /* crops are a best-effort convenience for the agent */
+    }
+  }
+
+  function scheduleCommentAssets(sessionComments) {
+    if (assetTimer.current !== null) clearTimeout(assetTimer.current)
+    assetTimer.current = setTimeout(() => {
+      assetTimer.current = null
+      exportCommentAssets(sessionComments)
+      stageRef.current?.exportNow?.()
+    }, 650)
+  }
+
+  async function handleMaskReady({ maskBlob, brushBlob, rgbaBlob, hasMask, shapes }) {
     if (!sessionId) return
     try {
       await uploadAsset(sessionId, 'mask.png', maskBlob)
-      if (rgbaBlob !== null) await uploadAsset(sessionId, 'canvas_rgba.png', rgbaBlob)
+      if (brushBlob) await uploadAsset(sessionId, 'mask-brush.png', brushBlob)
+      if (rgbaBlob !== null) {
+        const annotated = await annotatePng(rgbaBlob, docRef.current?.comments ?? [])
+        await uploadAsset(sessionId, 'canvas_rgba.png', annotated)
+      }
       const patch = { rev: Date.now(), hasMask }
       if (Array.isArray(shapes)) patch.shapes = shapes
       const result = await saveCanvas(sessionId, { mask: patch })
@@ -891,18 +1052,21 @@ export function CanvasTab(props) {
         )?.key
       : undefined
   const imageUrl = image ? assetUrl(sessionId, image.asset, image.rev) : null
+  const selectedCommentItem = comments.find((item) => item.id === selectedComment) ?? null
   const hasBoxes = items.length > 0
   const compiled = hasBoxes && doc?.promptSource === 'layout'
-  const tools = doc?.mode === 'layout'
-    ? [{ id: 'box', label: t('tool.box') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
-    : [
-        { id: 'brush', label: t('tool.brush') },
-        { id: 'eraser', label: t('tool.eraser') },
-        { id: 'rect', label: t('tool.rect') },
-        { id: 'ellipse', label: t('tool.ellipse') },
-        { id: 'select', label: t('tool.select') },
-        { id: 'pan', label: t('tool.pan') },
-      ]
+  const tools = tool === 'comment'
+    ? [{ id: 'comment', label: t('tool.comment') }, { id: 'pan', label: t('tool.pan') }]
+    : doc?.mode === 'layout'
+      ? [{ id: 'box', label: t('tool.box') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
+      : [
+          { id: 'brush', label: t('tool.brush') },
+          { id: 'eraser', label: t('tool.eraser') },
+          { id: 'rect', label: t('tool.rect') },
+          { id: 'ellipse', label: t('tool.ellipse') },
+          { id: 'select', label: t('tool.select') },
+          { id: 'pan', label: t('tool.pan') },
+        ]
   const activeTool = tools.find((item) => item.id === tool) ?? null
 
   if (!sessionId) {
@@ -995,16 +1159,31 @@ export function CanvasTab(props) {
             <IconButton
               icon="image"
               label={t('mode.edit')}
-              active={doc?.mode === 'image'}
-              onClick={() => setMode('image')}
+              active={doc?.mode === 'image' && tool !== 'comment'}
+              onClick={() => {
+                setMode('image')
+                if (tool === 'comment') setTool('brush')
+              }}
             />
             <IconButton
               icon="layout"
               label={mossWorkflow ? t('mode.layout') : t('mode.layoutMossOnly')}
-              active={doc?.mode === 'layout'}
+              active={doc?.mode === 'layout' && tool !== 'comment'}
               disabled={!mossWorkflow}
               onClick={() => {
-                if (mossWorkflow) setMode('layout')
+                if (!mossWorkflow) return
+                setMode('layout')
+                if (tool === 'comment') setTool('box')
+              }}
+            />
+            <IconButton
+              icon="comment"
+              label={t('mode.comment')}
+              active={tool === 'comment'}
+              onClick={() => {
+                // Leave layout mode first: setMode resets the tool to brush.
+                if (doc?.mode === 'layout') setMode('image')
+                setTool('comment')
               }}
             />
           </div>
@@ -1067,6 +1246,12 @@ export function CanvasTab(props) {
               boxes={items}
               selectedId={doc?.selected?.id ?? null}
               shapes={mask.shapes ?? []}
+              comments={comments}
+              selectedComment={selectedComment}
+              onCommentCreate={createComment}
+              onCommentCommit={commitComment}
+              onCommentText={updateCommentText}
+              onCommentSelect={setSelectedComment}
               onBoxCreate={createBox}
               onBoxCommit={commitBox}
               onBoxCaption={(box, caption) => commitBox({ ...box, caption })}
@@ -1346,6 +1531,76 @@ export function CanvasTab(props) {
               </p>
             </Section>
           )}
+
+          <Section
+            title={t('comment.title')}
+            icon="comment"
+            count={comments.length}
+            className="ccw-section-comment"
+            actions={(
+              <IconButton
+                icon="plus"
+                label={t('comment.add')}
+                onClick={() => {
+                  if (doc?.mode === 'layout') setMode('image')
+                  setTool('comment')
+                }}
+              />
+            )}
+          >
+            <p className="ccw-hint">{t('comment.hint')}</p>
+            {comments.length === 0 ? (
+              <p className="ccw-hint">{t('comment.empty')}</p>
+            ) : (
+              <ul className="ccw-comments">
+                {comments.map((comment, index) => {
+                  const isSelected = selectedComment === comment.id
+                  const text = commentDraft !== null && commentDraft.id === comment.id ? commentDraft.text : comment.text
+                  const missing = String(text ?? '').trim() === ''
+                  return (
+                    <li key={comment.id} className={`ccw-comment ${isSelected ? 'is-selected' : ''}`}>
+                      <button
+                        type="button"
+                        className="ccw-comment-row"
+                        aria-expanded={isSelected}
+                        onClick={() => setSelectedComment(isSelected ? null : comment.id)}
+                      >
+                        <span className="ccw-comment-index">C{index + 1}</span>
+                        <span className={`ccw-comment-source is-${comment.source}`}>
+                          {comment.source === 'agent' ? t('comment.agent') : t('comment.user')}
+                        </span>
+                        <span className={`ccw-comment-text ${missing ? 'is-empty' : ''}`}>
+                          {missing ? t('comment.emptyText') : text}
+                        </span>
+                      </button>
+                      {isSelected ? (
+                        <div className="ccw-comment-editor">
+                          <textarea
+                            rows={3}
+                            value={text}
+                            placeholder={t('comment.placeholder')}
+                            aria-label={t('comment.title')}
+                            onChange={(event) => editCommentText(comment.id, event.target.value)}
+                          />
+                          <div className="ccw-comment-actions">
+                            <span className="ccw-hint">{t('comment.sourceHint')}</span>
+                            <button
+                              type="button"
+                              className="ccw-btn ccw-btn-danger-ghost ccw-btn-small"
+                              onClick={() => deleteComment(comment.id)}
+                            >
+                              <Icon name="trash" size={13} />
+                              <span>{t('comment.delete')}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </Section>
         </aside>
       </div>
 

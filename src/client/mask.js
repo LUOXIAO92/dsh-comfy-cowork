@@ -75,7 +75,7 @@ export function drawStrokeSegment(ctx, from, to, { size, hardness, opacity, eras
  * a mask canvas. Shapes stay editable objects; the eraser layer cuts them at
  * composite time instead of destroying them.
  */
-export function fillMaskShape(ctx, shape, opacity = 1) {
+export function fillMaskShape(ctx, shape, opacity = 1, composite = 'source-over') {
   const bbox = Array.isArray(shape?.bbox) ? shape.bbox.map(Number) : []
   if (bbox.length !== 4 || !bbox.every(Number.isFinite)) return
   const x = Math.min(bbox[0], bbox[2])
@@ -84,7 +84,7 @@ export function fillMaskShape(ctx, shape, opacity = 1) {
   const h = Math.abs(bbox[3] - bbox[1])
   if (w < 0.5 || h < 0.5) return
   ctx.save()
-  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalCompositeOperation = composite
   ctx.globalAlpha = Math.max(0, Math.min(1, Number(opacity) || 0))
   ctx.fillStyle = '#ffffff'
   ctx.beginPath()

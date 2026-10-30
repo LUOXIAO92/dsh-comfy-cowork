@@ -83,3 +83,157 @@ test('recovers from a corrupt document file', async () => {
     await cleanup()
   }
 })
+
+test('creates, updates and removes canvas comments', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-comments'
+    let doc = await store.upsertComment(session, { bbox: [10, 20, 110, 220], text: 'the hand is wrong' }, { source: 'user' })
+    assert.equal(doc.comments.length, 1)
+    const created = doc.comments[0]
+    assert.match(created.id, /^cm-[0-9a-z]+$/)
+    assert.equal(created.source, 'user')
+    assert.deepEqual(created.bbox, [10, 20, 110, 220])
+    assert.ok(Number.isFinite(created.createdAt))
+    assert.equal(created.updatedAt, created.createdAt)
+
+    doc = await store.upsertComment(session, {
+      id: created.id,
+      bbox: [12, 22, 112, 222],
+      text: 'the hand is too soft',
+    }, { source: 'user' })
+    assert.equal(doc.comments.length, 1)
+    assert.deepEqual(doc.comments[0].bbox, [12, 22, 112, 222])
+    assert.equal(doc.comments[0].text, 'the hand is too soft')
+    assert.equal(doc.comments[0].createdAt, created.createdAt)
+
+    const rev = doc.rev
+    doc = await store.removeComment(session, created.id)
+    assert.deepEqual(doc.comments, [])
+    assert.equal(doc.rev, rev + 1)
+    doc = await store.removeComment(session, created.id)
+    assert.equal(doc.rev, rev + 1, 'removing an unknown comment is a no-op')
+
+    const stored = JSON.parse(await fs.readFile(path.join(store.sessionDir(session), 'document.json'), 'utf8'))
+    assert.deepEqual(stored.comments, [])
+  } finally {
+    await cleanup()
+  }
+})
+
+test('keeps a comment source when the agent edits it and rejects invalid input', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-comment-source'
+    let doc = await store.upsertComment(session, { bbox: [0, 0, 100, 100], text: '这里细节不好', source: 'user' }, { source: 'user' })
+    const id = doc.comments[0].id
+    const createdAt = doc.comments[0].createdAt
+
+    doc = await store.upsertComment(session, {
+      id,
+      bbox: [5, 5, 105, 105],
+      text: '这里细节不好，重画',
+      source: 'agent',
+    }, { source: 'agent' })
+    assert.equal(doc.comments[0].source, 'user', 'an agent edit keeps the original creator')
+    assert.equal(doc.comments[0].createdAt, createdAt)
+    assert.equal(doc.comments[0].text, '这里细节不好，重画')
+
+    doc = await store.upsertComment(session, { bbox: [0, 0, 50, 50], text: 'agent note', source: 'agent' }, { source: 'agent' })
+    assert.equal(doc.comments[1].source, 'agent')
+
+    await assert.rejects(store.upsertComment(session, { bbox: [0, 0], text: 'x' }), /four coordinates/)
+    await assert.rejects(store.upsertComment(session, { bbox: 'nope', text: 'x' }), /array/)
+    await assert.rejects(store.upsertComment(session, { bbox: [null, null, 10, 10], text: 'x' }), /finite numbers/)
+    await assert.rejects(store.upsertComment(session, { bbox: [0, 0, 10, 10], text: 42 }), /comment text must be a string/)
+    await assert.rejects(store.upsertComment(session, { bbox: [0, 0, 10, 10], text: 'x'.repeat(8001) }), /at most 8000 characters/)
+    await assert.rejects(store.upsertComment(session, { bbox: [2000, 2000, 3000, 3000], text: 'x' }), /inside the 1024x1024 canvas/)
+    assert.equal((await store.snapshot(session)).comments.length, 2)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('normalizes persisted comments and drops malformed ones', async () => {
+  const { store, root, cleanup } = await makeStore()
+  try {
+    const session = 'session-comments-old'
+    const dir = path.join(root, '.comfy-coworking', session)
+    await fs.mkdir(path.join(dir, 'assets'), { recursive: true })
+    const longText = 'x'.repeat(9000)
+    await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
+      canvas: { width: 800, height: 600 },
+      comments: [
+        { id: 'cm-good', bbox: [-50, -20, 500, 400], text: 'keep me', source: 'agent', createdAt: 111, updatedAt: 222, extra: 'drop me' },
+        { id: 'cm-strings', bbox: ['10', '20', '300', '400'], text: 'coerced numbers' },
+        { id: 'cm-long', bbox: [10, 10, 20, 20], text: longText, source: 'weird' },
+        { id: 'cm-bad-bbox', bbox: 'nope', text: 'drop me' },
+        { id: 'cm-short-bbox', bbox: [1, 2, 3], text: 'drop me' },
+        { id: 'cm-null-bbox', bbox: [null, null, 10, 10], text: 'drop me' },
+        { id: 'cm-outside', bbox: [900, 700, 1000, 800], text: 'drop me' },
+        { bbox: [0, 0, 10, 10], text: 'no id' },
+      ],
+    }))
+    const doc = await store.snapshot(session)
+    assert.deepEqual(doc.comments.map((comment) => comment.id), ['cm-good', 'cm-strings', 'cm-long'])
+    assert.deepEqual(doc.comments[0].bbox, [0, 0, 500, 400], 'bbox is clamped into the canvas')
+    assert.equal(doc.comments[0].source, 'agent')
+    assert.equal(doc.comments[0].createdAt, 111)
+    assert.equal(doc.comments[0].updatedAt, 222)
+    assert.deepEqual(Object.keys(doc.comments[0]).sort(), ['bbox', 'createdAt', 'id', 'source', 'text', 'updatedAt'])
+    assert.deepEqual(doc.comments[1].bbox, [10, 20, 300, 400])
+    assert.equal(doc.comments[1].text, 'coerced numbers')
+    assert.equal(doc.comments[1].source, 'user', 'source defaults to user')
+    assert.equal(doc.comments[2].text.length, 8000, 'comment text is capped')
+    assert.equal(doc.comments[2].source, 'user', 'an unknown source falls back to user')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('clears a stale layout prompt error when the last box is deleted', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-prompt-error'
+    let doc = await store.setLayout(session, {
+      summary: '',
+      items: [{ id: 'bad', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
+    })
+    assert.notEqual(doc.promptError, null)
+
+    doc = await store.removeBox(session, 'bad')
+    assert.deepEqual(doc.layout.items, [])
+    assert.equal(doc.promptError, null)
+    const stored = JSON.parse(await fs.readFile(path.join(store.sessionDir(session), 'document.json'), 'utf8'))
+    assert.equal(stored.promptError, null, 'the cleared error is persisted')
+
+    doc = await store.setLayout(session, {
+      summary: '',
+      items: [{ id: 'bad2', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
+    })
+    assert.notEqual(doc.promptError, null)
+    doc = await store.setLayout(session, { summary: '', items: [] })
+    assert.equal(doc.promptError, null)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('clears a stale prompt error when a manual prompt needs no compilation', async () => {
+  const { store, root, cleanup } = await makeStore()
+  try {
+    const session = 'session-manual-error'
+    const dir = path.join(root, '.comfy-coworking', session)
+    await fs.mkdir(path.join(dir, 'assets'), { recursive: true })
+    await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
+      promptManual: true,
+      promptSource: 'user',
+      promptError: 'items[0].caption must not be empty (box 1)',
+      layout: { summary: 's', items: [{ id: 'box-1', label: 'object', caption: '', bbox: [0, 0, 64, 64] }] },
+    }))
+    const doc = await store.setNegative(session, 'blurry')
+    assert.equal(doc.promptError, null)
+  } finally {
+    await cleanup()
+  }
+})

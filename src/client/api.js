@@ -70,6 +70,17 @@ export function saveLayout(sessionId, summary, items) {
   })
 }
 
+export function saveComment(sessionId, comment) {
+  return request('/doc/comment', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), comment, source: 'user' }),
+  })
+}
+
+export function removeComment(sessionId, id) {
+  return request(`/doc/comment/${encodeURIComponent(id)}?${sessionQuery(sessionId)}`, { method: 'DELETE' })
+}
+
 export function saveCanvas(sessionId, patch) {
   return request('/doc/canvas', {
     method: 'PUT',
