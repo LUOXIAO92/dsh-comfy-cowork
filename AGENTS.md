@@ -17,7 +17,7 @@ pipeline that writes every prompt into the plugin prompt box.
 ## Shape of the code
 
 - `index.js` + `lib/plugin.js` — Host half. Injects `tools`, `webServer`, `sessions`,
-  `workingDirectory`, `systemPrompt`, `connection`, `agents`, `commands`.
+  `workingDirectory`, `systemPrompt`, `connection`, `agents`.
 - `lib/routes.js` — `/api/comfy-coworking/*` HTTP routes (auth through `ctx.connection.admit`),
   the SSE stream, and the ComfyUI proxy.
 - `lib/store.js` — per-session document store at `<workspace>/.comfy-coworking/<sessionId>/`
@@ -37,10 +37,16 @@ pipeline that writes every prompt into the plugin prompt box.
 - The plugin mounts dormant: no tool and no prompt section exists until one chat opens
   the canvas. Enabling is strictly per session — the host attaches `comfy_coworking_*`
   through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see them.
-- Ways in: the composer icon (icon only — the plugin has no "canvas" name) and the
-  `/dsh-comfy-coworks` slash command. Both enable the session and open the sidebar tab.
+- The only way in is the `/dsh-comfy-coworks` slash-menu row (label `DSH Comfy协同` /
+  `DSH Comfy cowork`). It is a client command contribution (`ctx.commandUi.register`), not a
+  host command — that is the only way a menu row gets a localized label and an icon, and its
+  whole effect (enable the session + open the tab) is client-side. There is no composer button.
+- The agent's `comfy_coworking_open_canvas` tool bumps `doc.ui.openSeq`; the plugin follows the
+  on-screen session's SSE stream and opens the tab when the sequence moves.
 - Ways out: the appbar ✕ (and any tab close) run the tab type's close handler, which
   disables the session again; the tools leave that agent.
+- The canvas tab has its own title (`Comfy 画布`); the *command* carries the plugin's name.
+  Never call the plugin "canvas" in UI copy, and never add a composer button for it.
 - `doc.enabled` is the durable switch; `GET /api/comfy-coworking/health` reports the live
   attach list as `scoped`.
 

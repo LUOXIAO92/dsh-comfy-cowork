@@ -2681,41 +2681,6 @@
   gap: 5px;
 }
 
-.ccw-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 7px;
-  border: 1px solid transparent;
-  border-radius: var(--ccw-radius-sm);
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* The composer entry is an icon with no caption: the plugin has no short name
-   of its own, and "canvas" is not what it is called. */
-.ccw-icon-btn-square {
-  width: 28px;
-  padding: 0;
-}
-
-.ccw-icon-btn:hover:not(:disabled) {
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-primary);
-}
-
-.ccw-icon-btn:focus-visible {
-  outline: 2px solid var(--dsw-alias-brand-primary);
-  outline-offset: 1px;
-}
-
 /* ------------------------------------------------------------ responsive */
 
 @container ccw-canvas (min-width: 1100px) {

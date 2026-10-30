@@ -1,8 +1,9 @@
 export const en = {
   'tab.title': 'Comfy canvas',
   'tab.noSession': 'Open this canvas from a chat: a tab in a session-less pane has no canvas to edit.',
-  'composer.open': 'Canvas',
-  'composer.title': 'Open the Comfy canvas',
+  'command.label': 'DSH Comfy cowork',
+  'command.description': 'Open the canvas here and give this chat the canvas tools',
+  'guide.description': 'Open the Comfy canvas',
   'prompt.title': 'Prompt',
   'prompt.hint': 'Everything ComfyUI runs uses this text. Agent writes land here too.',
   'prompt.placeholder': 'Describe the image, or draw boxes and let the layout compiler fill this in…',
@@ -176,8 +177,9 @@ export const en = {
 export const zh = {
   'tab.title': 'Comfy 画布',
   'tab.noSession': '请从某个聊天里打开画布：没有会话的面板没有可编辑的画布。',
-  'composer.open': '画布',
-  'composer.title': '打开 Comfy 画布',
+  'command.label': 'DSH Comfy协同',
+  'command.description': '打开画布，并把这个会话的 agent 接到画布工具上',
+  'guide.description': '打开 Comfy 画布',
   'prompt.title': '提示词',
   'prompt.hint': 'ComfyUI 运行用的就是这段文字；agent 写的提示词也会出现在这里。',
   'prompt.placeholder': '描述画面，或在画布上拉框后由布局编译器自动生成…',

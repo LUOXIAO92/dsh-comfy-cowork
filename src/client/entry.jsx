@@ -8,6 +8,7 @@ const PACKAGE_ID = 'dsh-comfy-coworking'
 const NS = 'comfy-coworking'
 const TAB_ID = 'comfy-coworking'
 const TAB_KIND = 'comfy-coworking'
+const COMMAND = 'dsh-comfy-coworks'
 
 export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'layout']
 
@@ -49,6 +50,7 @@ function openCanvas(ctx, sessionId) {
   setTimeout(open, 60)
 }
 
+/** The one pictogram the plugin owns: a frame with a painted stroke and a layout box. */
 function CanvasIcon({ size = 16 }) {
   return React.createElement('svg', {
     viewBox: '0 0 20 20',
@@ -67,36 +69,57 @@ function CanvasIcon({ size = 16 }) {
   React.createElement('rect', { x: 12.2, y: 11.4, width: 4.4, height: 3.2, rx: 0.6, strokeDasharray: '1.5 1.2' }))
 }
 
-function OpenCanvasButton(props) {
-  const t = props.t
-  const lastOpen = React.useRef(null)
-  React.useEffect(() => {
-    if (!props.sessionId) return undefined
-    const streamUrl = eventUrl(props.sessionId)
-    if (streamUrl === '') return undefined
-    const source = new EventSource(streamUrl)
+/**
+ * The canvas belongs to one chat at a time. Follow the on-screen session's
+ * document stream and turn an `openSeq` bump — what `comfy_coworking_open_canvas`
+ * writes — into a sidebar tab, so the agent can ask for the canvas too.
+ */
+function watchOpenRequests(ctx) {
+  let source = null
+  let watched = null
+  let lastSeq = null
+
+  const connect = (sessionId) => {
+    if (sessionId === watched) return
+    watched = typeof sessionId === 'string' ? sessionId : null
+    lastSeq = null
+    try {
+      source?.close()
+    } catch {}
+    source = null
+    if (watched === null || watched === '') return
+    const streamUrl = eventUrl(watched)
+    if (streamUrl === '') return
+    const next = new EventSource(streamUrl)
     const onDoc = (event) => {
       try {
         const doc = JSON.parse(event.data).doc
         const seq = doc?.ui?.openSeq ?? 0
-        if (lastOpen.current === null) lastOpen.current = seq
-        else if (seq > lastOpen.current) {
-          lastOpen.current = seq
-          props.onOpen?.()
+        if (lastSeq === null) {
+          lastSeq = seq
+        } else if (seq > lastSeq) {
+          lastSeq = seq
+          openCanvas(ctx, watched)
         }
       } catch {}
     }
-    source.addEventListener('hello', onDoc)
-    source.addEventListener('doc', onDoc)
-    return () => source.close()
-  }, [props.sessionId])
-  return React.createElement('button', {
-    type: 'button',
-    className: 'ccw-icon-btn ccw-icon-btn-square',
-    title: t('composer.title'),
-    onClick: () => props.onOpen?.(),
-    'aria-label': t('composer.title'),
-  }, React.createElement(CanvasIcon, { size: 17 }))
+    next.addEventListener('hello', onDoc)
+    next.addEventListener('doc', onDoc)
+    source = next
+  }
+
+  const mounted = ctx.sidebarRight?.mounted
+  connect(mounted?.getSnapshot?.())
+  const unsubscribe = mounted?.subscribe?.(() => connect(mounted.getSnapshot()))
+
+  return () => {
+    try {
+      unsubscribe?.()
+    } catch {}
+    try {
+      source?.close()
+    } catch {}
+  }
 }
 
 function CanvasTitle(props) {
@@ -121,8 +144,8 @@ export function apply(ctx) {
   const t = ctx.locale.bind(NS)
 
   // Closing the canvas tab is the off switch. The sidebar calls a tab type's
-  // close handler on the way out (the chip's ✕, the tab menu, or our own close
-  // button), so the tools leave that chat's agent at the same moment.
+  // close handler on the way out (the chip's ✕, the tab menu, or the appbar ✕),
+  // so the tools leave that chat's agent at the same moment.
   try {
     const registerCloseHandler = ctx.sidebarRight?.registerCloseHandler
     if (typeof registerCloseHandler === 'function') {
@@ -152,6 +175,32 @@ export function apply(ctx) {
   }), 'comfy-coworking: tab type')
   postHello({ tabType: true })
 
+  // The whole entry surface is this one slash command: the menu row carries the
+  // plugin's icon and its real name, and running it enables the chat and opens
+  // the canvas. There is no composer button, because the plugin has no short
+  // caption of its own and the command is already the discoverable way in.
+  ctx.inject(['commandUi'], (scope) => {
+    scope.effect(() => scope.commandUi.register({
+      name: COMMAND,
+      label: () => t('command.label'),
+      description: () => t('command.description'),
+      icon: CanvasIcon,
+      available: (session) => typeof session?.sessionId === 'string' && session.sessionId !== '',
+      ui: {
+        kind: 'action',
+        run: (session) => {
+          postHello({ command: true })
+          const sessionId = session?.sessionId
+          if (typeof sessionId !== 'string' || sessionId === '') return
+          enableSession(sessionId)
+          openCanvas(ctx, sessionId)
+        },
+      },
+    }), 'comfy-coworking: slash command')
+  })
+
+  ctx.effect(() => watchOpenRequests(ctx), 'comfy-coworking: open requests')
+
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => {
     postHello({ body: true })
     return ctx.slots.register({
@@ -172,24 +221,6 @@ export function apply(ctx) {
     }, CanvasTitle)
   }), 'comfy-coworking: tab title')
 
-  ctx.effect(() => ctx.slots.inject('conversation.input.left', () => {
-    postHello({ composer: true })
-    return ctx.slots.register({
-      name: 'conversation.input.left',
-      id: 'comfy-canvas-open',
-      order: 40,
-      locale: NS,
-      inject: (sessionId) => ({
-        sessionId,
-        t: ctx.locale.bind(NS),
-        onOpen: () => {
-          enableSession(sessionId)
-          openCanvas(ctx, sessionId)
-        },
-      }),
-    }, OpenCanvasButton)
-  }), 'comfy-coworking: composer button')
-
   postHello({ slots: true })
 
   // Make the tab visible in the right sidebar's add-tab guide where supported.
@@ -201,7 +232,7 @@ export function apply(ctx) {
         kind: TAB_KIND,
         order: 60,
         title: () => t('tab.title'),
-        description: () => t('composer.title'),
+        description: () => t('guide.description'),
       }), 'comfy-coworking: guide entry')
     }
   } catch (error) {
