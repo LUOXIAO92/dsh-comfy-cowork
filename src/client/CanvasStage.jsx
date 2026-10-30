@@ -43,6 +43,23 @@ function resizeBox(box, handle, point, limits) {
   return [x1, y1, x2, y2]
 }
 
+function wrapLines(ctx, text, maxWidth, maxLines) {
+  const lines = []
+  let line = ''
+  for (const char of String(text ?? '')) {
+    const candidate = line + char
+    if (ctx.measureText(candidate).width > maxWidth && line !== '') {
+      lines.push(line)
+      line = char
+      if (lines.length >= maxLines) return lines
+    } else {
+      line = candidate
+    }
+  }
+  if (line !== '' && lines.length < maxLines) lines.push(line)
+  return lines
+}
+
 function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
   const line = 1.5 / scale
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -62,16 +79,48 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
     ctx.setLineDash(isDraft ? [6 / scale, 4 / scale] : [])
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
     ctx.setLineDash([])
-    const label = String(index + 1).padStart(2, '0')
+    // Translucent tint plus the type/caption written inside the box, so the
+    // annotation reads clearly on top of any picture.
     const fontPx = 11 / scale
+    const pad = 3 / scale
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x1, y1, x2 - x1, y2 - y1)
+    ctx.clip()
+    ctx.fillStyle = selected ? 'rgba(76,201,240,0.16)' : 'rgba(76,201,240,0.10)'
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1)
+    const label = String(index + 1).padStart(2, '0')
     ctx.font = `${fontPx}px ui-sans-serif, system-ui, sans-serif`
     const textWidth = ctx.measureText(label).width
-    const pad = 3 / scale
     const labelHeight = fontPx + pad * 2
-    ctx.fillStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.85)'
+    ctx.fillStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.9)'
     ctx.fillRect(x1, y1, textWidth + pad * 2, labelHeight)
     ctx.fillStyle = '#06202b'
     ctx.fillText(label, x1 + pad, y1 + fontPx + pad * 0.7)
+    const type = String(item.label ?? 'object')
+    const caption = String(item.caption ?? '').trim()
+    if (x2 - x1 > 34 / scale) {
+      ctx.font = `${fontPx}px ui-sans-serif, system-ui, sans-serif`
+      ctx.lineWidth = 2.4 / scale
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
+      ctx.fillStyle = '#9be7ff'
+      const typeX = x1 + textWidth + pad * 3
+      ctx.strokeText(type, typeX, y1 + fontPx + pad * 0.7)
+      ctx.fillText(type, typeX, y1 + fontPx + pad * 0.7)
+      if (caption !== '') {
+        ctx.fillStyle = '#ffffff'
+        const maxWidth = Math.max(24 / scale, x2 - x1 - pad * 2)
+        const top = y1 + labelHeight + fontPx + 3 / scale
+        const maxLines = Math.max(1, Math.floor((y2 - top - pad) / (fontPx * 1.35)))
+        const lines = wrapLines(ctx, caption, maxWidth, maxLines)
+        lines.forEach((value, row) => {
+          const ty = top + row * fontPx * 1.35
+          ctx.strokeText(value, x1 + pad, ty)
+          ctx.fillText(value, x1 + pad, ty)
+        })
+      }
+    }
+    ctx.restore()
     if (selected && !isDraft) {
       const r = 4 / scale
       for (const [hx, hy] of [
@@ -1401,8 +1450,6 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
               className: `ccw-caption-editor-chip is-${captionEdit.label ?? 'object'}`,
               key: 'type',
             }, captionEdit.label ?? 'object'),
-            React.createElement('span', { className: 'ccw-caption-editor-bbox', key: 'bbox' },
-              captionEdit.bbox.map((value) => Math.round(value)).join(', ')),
             Array.isArray(captionEdit.palette) && captionEdit.palette.length > 0
               ? React.createElement('span', { className: 'ccw-caption-editor-palette', key: 'palette' },
                   captionEdit.palette.slice(0, 5).map((color, index) => React.createElement('span', {
