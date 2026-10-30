@@ -4,8 +4,10 @@ import { CanvasTab } from './CanvasTab.jsx'
 import { en, zh } from './locales.js'
 import { BUILD, eventUrl } from './api.js'
 
-const PACKAGE_ID = 'dsh-comfy-coworking'
-const NS = 'comfy-coworking'
+const PACKAGE_ID = 'dsh-comfy-cowork'
+const NS = 'comfy-cowork'
+// The tab kind and id are persisted in session layouts; they keep their original
+// spelling so a rename never strands an already-open canvas tab.
 const TAB_ID = 'comfy-coworking'
 const TAB_KIND = 'comfy-coworking'
 const COMMAND = 'dsh-comfy-cowork'
@@ -43,7 +45,7 @@ function openCanvas(ctx, sessionId) {
       }
       ctx.sidebarRight?.openTab?.(TAB_KIND, {})
     } catch (error) {
-      console.error('[comfy-coworking] could not open canvas tab', error)
+      console.error('[comfy-cowork] could not open canvas tab', error)
     }
   }
   // The right sidebar adopts the session when it opens; give that one frame.
@@ -130,8 +132,8 @@ function CanvasTitle(props) {
 }
 
 export function apply(ctx) {
-  ctx.effect(() => ctx.locale.register(NS, 'en', en), 'comfy-coworking: en locale')
-  ctx.effect(() => ctx.locale.register(NS, 'zh', zh), 'comfy-coworking: zh locale')
+  ctx.effect(() => ctx.locale.register(NS, 'en', en), 'comfy-cowork: en locale')
+  ctx.effect(() => ctx.locale.register(NS, 'zh', zh), 'comfy-cowork: zh locale')
 
   ctx.effect(() => {
     const style = document.createElement('style')
@@ -139,7 +141,7 @@ export function apply(ctx) {
     style.textContent = css
     document.head.appendChild(style)
     return () => style.remove()
-  }, 'comfy-coworking: styles')
+  }, 'comfy-cowork: styles')
 
   const t = ctx.locale.bind(NS)
 
@@ -151,10 +153,10 @@ export function apply(ctx) {
     if (typeof registerCloseHandler === 'function') {
       ctx.effect(() => registerCloseHandler.call(ctx.sidebarRight, TAB_KIND, (sessionId) => {
         setEnabled(sessionId, false)
-      }), 'comfy-coworking: tab close handler')
+      }), 'comfy-cowork: tab close handler')
     }
   } catch (error) {
-    console.warn('[comfy-coworking] tab close handler unavailable', error)
+    console.warn('[comfy-cowork] tab close handler unavailable', error)
   }
 
   const postHello = (extra = {}) => {
@@ -172,7 +174,7 @@ export function apply(ctx) {
     priority: 'extension',
     multiple: false,
     title: () => t('tab.title'),
-  }), 'comfy-coworking: tab type')
+  }), 'comfy-cowork: tab type')
   postHello({ tabType: true })
 
   // The whole entry surface is this one slash command: the menu row carries the
@@ -196,10 +198,10 @@ export function apply(ctx) {
           openCanvas(ctx, sessionId)
         },
       },
-    }), 'comfy-coworking: slash command')
+    }), 'comfy-cowork: slash command')
   })
 
-  ctx.effect(() => watchOpenRequests(ctx), 'comfy-coworking: open requests')
+  ctx.effect(() => watchOpenRequests(ctx), 'comfy-cowork: open requests')
 
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => {
     postHello({ body: true })
@@ -209,7 +211,7 @@ export function apply(ctx) {
       locale: NS,
       inject: (sessionId) => ({ sessionId, t: ctx.locale.bind(NS) }),
     }, CanvasTab)
-  }), 'comfy-coworking: tab body')
+  }), 'comfy-cowork: tab body')
 
   ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => {
     postHello({ title: true })
@@ -219,7 +221,7 @@ export function apply(ctx) {
       locale: NS,
       inject: () => ({ t: ctx.locale.bind(NS) }),
     }, CanvasTitle)
-  }), 'comfy-coworking: tab title')
+  }), 'comfy-cowork: tab title')
 
   postHello({ slots: true })
 
@@ -228,14 +230,14 @@ export function apply(ctx) {
     const maybeRegisterGuide = ctx.sidebarRightTabs?.registerGuide
     if (typeof maybeRegisterGuide === 'function') {
       ctx.effect(() => maybeRegisterGuide({
-        id: 'comfy-coworking-guide',
+        id: 'comfy-cowork-guide',
         kind: TAB_KIND,
         order: 60,
         title: () => t('tab.title'),
         description: () => t('guide.description'),
-      }), 'comfy-coworking: guide entry')
+      }), 'comfy-cowork: guide entry')
     }
   } catch (error) {
-    console.warn('[comfy-coworking] guide entry unavailable', error)
+    console.warn('[comfy-cowork] guide entry unavailable', error)
   }
 }

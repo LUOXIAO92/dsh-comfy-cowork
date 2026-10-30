@@ -1,5 +1,5 @@
 {
-  "name": "dsh-comfy-coworking",
+  "name": "dsh-comfy-cowork",
   "version": "0.1.0",
   "private": true,
   "description": "Human + agent image/video coworking canvas for ComfyUI, inside DeepSeek Harness.",

@@ -1,4 +1,4 @@
-# dsh-comfy-coworking
+# dsh-comfy-cowork
 
 A DSH (DeepSeek Harness) plugin that opens a right-sidebar image/layout canvas for ComfyUI:
 mask painting, MOSS-Image layout boxes, workflow browsing/parameter editing, and a run/inject
@@ -60,7 +60,7 @@ pipeline that writes every prompt into the plugin prompt box.
   Query flags: `?view=workflow`, `?noimage=1`, `?smoke=1`, `?sizetest=1`, …
 - Real-page verification: mint a browser cookie from `~/.dsh/.credentials.yaml`, drive
   headless Chrome over CDP, evaluate JS and screenshot. Host changes need the plugin toggled
-  off→on (`plugin_manager set_plugin`, entry `include:comfy-coworking`); client changes need
+  off→on (`plugin_manager set_plugin`, entry `include:comfy-cowork`); client changes need
   `npm run build` + a page refresh.
 - **Never type into the composer of a live session as a test.** A stray Enter submits a real
   user message and starts a model turn. Prefer clicking the plugin's own controls, or assert on

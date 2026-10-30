@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Comfy 画布",
+    "title": "DSH Comfy协同",
     "description": "用可羽化蒙版改图、为 MOSS-Image 拉框写提示词、浏览 ComfyUI 工作流，并与 agent 共用同一块画布。"
   }
 }

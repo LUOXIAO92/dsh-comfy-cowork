@@ -1,4 +1,4 @@
-# DSH Comfy Coworking
+# DSH Comfy Cowork
 
 人类与 DSH agent 在同一块画布上协作生图 / 改图的 DeepSeek Harness 插件。
 
@@ -21,7 +21,7 @@ plugin_manager(action: "install_bundle", target: "/home/luoxiao/comfy/dsh-comfy-
 然后刷新 DSH Web 页面。在输入框左侧会出现「画布」按钮，点击后在右侧栏打开 **Comfy 画布**。
 右栏可以拖宽，ComfyUI 工作流图支持滚轮缩放和拖动平移。
 
-默认连接 `http://127.0.0.1:8188`。改地址：编辑 `cordis.patch.yml` 的 `baseUrl`，或在 profile 的 patch 层覆盖 `comfy-coworking` 行的 `config.baseUrl`。
+默认连接 `http://127.0.0.1:8188`。改地址：编辑 `cordis.patch.yml` 的 `baseUrl`，或在 profile 的 patch 层覆盖 `comfy-cowork` 行的 `config.baseUrl`。
 
 ## 使用
 
@@ -112,7 +112,7 @@ npm test             # node:test，16 项
 ## 排查
 
 - 画布标签页出现红字：先跑 `comfy_coworking_health`。返回里的 `client` 是浏览器端心跳（`tabType/body/title/composer/slots` 都应存在），`errors` 是最近失败的浏览器请求（方法、URL、状态、错误），可直接定位是哪个接口出错。
-- 改了 Host 代码（`lib/`、`index.js`）后需要重载插件：`plugin_manager` 里把 `include:comfy-coworking` 先 `set_plugin` 关掉再打开。改了 Client（`src/client/`）需要 `npm run build` 并刷新页面。
+- 改了 Host 代码（`lib/`、`index.js`）后需要重载插件：`plugin_manager` 里把 `include:comfy-cowork` 先 `set_plugin` 关掉再打开。改了 Client（`src/client/`）需要 `npm run build` 并刷新页面。
 - 接口要求同源浏览器 cookie：`/health` 无 cookie 返回 401、伪造 `Origin` 返回 403 属于正常防护，不是故障。
 - 画布标签页提示未绑定会话：右栏标签页需要从某个聊天里打开；从无会话的面板打开时不会发请求。
 
