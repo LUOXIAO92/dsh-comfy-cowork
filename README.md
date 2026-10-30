@@ -1,6 +1,6 @@
 # DSH Comfy Cowork
 
-[English](README.en.md) · [日本語](README.ja.md)
+中文 · [English](README.en.md) · [日本語](README.ja.md)
 
 在 DSH 右侧栏打开一块画布，人和 agent 共用同一份画布状态，直接对接 ComfyUI。
 
