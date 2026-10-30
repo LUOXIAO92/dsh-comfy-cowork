@@ -57,8 +57,24 @@ async function makeRoutes(admission = { peer: { id: 'peer-1' } }) {
     async systemStats() {
       return { system: { comfyui_version: '0.0.0-test' }, devices: [] }
     },
+    async saveWorkflow(name) {
+      return { name: name ?? 'saved.json' }
+    },
+    async readWorkflow() {
+      return { nodes: [], links: [] }
+    },
+    async objectInfo() {
+      return {}
+    },
+    async listWorkflows() {
+      return [{ path: 'a.json' }]
+    },
   }
-  const runManager = {}
+  const runManager = {
+    async start(sessionId) {
+      return { run: { id: 'run-test', status: 'queued', sessionId } }
+    },
+  }
   const routes = createRoutes({ ctx, config, store, comfy, runManager })
   return { routes, store, cleanup: () => fs.rm(root, { recursive: true, force: true }) }
 }
@@ -172,6 +188,32 @@ test('accepts a prompt write whose session id is only in the body', async () => 
     }))
     assert.equal(res.status, 200)
     assert.equal((await store.snapshot(session)).prompt, 'a red apple on linen')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('answers the client heartbeat', async () => {
+  const { routes, cleanup } = await makeRoutes()
+  try {
+    const res = await call(routes, makeReq('POST', '/api/comfy-coworking/client-hello', { build: 'test' }))
+    assert.equal(res.status, 200)
+    const health = await call(routes, makeReq('GET', '/api/comfy-coworking/health'))
+    assert.equal(JSON.parse(health.body).client.build, 'test')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('queues a run whose session id is only in the body', async () => {
+  const { routes, cleanup } = await makeRoutes()
+  try {
+    const res = await call(routes, makeReq('POST', '/api/comfy-coworking/run', {
+      sessionId: 'session-run-body',
+      seed: 7,
+    }))
+    assert.equal(res.status, 200)
+    assert.equal(JSON.parse(res.body).run.id, 'run-test')
   } finally {
     await cleanup()
   }
