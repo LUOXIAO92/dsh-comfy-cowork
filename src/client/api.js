@@ -1,6 +1,9 @@
 const BASE = '/api/comfy-coworking'
 const SESSION_ID = /^[A-Za-z0-9._-]{1,200}$/
 
+/** Injected by scripts/build-client.mjs; `dev` when the module runs outside the bundle. */
+export const BUILD = typeof __CCW_BUILD__ === 'string' ? __CCW_BUILD__ : 'dev'
+
 /**
  * A session id the host accepts. The right sidebar can hand a tab a missing
  * session (a pane not bound to a chat yet), and a request carrying `null`
@@ -23,6 +26,7 @@ async function request(path, options = {}) {
     credentials: 'same-origin',
     ...options,
     headers: {
+      'x-ccw-build': BUILD,
       ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
       ...(options.headers ?? {}),
     },
@@ -159,7 +163,7 @@ export async function uploadAsset(sessionId, name, blob) {
   const response = await fetch(`${BASE}/asset?${sessionQuery(sessionId)}&name=${encodeURIComponent(name)}`, {
     method: 'PUT',
     credentials: 'same-origin',
-    headers: { 'content-type': blob.type || 'image/png' },
+    headers: { 'content-type': blob.type || 'image/png', 'x-ccw-build': BUILD },
     body: blob,
   })
   const text = await response.text()

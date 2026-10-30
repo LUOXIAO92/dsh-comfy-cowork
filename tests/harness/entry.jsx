@@ -165,3 +165,136 @@ if (new URLSearchParams(location.search).get('debug') === '1') {
     }))
   }, 1200)
 }
+
+// `?smoke=1` drives the real CanvasTab through a brush/eraser/shape mask and a
+// layout box, then reports what the mocks saw. Read the result from the
+// `data-smoke` attribute or `#smoke-report` text after --dump-dom.
+if (new URLSearchParams(location.search).get('smoke') === '1') runSmoke()
+
+function runSmoke() {
+  const calls = []
+  const originalFetch = window.fetch
+  window.fetch = async (url, options = {}) => {
+    calls.push(`${options.method ?? 'GET'} ${String(url).replace('http://127.0.0.1:8766', '')}`)
+    return originalFetch(url, options)
+  }
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+  const waitFor = async (read, timeout = 4000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeout) {
+      const value = read()
+      if (value) return value
+      await sleep(50)
+    }
+    return null
+  }
+  const q = (selector) => document.querySelector(`#canvas-root ${selector}`)
+  const byLabel = (label, scope = '#canvas-root') => Array.from(document.querySelectorAll(`${scope} [aria-label], ${scope} button`))
+    .find((element) => element.getAttribute('aria-label') === label || element.textContent.trim() === label)
+  const maskPixels = () => {
+    const canvas = q('canvas.ccw-stage-mask')
+    if (canvas === null || canvas.width === 0) return -1
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+    let painted = 0
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 8) painted += 1
+    return painted
+  }
+  const fire = (wrap, type, x, y) => wrap.dispatchEvent(new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: x,
+    clientY: y,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    pointerId: 1,
+    isPrimary: true,
+  }))
+  const drag = async (wrap, from, to) => {
+    fire(wrap, 'pointerdown', from[0], from[1])
+    await sleep(30)
+    fire(wrap, 'pointermove', (from[0] + to[0]) / 2, (from[1] + to[1]) / 2)
+    await sleep(30)
+    fire(wrap, 'pointermove', to[0], to[1])
+    await sleep(30)
+    fire(wrap, 'pointerup', to[0], to[1])
+    await sleep(300)
+  }
+
+  const run = async () => {
+    const report = { steps: [], calls, errors: [] }
+    const wrap = await waitFor(() => q('.ccw-stage-wrap'))
+    if (wrap === null) {
+      report.errors.push('stage never mounted')
+      return report
+    }
+    const rect = wrap.getBoundingClientRect()
+    const center = [rect.left + rect.width / 2, rect.top + rect.height / 2]
+
+    const imageTab = byLabel('画布')
+    if (imageTab) imageTab.click()
+    await sleep(300)
+
+    report.steps.push({ step: 'mount', maskPixels: maskPixels() })
+
+    byLabel('画笔')?.click()
+    await sleep(100)
+    await drag(wrap, [center[0] - 90, center[1]], [center[0] + 90, center[1]])
+    report.steps.push({ step: 'brush', maskPixels: maskPixels() })
+
+    byLabel('橡皮')?.click()
+    await sleep(100)
+    await drag(wrap, [center[0] - 40, center[1]], [center[0] + 40, center[1]])
+    report.steps.push({ step: 'eraser', maskPixels: maskPixels() })
+
+    byLabel('矩形')?.click()
+    await sleep(100)
+    await drag(wrap, [center[0] - 160, center[1] - 90], [center[0] - 20, center[1] + 60])
+    report.steps.push({ step: 'rect', maskPixels: maskPixels() })
+
+    byLabel('椭圆')?.click()
+    await sleep(100)
+    await drag(wrap, [center[0] + 40, center[1] - 90], [center[0] + 170, center[1] + 40])
+    report.steps.push({ step: 'ellipse', maskPixels: maskPixels() })
+
+    const featherLabel = Array.from(document.querySelectorAll('#canvas-root label'))
+      .find((element) => element.textContent.includes('羽化'))
+    const featherInput = featherLabel?.querySelector('input[type=range]')
+    if (featherInput) {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(featherInput, '24')
+      featherInput.dispatchEvent(new Event('input', { bubbles: true }))
+      featherInput.dispatchEvent(new Event('change', { bubbles: true }))
+      await sleep(700)
+      report.steps.push({ step: 'feather', value: featherInput.value, maskPixels: maskPixels() })
+    }
+
+    byLabel('布局')?.click()
+    await sleep(500)
+    byLabel('框')?.click()
+    await sleep(150)
+    await drag(wrap, [center[0] - 100, center[1] - 100], [center[0] + 100, center[1] + 60])
+    report.steps.push({ step: 'layout-box' })
+
+    const workflowTab = Array.from(document.querySelectorAll('#canvas-root [role=tab], #canvas-root button'))
+      .find((element) => element.textContent.trim() === '工作流')
+    workflowTab?.click()
+    await sleep(500)
+    report.steps.push({ step: 'workflow', nodes: document.querySelectorAll('#canvas-root .ccw-gnode').length })
+
+    report.error = q('.ccw-error')?.textContent ?? null
+    report.calls = calls.filter((line) => !line.includes('/health'))
+    return report
+  }
+
+  run().then((report) => {
+    const text = JSON.stringify(report, null, 1)
+    document.body.setAttribute('data-smoke', 'done')
+    const pre = document.createElement('pre')
+    pre.id = 'smoke-report'
+    pre.textContent = text
+    pre.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;max-width:100%;max-height:100%;overflow:auto;background:#000;color:#0f0;font-size:10px'
+    document.body.appendChild(pre)
+  }).catch((error) => {
+    document.body.setAttribute('data-smoke', `failed: ${error?.message ?? error}`)
+  })
+}

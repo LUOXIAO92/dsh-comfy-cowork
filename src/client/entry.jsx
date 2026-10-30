@@ -2,7 +2,7 @@ import * as React from 'react'
 import css from './styles.css'
 import { CanvasTab } from './CanvasTab.jsx'
 import { en, zh } from './locales.js'
-import { eventUrl } from './api.js'
+import { BUILD, eventUrl } from './api.js'
 
 const PACKAGE_ID = 'dsh-comfy-coworking'
 const NS = 'comfy-coworking'
@@ -106,7 +106,7 @@ export function apply(ctx) {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ version: '0.1.0', tabId: TAB_ID, kind: TAB_KIND, ...extra }),
+      body: JSON.stringify({ version: '0.1.0', build: BUILD, tabId: TAB_ID, kind: TAB_KIND, ...extra }),
     }).catch(() => {})
   }
 
