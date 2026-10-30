@@ -699,7 +699,10 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
             </Section>
 
             <Section title={t('workflow.bindings')} icon="link" defaultOpen className="ccw-section-bindings">
-              <p className="ccw-hint">{t('bindings.hint')}</p>
+              <p className="ccw-hint ccw-bindings-hint">
+                <Icon name="info" size={13} />
+                <span>{t('bindings.hint')}</span>
+              </p>
               <div className="ccw-binding-grid">
                 {['prompt', 'image', 'mask', 'width', 'height', 'seed', 'bboxes'].map((key) => (
                   <label key={key} className="ccw-field">
