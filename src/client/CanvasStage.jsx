@@ -75,7 +75,7 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
     const isDraft = draft !== null && item.id === draft.id
     const selected = item.id === selectedId || isDraft
     ctx.strokeStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.65)'
-    ctx.lineWidth = selected ? 2 / scale : line
+    ctx.lineWidth = selected ? 2.2 / scale : line
     ctx.setLineDash(isDraft ? [6 / scale, 4 / scale] : [])
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
     ctx.setLineDash([])
@@ -90,13 +90,13 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
     ctx.fillStyle = selected ? 'rgba(76,201,240,0.16)' : 'rgba(76,201,240,0.10)'
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1)
     const label = String(index + 1).padStart(2, '0')
-    ctx.font = `${fontPx}px ui-sans-serif, system-ui, sans-serif`
+    ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`
     const textWidth = ctx.measureText(label).width
-    const labelHeight = fontPx + pad * 2
+    const labelHeight = fontPx + 6 / scale
     ctx.fillStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.9)'
-    ctx.fillRect(x1, y1, textWidth + pad * 2, labelHeight)
+    ctx.fillRect(x1, y1, textWidth + 8 / scale, labelHeight)
     ctx.fillStyle = '#06202b'
-    ctx.fillText(label, x1 + pad, y1 + fontPx + pad * 0.7)
+    ctx.fillText(label, x1 + 4 / scale, y1 + fontPx + 1 / scale)
     const type = String(item.label ?? 'object')
     const caption = String(item.caption ?? '').trim()
     if (x2 - x1 > 34 / scale) {
@@ -104,9 +104,9 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
       ctx.lineWidth = 2.4 / scale
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
       ctx.fillStyle = '#9be7ff'
-      const typeX = x1 + textWidth + pad * 3
-      ctx.strokeText(type, typeX, y1 + fontPx + pad * 0.7)
-      ctx.fillText(type, typeX, y1 + fontPx + pad * 0.7)
+      const typeX = x1 + textWidth + 8 / scale + pad * 2
+      ctx.strokeText(type, typeX, y1 + fontPx + 1 / scale)
+      ctx.fillText(type, typeX, y1 + fontPx + 1 / scale)
       if (caption !== '') {
         ctx.fillStyle = '#ffffff'
         const maxWidth = Math.max(24 / scale, x2 - x1 - pad * 2)
@@ -822,7 +822,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   /** Double-clicking a box opens its caption in place; empty space still fits. */
   function onStageDoubleClick(event) {
     const point = pointOf(event)
-    if (tool === 'comment') {
+    {
       const hitComment = hitTestComments(commentListRef.current, point, viewRef.current.scale, selectedCommentRef.current)
       if (hitComment !== null) {
         onCommentSelect?.(hitComment.comment.id)
@@ -1073,7 +1073,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       containerRef.current?.setPointerCapture(event.pointerId)
     } catch {}
 
-    if (tool === 'comment') {
+    if (tool === 'comment' || tool === 'select') {
       const hit = hitTestComments(commentListRef.current, point, viewRef.current.scale, selectedCommentRef.current)
       if (hit !== null) {
         onCommentSelect?.(hit.comment.id)
@@ -1089,10 +1089,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         }
         return
       }
-      onCommentSelect?.(null)
-      gestureRef.current = { kind: 'comment-new', start: point, current: point }
-      setOverlayTick((value) => value + 1)
-      return
+      if (tool === 'comment') {
+        onCommentSelect?.(null)
+        gestureRef.current = { kind: 'comment-new', start: point, current: point }
+        setOverlayTick((value) => value + 1)
+      }
+      // In select mode a miss falls through to shapes and layout boxes.
     }
 
     if (tool === 'brush' || tool === 'eraser') {
@@ -1127,6 +1129,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       if (shapeHit !== null) {
         setSelectedShape(shapeHit.shape.id)
         setPaintSelection(null)
+        onCommentSelect?.(null)
         onBoxSelect?.(null)
         gestureRef.current = {
           kind: 'shape-edit',
@@ -1148,6 +1151,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       if (hit !== null) {
         setSelectedShape(null)
         setPaintSelection(null)
+        onCommentSelect?.(null)
         onBoxSelect?.(hit.box.id)
         gestureRef.current = {
           kind: 'box',
@@ -1164,6 +1168,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         setOverlayTick((value) => value + 1)
       } else {
         onBoxSelect?.(null)
+        onCommentSelect?.(null)
         // Clicking painted mask selects that connected stroke: it gets a frame,
         // can be dragged, and Delete/Backspace removes it.
         const region = extractPaintRegion(point)
