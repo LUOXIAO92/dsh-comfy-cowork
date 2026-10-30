@@ -72,6 +72,15 @@ export function apply(ctx) {
 
   const t = ctx.locale.bind(NS)
 
+  const postHello = (extra = {}) => {
+    fetch('/api/comfy-coworking/client-hello', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ version: '0.1.0', tabId: TAB_ID, kind: TAB_KIND, ...extra }),
+    }).catch(() => {})
+  }
+
   ctx.effect(() => ctx.sidebarRightTabs.register({
     id: TAB_ID,
     kind: TAB_KIND,
@@ -79,37 +88,44 @@ export function apply(ctx) {
     multiple: false,
     title: () => t('tab.title'),
   }), 'comfy-coworking: tab type')
+  postHello({ tabType: true })
 
-  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
-    name: 'sidebar.right.pane.tab',
-    key: TAB_ID,
-    locale: NS,
-    inject: (sessionId) => ({ sessionId }),
-  }, CanvasTab)), 'comfy-coworking: tab body')
+  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => {
+    postHello({ body: true })
+    return ctx.slots.register({
+      name: 'sidebar.right.pane.tab',
+      key: TAB_ID,
+      locale: NS,
+      inject: (sessionId) => ({ sessionId, t: ctx.locale.bind(NS) }),
+    }, CanvasTab)
+  }), 'comfy-coworking: tab body')
 
-  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => ctx.slots.register({
-    name: 'sidebar.right.pane.tab.title',
-    key: TAB_ID,
-    locale: NS,
-  }, CanvasTitle)), 'comfy-coworking: tab title')
+  ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab.title', () => {
+    postHello({ title: true })
+    return ctx.slots.register({
+      name: 'sidebar.right.pane.tab.title',
+      key: TAB_ID,
+      locale: NS,
+      inject: () => ({ t: ctx.locale.bind(NS) }),
+    }, CanvasTitle)
+  }), 'comfy-coworking: tab title')
 
-  ctx.effect(() => ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
-    name: 'conversation.input.left',
-    id: 'comfy-canvas-open',
-    order: 40,
-    locale: NS,
-    inject: (sessionId) => ({
-      sessionId,
-      onOpen: () => openCanvas(ctx, sessionId),
-    }),
-  }, OpenCanvasButton)), 'comfy-coworking: composer button')
+  ctx.effect(() => ctx.slots.inject('conversation.input.left', () => {
+    postHello({ composer: true })
+    return ctx.slots.register({
+      name: 'conversation.input.left',
+      id: 'comfy-canvas-open',
+      order: 40,
+      locale: NS,
+      inject: (sessionId) => ({
+        sessionId,
+        t: ctx.locale.bind(NS),
+        onOpen: () => openCanvas(ctx, sessionId),
+      }),
+    }, OpenCanvasButton)
+  }), 'comfy-coworking: composer button')
 
-  fetch('/api/comfy-coworking/client-hello', {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ version: '0.1.0', tabId: TAB_ID, kind: TAB_KIND, slots: true }),
-  }).catch(() => {})
+  postHello({ slots: true })
 
   // Make the tab visible in the right sidebar's add-tab guide where supported.
   try {
