@@ -1,5 +1,63 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Comfy coworking harness</title>
-<link rel="stylesheet" href="../../src/client/styles.css?v=4">
-<style>:root{--dsw-alias-bg-base:#0d1117;--dsw-alias-bg-layer-1:#161b22;--dsw-alias-bg-layer-2:#21262d;--dsw-alias-bg-overlay:#1c2128;--dsw-alias-border-l1:#30363d;--dsw-alias-border-l2:#484f58;--dsw-alias-brand-primary:#4cc9f0;--dsw-alias-label-primary:#e6edf3;--dsw-alias-label-secondary:#9aa7b4;--dsw-alias-state-error-primary:#f85149;--dsw-alias-state-idle-primary:#6e7681;--dsw-alias-state-success-primary:#3fb950;--dsw-alias-state-warn-primary:#d29922}body{margin:0;background:#0b0f14;color:#e6edf3;font-family:system-ui,sans-serif}.row{display:flex;gap:16px;padding:12px}.pane{width:520px;height:1200px;border:1px solid #24303c;border-radius:10px;overflow:hidden;background:#111820}</style>
-</head><body><div class="row"><div id="canvas-root" class="pane"></div><div id="workflow-root" class="pane"></div></div><script src="harness.js"></script></body></html>
+<html lang="zh-CN" data-view="canvas">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comfy coworking harness</title>
+<link rel="stylesheet" href="../../src/client/styles.css?v=10">
+<style>
+  :root {
+    color-scheme: dark;
+    --dsw-alias-bg-base: #0d1117;
+    --dsw-alias-bg-layer-1: #121820;
+    --dsw-alias-bg-layer-2: #18212b;
+    --dsw-alias-bg-layer-3: #1f2935;
+    --dsw-alias-bg-layer-4: #293543;
+    --dsw-alias-bg-overlay: #171f29;
+    --dsw-alias-border-l1: #29323d;
+    --dsw-alias-border-l2: #3a4653;
+    --dsw-alias-border-l3: #4c5b6b;
+    --dsw-alias-border-l4: #647486;
+    --dsw-alias-brand-primary: #4cc9f0;
+    --dsw-alias-label-primary: #e8eef5;
+    --dsw-alias-label-secondary: #9dabb9;
+    --dsw-alias-label-tertiary: #748292;
+    --dsw-alias-label-dimmed: #586574;
+    --dsw-alias-state-error-primary: #f2686d;
+    --dsw-alias-state-idle-primary: #6e7c8c;
+    --dsw-alias-state-success-primary: #54c68a;
+    --dsw-alias-state-warn-primary: #d8ab55;
+  }
+  html, body { width: 100%; height: 100%; margin: 0; }
+  body {
+    overflow: hidden;
+    background: var(--dsw-alias-bg-base);
+    color: var(--dsw-alias-label-primary);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  html[data-view="canvas"] #workflow-root,
+  html[data-view="workflow"] #workflow-root,
+  html[data-view="workflow-direct"] #canvas-root { display: none; }
+  .pane {
+    width: 100%;
+    height: 100vh;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--dsw-alias-bg-base);
+  }
+</style>
+<script>
+  (function () {
+    var view = new URLSearchParams(location.search).get('view')
+    document.documentElement.dataset.view = view === 'workflow-direct'
+      ? 'workflow-direct'
+      : view === 'workflow' ? 'workflow' : 'canvas'
+  })()
+</script>
+</head>
+<body>
+<div id="canvas-root" class="pane" aria-label="Canvas tab"></div>
+<div id="workflow-root" class="pane" aria-label="Workflow view"></div>
+<script src="harness.js"></script>
+</body>
+</html>

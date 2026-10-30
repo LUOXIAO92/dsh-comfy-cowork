@@ -2,6 +2,13 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { CanvasTab } from '../../src/client/CanvasTab.jsx'
 import { WorkflowView } from '../../src/client/WorkflowView.jsx'
+import { zh } from '../../src/client/locales.js'
+
+const t = (key, vars) => {
+  const text = zh[key] ?? key
+  if (vars === undefined) return text
+  return text.replace(/\{(\w+)\}/g, (match, name) => (vars[name] === undefined ? match : String(vars[name])))
+}
 
 const items = [
   { id: 'box-1', label: 'object', caption: 'A glossy red apple on the linen surface.', text: '', bbox: [120, 320, 460, 760], palette: ['#b3121b'] },
@@ -34,7 +41,11 @@ const doc = {
   sessionId: 'session-test',
   rev: 7,
   mode: 'layout',
-  canvas: { width: 1024, height: 1024, image: null },
+  canvas: {
+    width: 1024,
+    height: 1024,
+    image: { asset: 'canvas.png', name: 'linen-still-life.png', width: 1024, height: 1024, rev: 1 },
+  },
   mask: { feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false, rev: 0 },
   prompt,
   promptSource: 'layout',
@@ -48,7 +59,7 @@ const doc = {
 }
 
 const infos = {
-  CheckpointLoaderSimple: { input: { required: { ckpt_name: [['a.safetensors'], {}] } }, input_order: { required: ['ckpt_name'] } },
+  CheckpointLoaderSimple: { input: { required: { ckpt_name: [['Illustrious/miaomiaoHarem_v20.safetensors'], {}] } }, input_order: { required: ['ckpt_name'] } },
   LoadImage: { input: { required: { image: [['canvas.png'], {}] } }, input_order: { required: ['image'] } },
   VAEEncodeForInpaint: { input: { required: { pixels: ['IMAGE'], vae: ['VAE'], mask: ['MASK'], grow_mask_by: ['INT', { default: 6 }] } }, input_order: { required: ['pixels', 'vae', 'mask', 'grow_mask_by'] } },
   CLIPTextEncode: { input: { required: { clip: ['CLIP'], text: ['STRING', { multiline: true }] } }, input_order: { required: ['clip', 'text'] } },
@@ -56,23 +67,101 @@ const infos = {
 }
 
 class MockEventSource {
-  constructor() { setTimeout(() => this.listeners.open?.({}), 0) }
-  listeners = {}
+  constructor() {
+    this.listeners = {}
+    setTimeout(() => {
+      this.listeners.open?.({})
+      this.listeners.hello?.({ data: JSON.stringify({ doc }) })
+    }, 0)
+  }
+
   addEventListener(type, fn) { this.listeners[type] = fn }
   close() {}
 }
 
+const nativeFetch = window.fetch.bind(window)
 window.EventSource = MockEventSource
-window.fetch = async (url) => {
+window.fetch = async (url, options) => {
   const text = String(url)
-  if (text.includes('/doc')) return new Response(JSON.stringify({ doc }), { status: 200, headers: { 'content-type': 'application/json' } })
-  if (text.includes('/health')) return new Response(JSON.stringify({ ok: true, comfy: { connected: true, version: '0.41.0' } }), { status: 200 })
-  if (text.includes('/workflows')) return new Response(JSON.stringify({ workflows: [{ path: 'coworking_inpaint.json' }] }), { status: 200 })
-  if (text.includes('/object_info')) return new Response(JSON.stringify({ nodes: infos }), { status: 200 })
-  if (text.includes('/models')) return new Response(JSON.stringify({ folders: ['checkpoints'], files: ['Illustrious/miaomiaoHarem_v20.safetensors'] }), { status: 200 })
-  return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+  const json = (value) => new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } })
+  if (text.includes('/doc') && !text.includes('/doc/')) return json({ doc })
+  if (text.includes('/health')) return json({ ok: true, comfy: { connected: true, version: '0.41.0' } })
+  if (text.includes('/workflows') && !text.includes('/load') && !text.includes('/save')) {
+    return json({ workflows: [{ path: 'coworking_inpaint.json' }, { path: 'upscale_detail.json' }] })
+  }
+  if (text.includes('/object_info')) return json({ nodes: infos })
+  if (text.includes('/models/')) return json({ folders: ['checkpoints', 'vae'], files: ['Illustrious/miaomiaoHarem_v20.safetensors', 'flux1-dev-fp8.safetensors'] })
+  if (text.includes('/models')) return json({ folders: ['checkpoints', 'vae', 'loras'], files: [] })
+  if (text.includes('/asset')) {
+    return new Response('', { status: 404, statusText: 'not found' })
+  }
+  if (text.includes('/workflows/load') || text.includes('/workflows/save') || text.includes('/doc/')) return json({ doc })
+  return json({})
 }
 
-const t = (key) => key
-createRoot(document.getElementById('canvas-root')).render(React.createElement(CanvasTab, { sessionId: 'session-test', t }))
-createRoot(document.getElementById('workflow-root')).render(React.createElement(WorkflowView, { sessionId: 'session-test', doc, setDoc: () => {}, t, setError: () => {} }))
+
+function mountApp() {
+  createRoot(document.getElementById('canvas-root')).render(
+    React.createElement(CanvasTab, { sessionId: 'session-test', t }),
+  )
+  createRoot(document.getElementById('workflow-root')).render(
+    React.createElement(WorkflowView, {
+      sessionId: 'session-test',
+      doc,
+      setDoc: () => {},
+      t,
+      setError: () => {},
+    }),
+  )
+}
+
+mountApp()
+
+// The mocked HTTP layer cannot answer browser <img> requests, so point the
+// stage image at the checked-in demo art after React mounts it.
+function patchDemoImage() {
+  const image = document.querySelector('#canvas-root .ccw-stage-image')
+  if (image === null || image.dataset.sample === '1') return
+  image.dataset.sample = '1'
+  image.src = 'sample.svg'
+}
+
+const imageObserver = new MutationObserver(patchDemoImage)
+imageObserver.observe(document.body, { childList: true, subtree: true })
+patchDemoImage()
+
+// `view=workflow` screenshots the real app shell (the CanvasTab workflow tab);
+// `view=workflow-direct` mounts the workflow browser on its own.
+const harnessView = new URLSearchParams(location.search).get('view')
+if (harnessView === 'workflow' || harnessView === 'workflow-direct') {
+  let attempts = 0
+  const root = harnessView === 'workflow' ? '#canvas-root' : '#workflow-root'
+  const timer = setInterval(() => {
+    if (harnessView === 'workflow') {
+      const tab = document.querySelectorAll('#canvas-root .ccw-viewtab')[1]
+      if (tab !== null && !tab.classList.contains('is-active')) tab.click()
+    }
+    const node = document.querySelector(`${root} .ccw-gnode`)
+    if (node !== null) node.click()
+    attempts += 1
+    if ((node !== null && attempts > 2) || attempts > 40) clearInterval(timer)
+  }, 100)
+}
+
+// Lightweight layout smoke signal for screenshot runs (`?debug=1`).
+if (new URLSearchParams(location.search).get('debug') === '1') {
+  setTimeout(() => {
+    const report = (selector) => {
+      const element = document.querySelector(selector)
+      if (element === null) return null
+      return { clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }
+    }
+    console.log('HARNESS_OVERFLOW', JSON.stringify({
+      viewport: window.innerWidth,
+      document: report('html'),
+      canvas: report('#canvas-root .ccw-root'),
+      workflow: report('#canvas-root .ccw-workflow, #workflow-root .ccw-workflow'),
+      inspector: report('.ccw-inspector'),
+    }))
+  }, 1200)
+}

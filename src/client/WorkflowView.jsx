@@ -22,26 +22,7 @@ import {
   workflowBounds,
   workflowLinks,
 } from './workflow-ui.js'
-
-function NodeCard({ node, selected, left, top, info, onClick }) {
-  const size = nodeSize(node)
-  const height = Math.min(180, Math.max(74, size.height))
-  const widgets = nodeWidgets(node, info).slice(0, 4)
-  return React.createElement('div', {
-    className: `ccw-gnode ${selected ? 'is-selected' : ''} ${node.mode === 4 ? 'is-bypassed' : ''} ${node.mode === 2 ? 'is-muted' : ''}`,
-    style: { left, top, width: Math.max(150, Math.min(280, size.width)), height },
-    onClick: (event) => {
-      event.stopPropagation()
-      onClick()
-    },
-  },
-  React.createElement('div', { className: 'ccw-gnode-title' }, nodeTitle(node)),
-  React.createElement('div', { className: 'ccw-gnode-type' }, node.type),
-  React.createElement('div', { className: 'ccw-gnode-widgets' },
-    widgets.map((widget) => React.createElement('div', { key: widget.name, className: 'ccw-gnode-widget' },
-      React.createElement('span', null, widget.name),
-      React.createElement('b', null, formatValue(widget.value))))))
-}
+import { Icon, IconButton, Section } from './ui.jsx'
 
 function formatValue(value) {
   if (value === null || value === undefined) return '—'
@@ -50,7 +31,49 @@ function formatValue(value) {
   return '…'
 }
 
-function Graph({ workflow, infos, selectedId, onSelect, t }) {
+function formatWidgetType(type) {
+  if (typeof type === 'string') return type
+  if (Array.isArray(type)) return 'COMBO'
+  return ''
+}
+
+function NodeCard({ node, selected, left, top, info, onClick, t }) {
+  const size = nodeSize(node)
+  const height = Math.min(180, Math.max(74, size.height))
+  const widgets = nodeWidgets(node, info).slice(0, 4)
+  const flag = node.mode === 4
+    ? t('workflow.bypass')
+    : node.mode === 2 ? t('workflow.mute') : ''
+  return (
+    <button
+      type="button"
+      className={`ccw-gnode ${selected ? 'is-selected' : ''} ${node.mode === 4 ? 'is-bypassed' : ''} ${node.mode === 2 ? 'is-muted' : ''}`}
+      style={{ left, top, width: Math.max(150, Math.min(280, size.width)), height }}
+      aria-pressed={selected}
+      title={`${nodeTitle(node)} · ${node.type}`}
+      onClick={(event) => {
+        event.stopPropagation()
+        onClick()
+      }}
+    >
+      <span className="ccw-gnode-head">
+        <span className="ccw-gnode-title">{nodeTitle(node)}</span>
+        {flag !== '' ? <span className="ccw-gnode-flag">{flag}</span> : null}
+      </span>
+      <span className="ccw-gnode-type">{node.type}</span>
+      <span className="ccw-gnode-widgets">
+        {widgets.map((widget) => (
+          <span key={widget.name} className="ccw-gnode-widget">
+            <span>{widget.name}</span>
+            <b>{formatValue(widget.value)}</b>
+          </span>
+        ))}
+      </span>
+    </button>
+  )
+}
+
+function Graph({ workflow, title, infos, selectedId, onSelect, t }) {
   const wrapRef = useRef(null)
   const [view, setView] = useState({ scale: 1, x: 20, y: 20 })
   const gestureRef = useRef(null)
@@ -72,8 +95,38 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
     })
   }
 
+  function zoomBy(factor) {
+    const el = wrapRef.current
+    if (!el) return
+    touchedRef.current = true
+    const rect = el.getBoundingClientRect()
+    setView((current) => {
+      const nextScale = Math.min(3, Math.max(0.15, current.scale * factor))
+      const cx = rect.width / 2
+      const cy = rect.height / 2
+      const gx = (cx - current.x) / current.scale
+      const gy = (cy - current.y) / current.scale
+      return { scale: nextScale, x: cx - gx * nextScale, y: cy - gy * nextScale }
+    })
+  }
+
+  const fitRef = useRef(fit)
+  fitRef.current = fit
+  const touchedRef = useRef(false)
+
+  // The graph lives inside a pane that is still settling when it mounts, so a
+  // one-shot fit frames the wrong box. Refit on resize until the human takes
+  // over with a pan or a zoom.
   useEffect(() => {
-    fit()
+    const el = wrapRef.current
+    if (!el) return undefined
+    fitRef.current()
+    if (typeof ResizeObserver !== 'function') return undefined
+    const observer = new ResizeObserver(() => {
+      if (!touchedRef.current) fitRef.current()
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -81,6 +134,7 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
     if (!el) return undefined
     const onWheel = (event) => {
       event.preventDefault()
+      touchedRef.current = true
       const rect = el.getBoundingClientRect()
       const factor = Math.exp(-event.deltaY * 0.0015)
       setView((current) => {
@@ -96,112 +150,208 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
-  return React.createElement('div', {
-    className: 'ccw-graph',
-    ref: wrapRef,
-    onPointerDown: (event) => {
-      if (event.target !== event.currentTarget && event.target.closest?.('.ccw-gnode') !== null) return
-      gestureRef.current = { x: event.clientX, y: event.clientY, view, moved: false }
-      event.currentTarget.setPointerCapture(event.pointerId)
-    },
-    onPointerMove: (event) => {
-      const gesture = gestureRef.current
-      if (gesture === null) return
-      const dx = event.clientX - gesture.x
-      const dy = event.clientY - gesture.y
-      if (Math.abs(dx) + Math.abs(dy) > 2) gesture.moved = true
-      setView({ ...gesture.view, x: gesture.view.x + dx, y: gesture.view.y + dy })
-    },
-    onPointerUp: (event) => {
-      const gesture = gestureRef.current
-      gestureRef.current = null
-      if (gesture !== null && !gesture.moved) onSelect(null)
-      try {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-      } catch {}
-    },
-  },
-  React.createElement('div', {
-    className: 'ccw-graph-inner',
-    style: {
-      width: bounds.width,
-      height: bounds.height,
-      transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-    },
-  },
-  React.createElement('svg', { className: 'ccw-graph-links', width: bounds.width, height: bounds.height },
-    links.map((link) => {
-      const from = byId.get(link.originId)
-      const to = byId.get(link.targetId)
-      if (from === undefined || to === undefined) return null
-      const fs = nodeSize(from)
-      const fx = (from.pos?.[0] ?? 0) - bounds.minX + Math.max(150, Math.min(280, fs.width))
-      const fy = (from.pos?.[1] ?? 0) - bounds.minY + 38 + link.originSlot * 15
-      const tx = (to.pos?.[0] ?? 0) - bounds.minX
-      const ty = (to.pos?.[1] ?? 0) - bounds.minY + 38 + link.targetSlot * 15
-      const dx = Math.max(30, Math.abs(tx - fx) * 0.45)
-      return React.createElement('path', {
-        key: link.id,
-        d: `M ${fx} ${fy} C ${fx + dx} ${fy}, ${tx - dx} ${ty}, ${tx} ${ty}`,
-        className: from.mode === 4 ? 'is-bypassed' : '',
-      })
-    })),
-  nodes.map((node) => React.createElement(NodeCard, {
-    key: node.id,
-    node,
-    info: infos[node.type],
-    selected: String(selectedId) === String(node.id),
-    left: (node.pos?.[0] ?? 0) - bounds.minX,
-    top: (node.pos?.[1] ?? 0) - bounds.minY,
-    onClick: () => onSelect(node.id),
-  }))),
-  React.createElement('div', { className: 'ccw-graph-actions' },
-    React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: fit }, t('canvas.fit')),
-    React.createElement('span', { className: 'ccw-muted' }, `${Math.round(view.scale * 100)}%`)))
+  return (
+    <div
+      className="ccw-graph"
+      ref={wrapRef}
+      aria-label={t('workflow.graph')}
+      onPointerDown={(event) => {
+        if (event.target.closest?.('.ccw-graph-actions, .ccw-graph-hud') !== null) return
+        if (event.target !== event.currentTarget && event.target.closest?.('.ccw-gnode') !== null) return
+        touchedRef.current = true
+        gestureRef.current = { x: event.clientX, y: event.clientY, view, moved: false }
+        event.currentTarget.setPointerCapture(event.pointerId)
+      }}
+      onPointerMove={(event) => {
+        const gesture = gestureRef.current
+        if (gesture === null) return
+        const dx = event.clientX - gesture.x
+        const dy = event.clientY - gesture.y
+        if (Math.abs(dx) + Math.abs(dy) > 2) gesture.moved = true
+        setView({ ...gesture.view, x: gesture.view.x + dx, y: gesture.view.y + dy })
+      }}
+      onPointerUp={(event) => {
+        const gesture = gestureRef.current
+        gestureRef.current = null
+        if (gesture !== null && !gesture.moved) onSelect(null)
+        try {
+          event.currentTarget.releasePointerCapture(event.pointerId)
+        } catch {}
+      }}
+    >
+      <div
+        className="ccw-graph-inner"
+        style={{
+          width: bounds.width,
+          height: bounds.height,
+          transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+        }}
+      >
+        <svg className="ccw-graph-links" width={bounds.width} height={bounds.height}>
+          {links.map((link) => {
+            const from = byId.get(link.originId)
+            const to = byId.get(link.targetId)
+            if (from === undefined || to === undefined) return null
+            const fs = nodeSize(from)
+            const fx = (from.pos?.[0] ?? 0) - bounds.minX + Math.max(150, Math.min(280, fs.width))
+            const fy = (from.pos?.[1] ?? 0) - bounds.minY + 38 + link.originSlot * 15
+            const tx = (to.pos?.[0] ?? 0) - bounds.minX
+            const ty = (to.pos?.[1] ?? 0) - bounds.minY + 38 + link.targetSlot * 15
+            const dx = Math.max(30, Math.abs(tx - fx) * 0.45)
+            return (
+              <path
+                key={link.id}
+                d={`M ${fx} ${fy} C ${fx + dx} ${fy}, ${tx - dx} ${ty}, ${tx} ${ty}`}
+                className={from.mode === 4 ? 'is-bypassed' : ''}
+              />
+            )
+          })}
+        </svg>
+        {nodes.map((node) => (
+          <NodeCard
+            key={node.id}
+            node={node}
+            info={infos[node.type]}
+            selected={String(selectedId) === String(node.id)}
+            left={(node.pos?.[0] ?? 0) - bounds.minX}
+            top={(node.pos?.[1] ?? 0) - bounds.minY}
+            onClick={() => onSelect(node.id)}
+            t={t}
+          />
+        ))}
+      </div>
+
+      <div className="ccw-graph-hud">
+        <span className="ccw-graph-hud-title" title={title}>{title || t('workflow.graph')}</span>
+        <span>{t('workflow.nodes').replace('{count}', String(nodes.length))}</span>
+        <span className="ccw-graph-hud-sep" aria-hidden="true" />
+        <span>{t('workflow.links').replace('{count}', String(links.length))}</span>
+      </div>
+
+      <div className="ccw-graph-actions" role="toolbar" aria-label={t('workflow.graph')}>
+        <span className="ccw-zoom-readout" aria-hidden="true">{Math.round(view.scale * 100)}%</span>
+        <IconButton icon="zoomOut" label={t('canvas.zoomOut')} onClick={() => zoomBy(1 / 1.2)} />
+        <IconButton icon="zoomIn" label={t('canvas.zoomIn')} onClick={() => zoomBy(1.2)} />
+        <IconButton icon="maximize" label={t('canvas.fit')} onClick={() => {
+          touchedRef.current = false
+          fit()
+        }} />
+      </div>
+    </div>
+  )
 }
 
 function WidgetEditor({ node, info, onChange, t }) {
   const widgets = nodeWidgets(node, info)
-  if (widgets.length === 0) return React.createElement('p', { className: 'ccw-hint' }, t('workflow.noWidgets'))
-  return React.createElement('div', { className: 'ccw-widgets' },
-    widgets.map((widget) => {
-      const options = comboOptions(widget)
-      let control
-      if (options.length > 0) {
-        control = React.createElement('select', {
-          value: String(widget.value ?? ''),
-          onChange: (event) => onChange(widget.name, event.target.value),
-        },
-        options.map((option) => React.createElement('option', { key: String(option), value: String(option) }, String(option))))
-      } else if (typeof widget.value === 'boolean') {
-        control = React.createElement('input', {
-          type: 'checkbox', checked: widget.value,
-          onChange: (event) => onChange(widget.name, event.target.checked),
-        })
-      } else if (typeof widget.value === 'number') {
-        const integer = widget.type === 'INT'
-        control = React.createElement('input', {
-          type: 'number', value: widget.value, step: integer ? 1 : 'any',
-          onChange: (event) => {
-            const value = Number(event.target.value)
-            if (Number.isFinite(value)) onChange(widget.name, integer ? Math.round(value) : value)
-          },
-        })
-      } else if (widget.options?.multiline === true || (typeof widget.value === 'string' && widget.value.length > 70)) {
-        control = React.createElement('textarea', {
-          rows: 3, value: String(widget.value ?? ''),
-          onChange: (event) => onChange(widget.name, event.target.value),
-        })
-      } else {
-        control = React.createElement('input', {
-          type: 'text', value: String(widget.value ?? ''),
-          onChange: (event) => onChange(widget.name, event.target.value),
-        })
-      }
-      return React.createElement('label', { key: widget.name, className: 'ccw-field ccw-widget-field' },
-        React.createElement('span', null, widget.name, React.createElement('em', null, widget.type)),
-        control)
-    }))
+  if (widgets.length === 0) {
+    return <p className="ccw-hint">{t('workflow.noWidgets')}</p>
+  }
+  return (
+    <div className="ccw-widgets">
+      {widgets.map((widget) => {
+        const options = comboOptions(widget)
+        let control
+        if (options.length > 0) {
+          control = (
+            <select
+              value={String(widget.value ?? '')}
+              onChange={(event) => onChange(widget.name, event.target.value)}
+            >
+              {options.map((option) => (
+                <option key={String(option)} value={String(option)}>{String(option)}</option>
+              ))}
+            </select>
+          )
+        } else if (typeof widget.value === 'boolean') {
+          control = (
+            <input
+              type="checkbox"
+              checked={widget.value}
+              onChange={(event) => onChange(widget.name, event.target.checked)}
+            />
+          )
+        } else if (typeof widget.value === 'number') {
+          const integer = widget.type === 'INT'
+          control = (
+            <input
+              type="number"
+              value={widget.value}
+              step={integer ? 1 : 'any'}
+              onChange={(event) => {
+                const value = Number(event.target.value)
+                if (Number.isFinite(value)) onChange(widget.name, integer ? Math.round(value) : value)
+              }}
+            />
+          )
+        } else if (widget.options?.multiline === true || (typeof widget.value === 'string' && widget.value.length > 70)) {
+          control = (
+            <textarea
+              rows={3}
+              value={String(widget.value ?? '')}
+              onChange={(event) => onChange(widget.name, event.target.value)}
+            />
+          )
+        } else {
+          control = (
+            <input
+              type="text"
+              value={String(widget.value ?? '')}
+              onChange={(event) => onChange(widget.name, event.target.value)}
+            />
+          )
+        }
+        return (
+          <label key={widget.name} className="ccw-field ccw-widget-field">
+            <span className="ccw-widget-label">
+              <span>{widget.name}</span>
+              <em>{formatWidgetType(widget.type)}</em>
+            </span>
+            {control}
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
+function NodeEditor({ node, info, onChange, onTitle, onToggleMode, t }) {
+  return (
+    <div className="ccw-node-editor">
+      <div className="ccw-node-meta">
+        <span className="ccw-node-id">#{node.id}</span>
+        <span className="ccw-node-type">{node.type}</span>
+      </div>
+      <input
+        className="ccw-node-title-input"
+        value={node.title ?? ''}
+        placeholder={t('workflow.title')}
+        title={t('workflow.title')}
+        aria-label={t('workflow.title')}
+        onChange={(event) => onTitle(event.target.value)}
+      />
+      <div className="ccw-node-mode-row">
+        <button
+          type="button"
+          className={`ccw-chip-toggle ${node.mode === 4 ? 'is-active' : ''}`}
+          aria-pressed={node.mode === 4}
+          onClick={() => onToggleMode(4)}
+        >
+          <Icon name="circleSlash" size={14} />
+          <span>{t('workflow.bypass')}</span>
+        </button>
+        <button
+          type="button"
+          className={`ccw-chip-toggle ${node.mode === 2 ? 'is-active' : ''}`}
+          aria-pressed={node.mode === 2}
+          onClick={() => onToggleMode(2)}
+        >
+          <Icon name="eyeOff" size={14} />
+          <span>{t('workflow.mute')}</span>
+        </button>
+      </div>
+      <WidgetEditor node={node} info={info} onChange={onChange} t={t} />
+    </div>
+  )
 }
 
 function ModelBrowser({ t, setError }) {
@@ -219,26 +369,61 @@ function ModelBrowser({ t, setError }) {
     listModels(folder).then((result) => setFiles(result.files ?? [])).catch((error) => setError(error.message))
   }, [folder, setError])
 
-  return React.createElement('div', { className: 'ccw-model-browser' },
-    React.createElement('select', {
-      value: folder,
-      onChange: (event) => setFolder(event.target.value),
-    },
-    React.createElement('option', { value: '' }, t('models.folder')),
-    (folders ?? []).map((name) => React.createElement('option', { key: name, value: name }, name))),
-    React.createElement('div', { className: 'ccw-model-list' },
-      files.slice(0, 300).map((file) => React.createElement('button', {
-        key: file,
-        type: 'button',
-        className: `ccw-model-row ${copied === file ? 'is-copied' : ''}`,
-        title: file,
-        onClick: async () => {
-          await navigator.clipboard.writeText(file)
-          setCopied(file)
-          setTimeout(() => setCopied(''), 900)
-        },
-      }, file))),
-    React.createElement('p', { className: 'ccw-hint' }, t('models.hint')))
+  return (
+    <div className="ccw-model-browser">
+      <div className="ccw-model-head">
+        <span className="ccw-subhead">
+          <Icon name="folder" size={14} />
+          {t('models.title')}
+        </span>
+        {copied !== '' ? (
+          <span className="ccw-model-copied" role="status">
+            <Icon name="check" size={13} />
+            {t('models.copied')}
+          </span>
+        ) : (
+          <span className="ccw-subhead-meta">{files.length > 0 ? t('models.count').replace('{count}', String(files.length)) : ''}</span>
+        )}
+      </div>
+      <div className="ccw-model-controls">
+        <select
+          value={folder}
+          aria-label={t('models.folder')}
+          onChange={(event) => setFolder(event.target.value)}
+        >
+          <option value="">{t('models.folder')}</option>
+          {(folders ?? []).map((name) => <option key={name} value={name}>{name}</option>)}
+        </select>
+      </div>
+      <div className="ccw-model-list">
+        {files.length === 0 ? <p className="ccw-hint">{t('models.empty')}</p> : null}
+        {files.slice(0, 300).map((file) => (
+          <button
+            key={file}
+            type="button"
+            className={`ccw-model-row ${copied === file ? 'is-copied' : ''}`}
+            title={file}
+            onClick={async () => {
+              await navigator.clipboard.writeText(file)
+              setCopied(file)
+              setTimeout(() => setCopied(''), 900)
+            }}
+          >
+            <span>{file}</span>
+            <Icon name={copied === file ? 'check' : 'copy'} size={13} />
+          </button>
+        ))}
+      </div>
+      <p className="ccw-hint">{t('models.hint')}</p>
+    </div>
+  )
+}
+
+function runTone(status) {
+  if (status === 'completed' || status === 'success') return 'is-ok'
+  if (status === 'failed' || status === 'error') return 'is-error'
+  if (status === 'running' || status === 'queued') return 'is-live'
+  return ''
 }
 
 export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
@@ -403,113 +588,212 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   }
 
   const latestRun = doc?.runs?.[0] ?? null
+  const outputs = (latestRun?.outputs ?? []).filter((output) => output.asset)
   const selected = workflow?.nodes?.find((node) => String(node.id) === String(selectedNode)) ?? null
   const bindings = doc?.workflow?.bindings ?? {}
 
-  return React.createElement('section', { className: 'ccw-workflow' },
-    React.createElement('div', { className: 'ccw-workflow-bar' },
-      React.createElement('select', {
-        value: selectedName,
-        onChange: (event) => setSelectedName(event.target.value),
-        title: t('workflow.pick'),
-      },
-      React.createElement('option', { value: '' }, t('workflow.pick')),
-      workflows.map((entry) => React.createElement('option', { key: entry.path, value: entry.path }, entry.path))),
-      React.createElement('button', {
-        type: 'button', className: 'ccw-btn', disabled: busy || selectedName === '', onClick: () => load(selectedName),
-      }, t('workflow.load')),
-      React.createElement('input', {
-        className: 'ccw-name', value: saveName, placeholder: t('workflow.name'),
-        title: t('workflow.name'), onChange: (event) => setSaveName(event.target.value),
-      }),
-      React.createElement('button', {
-        type: 'button', className: 'ccw-btn', disabled: busy || workflow === null || dirty === false || (saveName || selectedName) === '', onClick: save,
-      }, t('workflow.save')),
-      React.createElement('button', {
-        type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => setShowModels((value) => !value),
-      }, t('models.open'))),
-    showModels ? React.createElement(ModelBrowser, { t, setError }) : null,
-    workflow === null
-      ? React.createElement('div', { className: 'ccw-workflow-empty' }, t('workflow.empty'))
-      : React.createElement(React.Fragment, null,
-          React.createElement(Graph, {
-            key: doc?.workflow?.loadedAt ?? 'workflow',
-            workflow, infos, selectedId: selectedNode, onSelect: setSelectedNode, t,
-          }),
-          Array.isArray(workflow.nodes) && workflow.nodes.length === 0
-            ? React.createElement('p', { className: 'ccw-hint' }, t('workflow.apiOnly'))
-            : null,
-          selected
-            ? React.createElement('div', { className: 'ccw-node-editor' },
-                React.createElement('div', { className: 'ccw-panel-head' },
-                  React.createElement('h3', null, nodeTitle(selected), React.createElement('span', { className: 'ccw-muted' }, ` #${selected.id} · ${selected.type}`)),
-                  React.createElement('button', {
-                    type: 'button', className: 'ccw-btn ccw-btn-ghost',
-                    onClick: () => setSelectedNode(null),
-                  }, '×')),
-                React.createElement('div', { className: 'ccw-row ccw-node-title-row' },
-                  React.createElement('input', {
-                    className: 'ccw-node-title-input',
-                    value: selected.title ?? '',
-                    placeholder: nodeTitle(selected),
-                    title: t('workflow.title'),
-                    onChange: (event) => setNodeField(selected.id, { title: event.target.value }),
-                  }),
-                  React.createElement('button', {
-                    type: 'button',
-                    className: `ccw-btn ccw-btn-ghost ${selected.mode === 4 ? 'is-active' : ''}`,
-                    onClick: () => setNodeField(selected.id, { mode: selected.mode === 4 ? 0 : 4 }),
-                  }, t('workflow.bypass')),
-                  React.createElement('button', {
-                    type: 'button',
-                    className: `ccw-btn ccw-btn-ghost ${selected.mode === 2 ? 'is-active' : ''}`,
-                    onClick: () => setNodeField(selected.id, { mode: selected.mode === 2 ? 0 : 2 }),
-                  }, t('workflow.mute'))),
-                React.createElement(WidgetEditor, {
-                  node: selected,
-                  info: infos[selected.type],
-                  t,
-                  onChange: (name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type])),
-                }))
-            : null,
-          React.createElement('details', { className: 'ccw-bindings' },
-            React.createElement('summary', null, t('workflow.bindings')),
-            React.createElement('div', { className: 'ccw-binding-grid' },
-              ['prompt', 'image', 'mask', 'width', 'height', 'seed', 'bboxes'].map((key) => React.createElement('label', { key, className: 'ccw-field' },
-                React.createElement('span', null, t(`bind.${key}`)),
-                React.createElement('select', {
-                  value: bindings[key] ?? '',
-                  onChange: (event) => updateBinding(key, event.target.value),
-                },
-                React.createElement('option', { value: '' }, '—'),
-                (workflow.nodes ?? []).map((node) => React.createElement('option', {
-                  key: node.id, value: String(node.id),
-                }, `#${node.id} ${nodeTitle(node)}`))))))),
-          React.createElement('div', { className: 'ccw-runbar' },
-            React.createElement('label', { className: 'ccw-field ccw-seed' }, t('run.seed'),
-              React.createElement('input', {
-                type: 'number', value: seed, placeholder: t('run.random'),
-                onChange: (event) => setSeed(event.target.value),
-              })),
-            React.createElement('button', {
-              type: 'button', className: 'ccw-btn', disabled: busy, onClick: run,
-            }, t('run.start')),
-            latestRun && ['queued', 'running'].includes(latestRun.status)
-              ? React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: cancel }, t('run.cancel'))
-              : null,
-            React.createElement('span', { className: 'ccw-muted' }, latestRun ? `${latestRun.status} · ${latestRun.id}` : t('run.none'))),
-          latestRun?.error ? React.createElement('div', { className: 'ccw-error' }, latestRun.error) : null,
-          latestRun?.notes?.length > 0
-            ? React.createElement('div', { className: 'ccw-hint' }, latestRun.notes.join(' · '))
-            : null,
-          latestRun?.outputs?.length > 0
-            ? React.createElement('div', { className: 'ccw-outputs' },
-                latestRun.outputs.filter((output) => output.asset).map((output) => React.createElement('div', { key: output.asset, className: 'ccw-output' },
-                  String(output.contentType ?? '').startsWith('video/')
-                    ? React.createElement('video', { src: assetUrl(sessionId, output.asset), controls: true })
-                    : React.createElement('img', { src: assetUrl(sessionId, output.asset), alt: output.filename }),
-                  React.createElement('div', { className: 'ccw-row' },
-                    React.createElement('span', { className: 'ccw-muted' }, output.filename),
-                    React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => useOutput(output) }, t('run.use'))))))
-            : null))
+  return (
+    <section className="ccw-workflow" aria-label={t('view.workflow')}>
+      <div className="ccw-workflow-bar">
+        <div className="ccw-workflow-picker">
+          <span className="ccw-selector-icon" aria-hidden="true"><Icon name="workflow" size={15} /></span>
+          <select
+            className="ccw-workflow-select"
+            value={selectedName}
+            aria-label={t('workflow.pick')}
+            title={t('workflow.pick')}
+            onChange={(event) => setSelectedName(event.target.value)}
+          >
+            <option value="">{t('workflow.pick')}</option>
+            {workflows.map((entry) => <option key={entry.path} value={entry.path}>{entry.path}</option>)}
+          </select>
+          <button
+            type="button"
+            className="ccw-btn ccw-btn-secondary ccw-btn-small"
+            disabled={busy || selectedName === ''}
+            onClick={() => load(selectedName)}
+          >
+            <Icon name="cornerDownLeft" size={14} />
+            <span>{t('workflow.load')}</span>
+          </button>
+        </div>
+        <div className="ccw-workflow-file-actions">
+          <input
+            className="ccw-name"
+            value={saveName}
+            placeholder={t('workflow.name')}
+            title={t('workflow.name')}
+            aria-label={t('workflow.name')}
+            onChange={(event) => setSaveName(event.target.value)}
+          />
+          <button
+            type="button"
+            className="ccw-btn ccw-btn-ghost ccw-btn-small"
+            disabled={busy || workflow === null || dirty === false || (saveName || selectedName) === ''}
+            onClick={save}
+          >
+            <Icon name="save" size={14} />
+            <span>{t('workflow.save')}</span>
+          </button>
+          <button
+            type="button"
+            className={`ccw-btn ccw-btn-ghost ccw-btn-small ${showModels ? 'is-active' : ''}`}
+            aria-expanded={showModels}
+            onClick={() => setShowModels((value) => !value)}
+          >
+            <Icon name="folder" size={14} />
+            <span>{t('models.open')}</span>
+          </button>
+        </div>
+      </div>
+
+      {showModels ? <ModelBrowser t={t} setError={setError} /> : null}
+
+      {workflow === null ? (
+        <div className="ccw-workflow-empty">
+          <span className="ccw-empty-icon"><Icon name="workflow" size={22} /></span>
+          <p>{t('workflow.empty')}</p>
+        </div>
+      ) : (
+        <div className="ccw-workflow-grid">
+          <div className="ccw-workflow-graph-col" aria-label={t('workflow.graph')}>
+            <Graph
+              key={doc?.workflow?.loadedAt ?? 'workflow'}
+              workflow={workflow}
+              title={selectedName || doc?.workflow?.name || t('workflow.graph')}
+              infos={infos}
+              selectedId={selectedNode}
+              onSelect={setSelectedNode}
+              t={t}
+            />
+            {Array.isArray(workflow.nodes) && workflow.nodes.length === 0 ? (
+              <p className="ccw-hint">{t('workflow.apiOnly')}</p>
+            ) : null}
+          </div>
+
+          <aside className="ccw-workflow-rail" aria-label={t('workflow.settings')}>
+            <Section
+              title={t('workflow.node')}
+              icon="box"
+              defaultOpen
+              className="ccw-section-node"
+              actions={selected !== null ? (
+                <IconButton icon="x" label={t('workflow.close')} onClick={() => setSelectedNode(null)} />
+              ) : null}
+            >
+              {selected !== null ? (
+                <NodeEditor
+                  node={selected}
+                  info={infos[selected.type]}
+                  t={t}
+                  onTitle={(value) => setNodeField(selected.id, { title: value })}
+                  onToggleMode={(mode) => setNodeField(selected.id, { mode: selected.mode === mode ? 0 : mode })}
+                  onChange={(name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))}
+                />
+              ) : (
+                <div className="ccw-rail-empty">
+                  <Icon name="pointer" size={16} />
+                  <p>{t('workflow.noSelection')}</p>
+                </div>
+              )}
+            </Section>
+
+            <Section title={t('workflow.bindings')} icon="link" defaultOpen className="ccw-section-bindings">
+              <p className="ccw-hint">{t('bindings.hint')}</p>
+              <div className="ccw-binding-grid">
+                {['prompt', 'image', 'mask', 'width', 'height', 'seed', 'bboxes'].map((key) => (
+                  <label key={key} className="ccw-field">
+                    <span>{t(`bind.${key}`)}</span>
+                    <select
+                      value={bindings[key] ?? ''}
+                      aria-label={t(`bind.${key}`)}
+                      onChange={(event) => updateBinding(key, event.target.value)}
+                    >
+                      <option value="">—</option>
+                      {(workflow.nodes ?? []).map((node) => (
+                        <option key={node.id} value={String(node.id)}>#{node.id} {nodeTitle(node)}</option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </Section>
+
+            <Section title={t('run.section')} icon="play" defaultOpen className="ccw-section-run">
+              <div className="ccw-run-controls">
+                <label className="ccw-field ccw-seed">
+                  <span>{t('run.seed')}</span>
+                  <input
+                    type="number"
+                    value={seed}
+                    placeholder={t('run.random')}
+                    onChange={(event) => setSeed(event.target.value)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="ccw-btn ccw-btn-primary ccw-btn-run"
+                  disabled={busy}
+                  onClick={run}
+                >
+                  <Icon name="play" size={15} />
+                  <span>{t('run.start')}</span>
+                </button>
+                {latestRun && ['queued', 'running'].includes(latestRun.status) ? (
+                  <button type="button" className="ccw-btn ccw-btn-secondary ccw-btn-small" onClick={cancel}>
+                    <Icon name="stop" size={14} />
+                    <span>{t('run.cancel')}</span>
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="ccw-run-meta">
+                <span className={`ccw-run-state ${latestRun ? runTone(latestRun.status) : ''}`}>
+                  <span className="ccw-statusdot" aria-hidden="true" />
+                  {latestRun ? latestRun.status : t('run.none')}
+                </span>
+                {latestRun ? <code title={latestRun.id}>{latestRun.id}</code> : null}
+              </div>
+              {latestRun?.error ? <div className="ccw-inline-error" role="alert">{latestRun.error}</div> : null}
+              {latestRun?.notes?.length > 0 ? <div className="ccw-hint">{latestRun.notes.join(' · ')}</div> : null}
+            </Section>
+
+            <Section
+              title={t('run.output')}
+              icon="image"
+              count={outputs.length > 0 ? outputs.length : undefined}
+              defaultOpen
+              className="ccw-section-outputs"
+            >
+              {outputs.length > 0 ? (
+                <div className="ccw-outputs">
+                  {outputs.map((output) => (
+                    <div key={output.asset} className="ccw-output">
+                      {String(output.contentType ?? '').startsWith('video/') ? (
+                        <video src={assetUrl(sessionId, output.asset)} controls />
+                      ) : (
+                        <img src={assetUrl(sessionId, output.asset)} alt={output.filename} />
+                      )}
+                      <div className="ccw-output-meta">
+                        <span title={output.filename}>{output.filename}</span>
+                        <button type="button" className="ccw-btn ccw-btn-ghost ccw-btn-small" onClick={() => useOutput(output)}>
+                          <Icon name="cornerDownLeft" size={13} />
+                          <span>{t('run.use')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="ccw-output-empty">
+                  <span className="ccw-empty-icon"><Icon name="image" size={18} /></span>
+                  <p className="ccw-hint">{t('run.outputsEmpty')}</p>
+                </div>
+              )}
+            </Section>
+          </aside>
+        </div>
+      )}
+    </section>
+  )
 }

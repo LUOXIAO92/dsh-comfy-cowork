@@ -39,10 +39,10 @@ __export(entry_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(entry_exports);
-var React4 = __toESM(require("react"), 1);
+var React5 = __toESM(require("react"), 1);
 
 // src/client/styles.css
-var styles_default = ".ccw-root {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  height: 100%;\n  min-height: 0;\n  padding: 10px;\n  box-sizing: border-box;\n  overflow: hidden;\n  background: var(--dsw-alias-bg-base);\n  color: var(--dsw-alias-label-primary);\n  font-size: 13px;\n  line-height: 1.45;\n}\n\n.ccw-header,\n.ccw-panel-head,\n.ccw-row,\n.ccw-title,\n.ccw-header-actions,\n.ccw-canvas-tools,\n.ccw-meta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ccw-header,\n.ccw-panel-head,\n.ccw-meta {\n  justify-content: space-between;\n}\n\n.ccw-header {\n  flex: none;\n  min-height: 26px;\n}\n\n.ccw-title {\n  font-weight: 600;\n  gap: 6px;\n  min-width: 0;\n}\n\n.ccw-header-actions {\n  gap: 6px;\n}\n\n.ccw-dot {\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n  background: var(--dsw-alias-state-idle-primary);\n  flex: none;\n}\n\n.ccw-dot-live { background: var(--dsw-alias-state-success-primary); }\n.ccw-dot-offline { background: var(--dsw-alias-state-error-primary); }\n.ccw-dot-connecting { background: var(--dsw-alias-state-warn-primary); }\n\n.ccw-muted {\n  color: var(--dsw-alias-label-secondary);\n  font-size: 11.5px;\n  white-space: nowrap;\n}\n\n.ccw-hint {\n  margin: 0;\n  color: var(--dsw-alias-label-secondary);\n  font-size: 11.5px;\n}\n\n.ccw-error {\n  flex: none;\n  padding: 6px 8px;\n  border: 1px solid var(--dsw-alias-state-error-primary);\n  border-radius: 6px;\n  color: var(--dsw-alias-state-error-primary);\n  font-size: 11.5px;\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n}\n\n.ccw-banner {\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  padding: 6px 8px;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 6px;\n  background: var(--dsw-alias-bg-layer-2);\n  font-size: 11.5px;\n}\n\n.ccw-banner span { flex: 1; }\n\n.ccw-btn,\n.ccw-icon-btn {\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-layer-1);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11.5px;\n  line-height: 1.2;\n  padding: 4px 8px;\n  cursor: pointer;\n  white-space: nowrap;\n}\n\n.ccw-btn:hover:not(:disabled),\n.ccw-icon-btn:hover:not(:disabled) {\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-btn:disabled {\n  opacity: 0.45;\n  cursor: default;\n}\n\n.ccw-btn-ghost {\n  background: transparent;\n  border-color: transparent;\n  color: var(--dsw-alias-label-secondary);\n}\n\n.ccw-btn-ghost:hover:not(:disabled) {\n  color: var(--dsw-alias-label-primary);\n  border-color: var(--dsw-alias-border-l1);\n}\n\n.ccw-icon-btn {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 3px 6px;\n  color: var(--dsw-alias-label-secondary);\n  background: transparent;\n  border-color: transparent;\n}\n\n.ccw-icon-btn:hover {\n  color: var(--dsw-alias-label-primary);\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-icon-btn-label {\n  font-size: 11.5px;\n}\n\n.ccw-canvas-wrap {\n  flex: 0 0 auto;\n  min-height: 140px;\n  max-height: 42%;\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  overflow: hidden;\n}\n\n.ccw-canvas {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 120px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 8px;\n  overflow: hidden;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.ccw-checker {\n  background-color: var(--dsw-alias-bg-layer-2);\n  background-image:\n    linear-gradient(45deg, var(--dsw-alias-bg-layer-1) 25%, transparent 25%),\n    linear-gradient(-45deg, var(--dsw-alias-bg-layer-1) 25%, transparent 25%),\n    linear-gradient(45deg, transparent 75%, var(--dsw-alias-bg-layer-1) 75%),\n    linear-gradient(-45deg, transparent 75%, var(--dsw-alias-bg-layer-1) 75%);\n  background-size: 16px 16px;\n  background-position: 0 0, 0 8px, 8px -8px, -8px 0;\n}\n\n.ccw-canvas-image {\n  max-width: 100%;\n  max-height: 100%;\n  object-fit: contain;\n  display: block;\n  user-select: none;\n}\n\n.ccw-canvas-empty {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 8px;\n  padding: 16px;\n  text-align: center;\n  color: var(--dsw-alias-label-secondary);\n}\n\n.ccw-canvas-empty p {\n  margin: 0;\n  font-size: 11.5px;\n}\n\n.ccw-canvas-tools {\n  position: absolute;\n  top: 6px;\n  right: 6px;\n  padding: 2px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--dsw-alias-bg-overlay) 88%, transparent);\n  backdrop-filter: blur(4px);\n}\n\n.ccw-file {\n  position: relative;\n  overflow: hidden;\n  cursor: pointer;\n}\n\n.ccw-file input {\n  position: absolute;\n  inset: 0;\n  opacity: 0;\n  cursor: pointer;\n}\n\n.ccw-panel {\n  flex: none;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n\n.ccw-panel-head h3 {\n  margin: 0;\n  font-size: 12px;\n  font-weight: 600;\n}\n\n.ccw-prompt {\n  width: 100%;\n  box-sizing: border-box;\n  height: 150px;\n  min-height: 150px;\n  max-height: 45vh;\n  flex: none;\n  resize: vertical;\n  padding: 8px;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 6px;\n  background: var(--dsw-alias-bg-layer-1);\n  color: var(--dsw-alias-label-primary);\n  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;\n  outline: none;\n}\n\n.ccw-prompt:focus {\n  border-color: var(--dsw-alias-brand-primary);\n}\n\n.ccw-layout {\n  flex: 1 1 auto;\n  min-height: 90px;\n  overflow: hidden;\n}\n\n.ccw-boxes {\n  list-style: none;\n  margin: 0;\n  padding: 0;\n  overflow: auto;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n\n.ccw-box-row {\n  width: 100%;\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 5px 6px;\n  border: 1px solid transparent;\n  border-radius: 5px;\n  background: transparent;\n  color: inherit;\n  font: inherit;\n  text-align: left;\n  cursor: pointer;\n}\n\n.ccw-box-row:hover {\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-box-row.is-selected {\n  border-color: var(--dsw-alias-brand-primary);\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-box-index {\n  width: 18px;\n  height: 18px;\n  border-radius: 4px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 10.5px;\n  background: var(--dsw-alias-bg-layer-1);\n  color: var(--dsw-alias-label-secondary);\n  flex: none;\n}\n\n.ccw-box-label {\n  font-size: 10.5px;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n  color: var(--dsw-alias-label-secondary);\n  flex: none;\n}\n\n.ccw-box-caption {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-size: 12px;\n}\n\n.ccw-tab-title {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n}\n\n.ccw-empty {\n  padding: 16px;\n  color: var(--dsw-alias-label-secondary);\n}\n\n@media (max-width: 520px) {\n  .ccw-root { padding: 8px; }\n  .ccw-icon-btn-label { display: none; }\n  .ccw-header-actions .ccw-btn { padding: 4px 6px; }\n}\n\n/* Canvas stage */\n.ccw-root { overflow-y: auto; }\n\n.ccw-toolbar {\n  flex: none;\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: 4px;\n}\n\n.ccw-segmented {\n  display: inline-flex;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 6px;\n  overflow: hidden;\n}\n\n.ccw-segmented button {\n  border: 0;\n  background: transparent;\n  color: var(--dsw-alias-label-secondary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 8px;\n  cursor: pointer;\n}\n\n.ccw-segmented button.is-active {\n  background: var(--dsw-alias-bg-layer-2);\n  color: var(--dsw-alias-label-primary);\n}\n\n.ccw-tool-btn {\n  border: 1px solid transparent;\n  border-radius: 5px;\n  background: transparent;\n  color: var(--dsw-alias-label-secondary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 7px;\n  cursor: pointer;\n}\n\n.ccw-tool-btn:hover { background: var(--dsw-alias-bg-layer-2); }\n\n.ccw-tool-btn.is-active {\n  border-color: var(--dsw-alias-brand-primary);\n  color: var(--dsw-alias-label-primary);\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-spacer { flex: 1 1 auto; }\n\n.ccw-canvas-wrap {\n  flex: none;\n  height: min(46vh, 520px);\n  min-height: 240px;\n  max-height: none;\n  position: relative;\n}\n\n.ccw-stage-wrap {\n  position: absolute;\n  inset: 0;\n  overflow: hidden;\n  touch-action: none;\n  cursor: crosshair;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 8px;\n  background: var(--dsw-alias-bg-layer-2);\n}\n\n.ccw-stage-wrap.ccw-tool-pan { cursor: grab; }\n.ccw-stage-wrap.ccw-tool-select { cursor: default; }\n\n.ccw-stage {\n  position: absolute;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  will-change: transform;\n  background: var(--dsw-alias-bg-layer-1);\n  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.28);\n}\n\n.ccw-stage-image,\n.ccw-stage-layer {\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  display: block;\n}\n\n.ccw-stage-layer {\n  pointer-events: none;\n}\n\n.ccw-canvas-tools {\n  z-index: 3;\n}\n\n.ccw-canvas-status {\n  position: absolute;\n  left: 8px;\n  bottom: 8px;\n  z-index: 3;\n  display: flex;\n  gap: 8px;\n  max-width: calc(100% - 16px);\n  padding: 3px 7px;\n  border-radius: 5px;\n  background: color-mix(in srgb, var(--dsw-alias-bg-overlay) 86%, transparent);\n  color: var(--dsw-alias-label-secondary);\n  font-size: 10.5px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-zoom-hint {\n  position: absolute;\n  right: 8px;\n  bottom: 8px;\n  z-index: 2;\n  padding: 2px 6px;\n  border-radius: 4px;\n  background: color-mix(in srgb, var(--dsw-alias-bg-overlay) 80%, transparent);\n  color: var(--dsw-alias-label-secondary);\n  font-size: 10px;\n  pointer-events: none;\n}\n\n.ccw-tools-row {\n  flex: none;\n  display: flex;\n  gap: 12px;\n  padding: 7px 8px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 7px;\n  background: var(--dsw-alias-bg-layer-1);\n}\n\n.ccw-tools-col {\n  flex: 1 1 0;\n  min-width: 0;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n}\n\n.ccw-slider {\n  display: grid;\n  grid-template-columns: 54px 1fr 48px;\n  align-items: center;\n  gap: 6px;\n  font-size: 10.5px;\n  color: var(--dsw-alias-label-secondary);\n}\n\n.ccw-slider input { width: 100%; min-width: 0; }\n.ccw-slider-value { text-align: right; font-variant-numeric: tabular-nums; }\n\n.ccw-check {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 10.5px;\n  color: var(--dsw-alias-label-secondary);\n}\n\n.ccw-check input { margin: 0; }\n\n.ccw-field {\n  display: flex;\n  flex-direction: column;\n  gap: 3px;\n  font-size: 10.5px;\n  color: var(--dsw-alias-label-secondary);\n  min-width: 0;\n}\n\n.ccw-field-wide { width: 100%; }\n\n.ccw-field input,\n.ccw-field select,\n.ccw-field textarea {\n  width: 100%;\n  box-sizing: border-box;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-base);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 5px;\n  min-width: 0;\n}\n\n.ccw-field textarea { resize: vertical; }\n\n.ccw-layout-settings {\n  flex: none;\n  gap: 5px;\n}\n\n.ccw-box-editor {\n  flex: none;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  padding: 6px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 6px;\n  background: var(--dsw-alias-bg-layer-1);\n}\n\n.ccw-prompt-source {\n  display: flex;\n  justify-content: space-between;\n  gap: 8px;\n  font-size: 10.5px;\n  color: var(--dsw-alias-label-secondary);\n}\n\n/* View switch */\n.ccw-viewswitch { margin-right: 2px; }\n\n/* Workflow graph */\n.ccw-workflow {\n  flex: none;\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n\n.ccw-workflow-bar {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n\n.ccw-workflow-bar select {\n  flex: 1 1 auto;\n  min-width: 0;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-layer-1);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 5px;\n}\n\n.ccw-workflow-empty {\n  padding: 14px;\n  border: 1px dashed var(--dsw-alias-border-l2);\n  border-radius: 7px;\n  color: var(--dsw-alias-label-secondary);\n  font-size: 11.5px;\n}\n\n.ccw-graph {\n  position: relative;\n  height: 330px;\n  overflow: hidden;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 8px;\n  background-color: var(--dsw-alias-bg-base);\n  background-image: radial-gradient(circle, var(--dsw-alias-border-l1) 1px, transparent 1px);\n  background-size: 18px 18px;\n  cursor: grab;\n  touch-action: none;\n}\n\n.ccw-graph:active { cursor: grabbing; }\n\n.ccw-graph-inner {\n  position: absolute;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  will-change: transform;\n}\n\n.ccw-graph-links {\n  position: absolute;\n  inset: 0;\n  overflow: visible;\n  pointer-events: none;\n}\n\n.ccw-graph-links path {\n  fill: none;\n  stroke: color-mix(in srgb, var(--dsw-alias-brand-primary) 65%, transparent);\n  stroke-width: 2;\n}\n\n.ccw-graph-links path.is-bypassed { stroke: var(--dsw-alias-state-warn-primary); stroke-dasharray: 5 4; }\n\n.ccw-gnode {\n  position: absolute;\n  box-sizing: border-box;\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  padding: 6px 7px;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 7px;\n  background: var(--dsw-alias-bg-layer-1);\n  color: var(--dsw-alias-label-primary);\n  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);\n  cursor: pointer;\n  overflow: hidden;\n}\n\n.ccw-gnode.is-selected { border-color: var(--dsw-alias-brand-primary); box-shadow: 0 0 0 1px var(--dsw-alias-brand-primary); }\n.ccw-gnode.is-bypassed { opacity: 0.55; border-style: dashed; }\n.ccw-gnode.is-muted { opacity: 0.4; }\n\n.ccw-gnode-title {\n  font-size: 11px;\n  font-weight: 600;\n  line-height: 1.25;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-gnode-type {\n  font-size: 9.5px;\n  color: var(--dsw-alias-label-secondary);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-gnode-widgets {\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  margin-top: 2px;\n  font-size: 9.5px;\n  color: var(--dsw-alias-label-secondary);\n  overflow: hidden;\n}\n\n.ccw-gnode-widget {\n  display: flex;\n  justify-content: space-between;\n  gap: 6px;\n  white-space: nowrap;\n  overflow: hidden;\n}\n\n.ccw-gnode-widget b { color: var(--dsw-alias-label-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }\n\n.ccw-graph-actions {\n  position: absolute;\n  right: 6px;\n  bottom: 6px;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  padding: 2px 4px;\n  border-radius: 5px;\n  background: color-mix(in srgb, var(--dsw-alias-bg-overlay) 82%, transparent);\n}\n\n.ccw-node-editor,\n.ccw-bindings,\n.ccw-runbar {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  padding: 6px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 7px;\n  background: var(--dsw-alias-bg-layer-1);\n}\n\n.ccw-node-editor .ccw-panel-head h3 {\n  display: flex;\n  align-items: baseline;\n  gap: 5px;\n  overflow: hidden;\n  white-space: nowrap;\n}\n\n.ccw-node-editor .ccw-panel-head h3 .ccw-muted {\n  font-weight: 400;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-widgets {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));\n  gap: 6px;\n}\n\n.ccw-widget-field em {\n  font-style: normal;\n  font-size: 9px;\n  color: var(--dsw-alias-label-secondary);\n  opacity: 0.7;\n  margin-left: 4px;\n}\n\n.ccw-bindings summary {\n  cursor: pointer;\n  font-size: 11.5px;\n  font-weight: 600;\n}\n\n.ccw-binding-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));\n  gap: 6px;\n  margin-top: 5px;\n}\n\n.ccw-runbar {\n  flex-direction: row;\n  align-items: flex-end;\n  flex-wrap: wrap;\n}\n\n.ccw-seed { width: 92px; }\n\n.ccw-outputs {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n\n.ccw-output {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  padding: 5px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 6px;\n  background: var(--dsw-alias-bg-layer-1);\n}\n\n.ccw-output img,\n.ccw-output video {\n  max-width: 100%;\n  max-height: 260px;\n  object-fit: contain;\n  border-radius: 4px;\n  background: var(--dsw-alias-bg-base);\n}\n\n.ccw-model-browser {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  padding: 6px;\n  border: 1px solid var(--dsw-alias-border-l1);\n  border-radius: 7px;\n}\n\n.ccw-model-browser > select {\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-base);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 5px;\n}\n\n.ccw-model-list {\n  max-height: 180px;\n  overflow: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n}\n\n.ccw-model-row {\n  text-align: left;\n  border: 0;\n  border-radius: 4px;\n  background: transparent;\n  color: var(--dsw-alias-label-secondary);\n  font: inherit;\n  font-size: 10.5px;\n  padding: 3px 4px;\n  cursor: pointer;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-model-row:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }\n.ccw-model-row.is-copied { color: var(--dsw-alias-state-success-primary); }\n\n.ccw-name {\n  width: 112px;\n  min-width: 70px;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-base);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11px;\n  padding: 4px 5px;\n}\n\n.ccw-node-title-row { align-items: center; }\n.ccw-node-title-input {\n  flex: 1 1 auto;\n  min-width: 0;\n  border: 1px solid var(--dsw-alias-border-l2);\n  border-radius: 5px;\n  background: var(--dsw-alias-bg-base);\n  color: var(--dsw-alias-label-primary);\n  font: inherit;\n  font-size: 11.5px;\n  padding: 4px 5px;\n}\n.ccw-btn.is-active { color: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); }\n";
+var styles_default = '/*\n * dsh-comfy-coworking client styles\n *\n * Dark, neutral editor chrome. Every surface, border and text colour comes\n * from a DSH alias token; only pixels drawn into the canvas (box strokes,\n * mask tint, demo art) use fixed display colours.\n */\n\n.ccw-root,\n.ccw-workflow {\n  --ccw-space-1: 4px;\n  --ccw-space-2: 8px;\n  --ccw-space-3: 12px;\n  --ccw-space-4: 16px;\n  --ccw-radius-sm: 4px;\n  --ccw-radius-md: 6px;\n  --ccw-radius-lg: 8px;\n  --ccw-font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;\n  --ccw-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;\n  --ccw-text-ui: 12px;\n  --ccw-text-title: 13px;\n  --ccw-line-ui: 1.45;\n  --ccw-surface-base: var(--dsw-alias-bg-base);\n  --ccw-surface-panel: var(--dsw-alias-bg-layer-1);\n  --ccw-surface-raised: var(--dsw-alias-bg-layer-2);\n  --ccw-surface-active: var(--dsw-alias-bg-layer-3);\n  --ccw-surface-strong: var(--dsw-alias-bg-layer-4);\n  --ccw-surface-overlay: var(--dsw-alias-bg-overlay);\n  --ccw-border: var(--dsw-alias-border-l1);\n  --ccw-border-strong: var(--dsw-alias-border-l2);\n  --ccw-border-bright: var(--dsw-alias-border-l3);\n  --ccw-text: var(--dsw-alias-label-primary);\n  --ccw-text-secondary: var(--dsw-alias-label-secondary);\n  --ccw-text-tertiary: var(--dsw-alias-label-tertiary);\n  --ccw-text-dimmed: var(--dsw-alias-label-dimmed);\n  --ccw-accent: var(--dsw-alias-brand-primary);\n  --ccw-danger: var(--dsw-alias-state-error-primary);\n  --ccw-success: var(--dsw-alias-state-success-primary);\n  --ccw-warning: var(--dsw-alias-state-warn-primary);\n  --ccw-idle: var(--dsw-alias-state-idle-primary);\n  --ccw-checker: color-mix(in srgb, var(--dsw-alias-bg-layer-4) 70%, transparent);\n  color-scheme: dark;\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-ui);\n  font-size: var(--ccw-text-ui);\n  line-height: var(--ccw-line-ui);\n  font-variant-numeric: tabular-nums;\n}\n\n.ccw-root,\n.ccw-root *,\n.ccw-workflow,\n.ccw-workflow * {\n  box-sizing: border-box;\n}\n\n.ccw-root {\n  container-type: inline-size;\n  container-name: ccw-canvas;\n  height: 100%;\n  min-width: 0;\n  min-height: 0;\n  display: flex;\n  flex-direction: column;\n  overflow-x: hidden;\n  overflow-y: auto;\n  background: var(--ccw-surface-base);\n}\n\n.ccw-workflow {\n  container-type: inline-size;\n  container-name: ccw-workflow;\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  height: 100%;\n  min-width: 0;\n  min-height: 0;\n  overflow-x: hidden;\n  overflow-y: auto;\n  padding: var(--ccw-space-2);\n  background: var(--ccw-surface-base);\n}\n\n.ccw-root :where(button, input, select, textarea, summary, [tabindex]):focus-visible,\n.ccw-workflow :where(button, input, select, textarea, summary, [tabindex]):focus-visible {\n  outline: 2px solid var(--ccw-accent);\n  outline-offset: 1px;\n}\n\n.ccw-root :where(p, h1, h2, h3, h4, ul) {\n  margin: 0;\n}\n\n.ccw-root :where(button, input, select, textarea) {\n  font: inherit;\n}\n\n.ccw-root svg,\n.ccw-workflow svg {\n  flex: none;\n}\n\n.ccw-root ::selection,\n.ccw-workflow ::selection {\n  background: color-mix(in srgb, var(--ccw-accent) 32%, transparent);\n}\n\n/* Scrollbars stay dark and unobtrusive in both panes. */\n.ccw-root,\n.ccw-workflow,\n.ccw-root *,\n.ccw-workflow * {\n  scrollbar-width: thin;\n  scrollbar-color: var(--ccw-surface-strong) transparent;\n}\n\n.ccw-root ::-webkit-scrollbar,\n.ccw-workflow ::-webkit-scrollbar {\n  width: 9px;\n  height: 9px;\n}\n\n.ccw-root ::-webkit-scrollbar-track,\n.ccw-workflow ::-webkit-scrollbar-track {\n  background: transparent;\n}\n\n.ccw-root ::-webkit-scrollbar-thumb,\n.ccw-workflow ::-webkit-scrollbar-thumb {\n  border: 2px solid transparent;\n  border-radius: 8px;\n  background: var(--ccw-surface-strong);\n  background-clip: padding-box;\n}\n\n.ccw-root ::-webkit-scrollbar-thumb:hover,\n.ccw-workflow ::-webkit-scrollbar-thumb:hover {\n  background: var(--ccw-border-bright);\n  background-clip: padding-box;\n}\n\n/* ---------------------------------------------------------------- app bar */\n\n.ccw-appbar {\n  position: sticky;\n  top: 0;\n  z-index: 5;\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-3);\n  height: 52px;\n  padding: 0 var(--ccw-space-3);\n  background: var(--ccw-surface-panel);\n  border-bottom: 1px solid var(--ccw-border);\n}\n\n.ccw-appbar-brand {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n}\n\n.ccw-brandmark {\n  display: grid;\n  place-items: center;\n  width: 28px;\n  height: 28px;\n  flex: none;\n  border: 1px solid color-mix(in srgb, var(--ccw-accent) 30%, var(--ccw-border));\n  border-radius: 7px;\n  color: var(--ccw-accent);\n  background: color-mix(in srgb, var(--ccw-accent) 10%, var(--ccw-surface-raised));\n}\n\n.ccw-brand-copy {\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  min-width: 0;\n}\n\n.ccw-appbar-title {\n  overflow: hidden;\n  color: var(--ccw-text);\n  font-size: var(--ccw-text-title);\n  font-weight: 600;\n  line-height: 1.2;\n  letter-spacing: -0.01em;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-appbar-meta {\n  display: flex;\n  align-items: center;\n  gap: 5px;\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.2;\n  white-space: nowrap;\n}\n\n.ccw-meta-sep {\n  color: var(--ccw-text-tertiary);\n}\n\n.ccw-statusdot {\n  display: inline-block;\n  width: 6px;\n  height: 6px;\n  flex: none;\n  border-radius: 50%;\n  background: var(--ccw-idle);\n}\n\n.ccw-statusdot.is-live { background: var(--ccw-success); }\n.ccw-statusdot.is-offline { background: var(--ccw-danger); }\n.ccw-statusdot.is-connecting { background: var(--ccw-warning); }\n\n.ccw-viewtabs {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  padding: 3px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-base);\n}\n\n.ccw-viewtab {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 26px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--ccw-text-secondary);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  font-weight: 500;\n  line-height: 1;\n  white-space: nowrap;\n  cursor: pointer;\n}\n\n.ccw-viewtab:hover {\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n}\n\n.ccw-viewtab.is-active {\n  background: var(--ccw-surface-active);\n  color: var(--ccw-text);\n  box-shadow: inset 0 0 0 1px var(--ccw-border-strong);\n}\n\n.ccw-viewtab.is-active svg {\n  color: var(--ccw-accent);\n}\n\n.ccw-appbar-actions {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  min-width: 0;\n  margin-left: auto;\n}\n\n.ccw-health {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  max-width: 190px;\n  height: 26px;\n  min-width: 0;\n  padding: 0 8px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-base);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  white-space: nowrap;\n}\n\n.ccw-health.is-ok {\n  border-color: color-mix(in srgb, var(--ccw-success) 30%, var(--ccw-border));\n}\n\n.ccw-health-dot {\n  width: 6px;\n  height: 6px;\n  flex: none;\n  border-radius: 50%;\n  background: var(--ccw-idle);\n}\n\n.ccw-health.is-ok .ccw-health-dot {\n  background: var(--ccw-success);\n}\n\n.ccw-health-label {\n  overflow: hidden;\n  min-width: 0;\n  text-overflow: ellipsis;\n}\n\n.ccw-appbar-probe {\n  border-color: transparent;\n}\n\n/* --------------------------------------------------------------- controls */\n\n.ccw-iconbtn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 28px;\n  height: 28px;\n  min-width: 28px;\n  padding: 0;\n  flex: none;\n  border: 1px solid transparent;\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--ccw-text-secondary);\n  line-height: 1;\n  cursor: pointer;\n  transition: transform 80ms ease;\n}\n\n.ccw-iconbtn:hover:not(:disabled) {\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n}\n\n.ccw-iconbtn:active:not(:disabled) {\n  transform: translateY(0.5px);\n}\n\n.ccw-iconbtn.is-active {\n  border-color: color-mix(in srgb, var(--ccw-accent) 34%, transparent);\n  background: color-mix(in srgb, var(--ccw-accent) 13%, var(--ccw-surface-raised));\n  color: var(--ccw-accent);\n}\n\n.ccw-iconbtn:disabled {\n  opacity: 0.36;\n  cursor: default;\n}\n\n.ccw-iconbtn-danger {\n  color: var(--ccw-danger);\n}\n\n.ccw-iconbtn-danger:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ccw-danger) 11%, transparent);\n  color: var(--ccw-danger);\n}\n\n.ccw-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 28px;\n  padding: 0 10px;\n  flex: none;\n  border: 1px solid var(--ccw-border-strong);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  font-weight: 500;\n  line-height: 1;\n  white-space: nowrap;\n  cursor: pointer;\n  transition: transform 80ms ease;\n}\n\n.ccw-btn:hover:not(:disabled) {\n  background: var(--ccw-surface-active);\n}\n\n.ccw-btn:active:not(:disabled) {\n  transform: translateY(0.5px);\n}\n\n.ccw-btn:disabled {\n  opacity: 0.38;\n  cursor: default;\n}\n\n.ccw-btn-small {\n  height: 26px;\n  padding: 0 8px;\n}\n\n.ccw-btn-ghost {\n  border-color: transparent;\n  background: transparent;\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-btn-ghost:hover:not(:disabled) {\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n}\n\n.ccw-btn-secondary {\n  border-color: var(--ccw-border);\n  background: var(--ccw-surface-raised);\n}\n\n.ccw-btn-primary {\n  border-color: var(--ccw-accent);\n  background: var(--ccw-accent);\n  color: var(--ccw-surface-base);\n  font-weight: 600;\n}\n\n.ccw-btn-primary:hover:not(:disabled) {\n  border-color: color-mix(in srgb, var(--ccw-accent) 84%, var(--ccw-text));\n  background: color-mix(in srgb, var(--ccw-accent) 84%, var(--ccw-text));\n}\n\n.ccw-btn-danger {\n  border-color: color-mix(in srgb, var(--ccw-danger) 40%, var(--ccw-border));\n  background: color-mix(in srgb, var(--ccw-danger) 9%, var(--ccw-surface-panel));\n  color: var(--ccw-danger);\n}\n\n.ccw-btn-danger:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ccw-danger) 14%, var(--ccw-surface-panel));\n}\n\n.ccw-btn-danger-ghost {\n  width: 100%;\n  justify-content: flex-start;\n  border-color: transparent;\n  background: transparent;\n  color: var(--ccw-danger);\n}\n\n.ccw-btn-danger-ghost:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ccw-danger) 9%, transparent);\n  color: var(--ccw-danger);\n}\n\n.ccw-btn.is-active {\n  border-color: color-mix(in srgb, var(--ccw-accent) 36%, var(--ccw-border));\n  color: var(--ccw-accent);\n  background: color-mix(in srgb, var(--ccw-accent) 10%, var(--ccw-surface-raised));\n}\n\n/* ---------------------------------------------------------- notices/errors */\n\n.ccw-notices {\n  flex: none;\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  padding: var(--ccw-space-2) var(--ccw-space-3) 0;\n}\n\n.ccw-error,\n.ccw-inline-error {\n  display: flex;\n  align-items: flex-start;\n  gap: var(--ccw-space-2);\n  padding: 7px 9px;\n  border: 1px solid color-mix(in srgb, var(--ccw-danger) 36%, var(--ccw-border));\n  border-left: 3px solid var(--ccw-danger);\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-danger) 6%, var(--ccw-surface-panel));\n  color: var(--ccw-text);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.45;\n  overflow-wrap: anywhere;\n}\n\n.ccw-error .ccw-icon,\n.ccw-inline-error .ccw-icon {\n  margin-top: 1px;\n  color: var(--ccw-danger);\n}\n\n.ccw-inline-error {\n  display: block;\n  padding: 5px 7px;\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-banner {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  padding: 5px 6px 5px 9px;\n  border: 1px solid color-mix(in srgb, var(--ccw-accent) 28%, var(--ccw-border));\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-accent) 7%, var(--ccw-surface-panel));\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-banner > .ccw-icon {\n  color: var(--ccw-accent);\n}\n\n.ccw-banner > span {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n/* ------------------------------------------------------------- workspace */\n\n.ccw-editor {\n  flex: 1 1 auto;\n  min-width: 0;\n  min-height: 0;\n  display: grid;\n  grid-template-columns: 44px minmax(0, 1fr) 300px;\n  background: var(--ccw-surface-base);\n}\n\n.ccw-editor.is-hidden {\n  display: none;\n}\n\n.ccw-workflow-host {\n  flex: 1 1 auto;\n  display: flex;\n  min-width: 0;\n  min-height: 0;\n  background: var(--ccw-surface-base);\n}\n\n.ccw-workflow-host > .ccw-workflow {\n  flex: 1 1 auto;\n}\n\n/* --------------------------------------------------------------- tool rail */\n\n.ccw-toolrail {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: var(--ccw-space-1);\n  min-width: 0;\n  min-height: 0;\n  padding: var(--ccw-space-2) 5px;\n  overflow-y: auto;\n  background: var(--ccw-surface-panel);\n  border-right: 1px solid var(--ccw-border);\n  scrollbar-width: none;\n}\n\n.ccw-toolrail::-webkit-scrollbar {\n  display: none;\n}\n\n.ccw-toolgroup {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: var(--ccw-space-1);\n}\n\n.ccw-toolrail .ccw-iconbtn {\n  width: 32px;\n  height: 32px;\n  border-radius: var(--ccw-radius-md);\n}\n\n.ccw-toolrail .ccw-iconbtn.is-active {\n  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ccw-accent) 36%, transparent);\n}\n\n.ccw-rail-divider {\n  width: 20px;\n  height: 1px;\n  flex: none;\n  margin: var(--ccw-space-1) 0;\n  background: var(--ccw-border);\n}\n\n.ccw-rail-spacer {\n  flex: 1 1 auto;\n  min-height: var(--ccw-space-2);\n}\n\n.ccw-rail-mark {\n  display: block;\n  width: 8px;\n  height: 8px;\n  border: 1px solid var(--ccw-border-bright);\n  border-radius: 2px;\n  opacity: 0.5;\n  transform: rotate(45deg);\n}\n\n/* -------------------------------------------------------------- stage area */\n\n.ccw-stagecol {\n  display: flex;\n  flex-direction: column;\n  min-width: 0;\n  min-height: 0;\n  background: var(--ccw-surface-base);\n}\n\n.ccw-stagebar {\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  height: 38px;\n  padding: 0 10px;\n  background: var(--ccw-surface-panel);\n  border-bottom: 1px solid var(--ccw-border);\n}\n\n.ccw-stagebar-title {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  min-width: 0;\n  color: var(--ccw-text);\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  white-space: nowrap;\n}\n\n.ccw-stagebar-title > .ccw-icon {\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-badge {\n  display: inline-flex;\n  align-items: center;\n  height: 20px;\n  padding: 0 6px;\n  border: 1px solid color-mix(in srgb, var(--ccw-accent) 28%, var(--ccw-border));\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-accent) 7%, transparent);\n  color: var(--ccw-accent);\n  font-size: var(--ccw-text-ui);\n  font-weight: 500;\n  line-height: 1;\n}\n\n.ccw-stagebar-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  min-width: 0;\n  margin-left: auto;\n}\n\n.ccw-stagebar-actions .ccw-iconbtn {\n  width: 28px;\n  height: 28px;\n}\n\n.ccw-bar-divider {\n  width: 1px;\n  height: 16px;\n  flex: none;\n  margin: 0 4px;\n  background: var(--ccw-border);\n}\n\n.ccw-file {\n  position: relative;\n  overflow: hidden;\n  cursor: pointer;\n}\n\n.ccw-file input {\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  opacity: 0;\n  cursor: pointer;\n}\n\n.ccw-file:focus-within {\n  outline: 2px solid var(--ccw-accent);\n  outline-offset: 1px;\n}\n\n.ccw-canvas-wrap {\n  position: relative;\n  flex: 1 1 auto;\n  min-width: 0;\n  min-height: 0;\n  margin: 10px 12px;\n  overflow: hidden;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background-color: var(--ccw-surface-base);\n  background-image: radial-gradient(\n    circle at 1px 1px,\n    color-mix(in srgb, var(--ccw-border) 55%, transparent) 1px,\n    transparent 1.5px\n  );\n  background-size: 20px 20px;\n  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ccw-text) 3%, transparent);\n}\n\n.ccw-stage-wrap {\n  position: absolute;\n  inset: 0;\n  overflow: hidden;\n  touch-action: none;\n  cursor: crosshair;\n}\n\n.ccw-stage-wrap.ccw-tool-pan { cursor: grab; }\n.ccw-stage-wrap.ccw-tool-select { cursor: default; }\n.ccw-stage-wrap.ccw-tool-pan:active { cursor: grabbing; }\n\n.ccw-stage {\n  position: absolute;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  will-change: transform;\n  background-color: var(--ccw-surface-panel);\n  background-image:\n    linear-gradient(45deg, var(--ccw-checker) 25%, transparent 25%),\n    linear-gradient(-45deg, var(--ccw-checker) 25%, transparent 25%),\n    linear-gradient(45deg, transparent 75%, var(--ccw-checker) 75%),\n    linear-gradient(-45deg, transparent 75%, var(--ccw-checker) 75%);\n  background-size: 20px 20px;\n  background-position: 0 0, 0 10px, 10px -10px, -10px 0;\n  outline: 1px solid var(--ccw-border-strong);\n  box-shadow:\n    0 18px 44px color-mix(in srgb, var(--ccw-surface-base) 72%, transparent),\n    0 2px 6px color-mix(in srgb, var(--ccw-surface-base) 64%, transparent);\n}\n\n.ccw-stage-image,\n.ccw-stage-layer {\n  position: absolute;\n  inset: 0;\n  display: block;\n  width: 100%;\n  height: 100%;\n}\n\n.ccw-stage-image {\n  user-select: none;\n  -webkit-user-drag: none;\n}\n\n.ccw-stage-layer {\n  pointer-events: none;\n}\n\n.ccw-zoom-hint {\n  position: absolute;\n  right: 8px;\n  bottom: 8px;\n  z-index: 4;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  height: 24px;\n  padding: 0 8px;\n  border: 1px solid color-mix(in srgb, var(--ccw-border-strong) 70%, transparent);\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-surface-overlay) 92%, transparent);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  font-variant-numeric: tabular-nums;\n  pointer-events: none;\n  backdrop-filter: blur(4px);\n}\n\n.ccw-zoom-dot {\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ccw-accent);\n}\n\n.ccw-statusbar {\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  height: 30px;\n  min-width: 0;\n  padding: 0 12px;\n  border-top: 1px solid var(--ccw-border);\n  background: var(--ccw-surface-panel);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  white-space: nowrap;\n}\n\n.ccw-status-item {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-status-strong {\n  color: var(--ccw-text);\n  font-weight: 500;\n}\n\n.ccw-status-file {\n  display: block;\n  flex: 0 1 auto;\n  max-width: 190px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-status-sep {\n  width: 1px;\n  height: 12px;\n  flex: none;\n  background: var(--ccw-border);\n}\n\n.ccw-status-spacer {\n  flex: 1 1 auto;\n}\n\n.ccw-mask-state.is-on .ccw-statusdot {\n  background: var(--ccw-success);\n}\n\n/* --------------------------------------------------------------- inspector */\n\n.ccw-inspector {\n  min-width: 0;\n  min-height: 0;\n  overflow-x: hidden;\n  overflow-y: auto;\n  background: var(--ccw-surface-panel);\n  border-left: 1px solid var(--ccw-border);\n}\n\n.ccw-section {\n  border-bottom: 1px solid var(--ccw-border);\n  background: var(--ccw-surface-panel);\n}\n\n.ccw-section:last-child {\n  border-bottom: 0;\n}\n\n.ccw-section-head {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-1);\n  height: 36px;\n  padding: 0 6px 0 8px;\n}\n\n.ccw-section-toggle {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  flex: 1 1 auto;\n  min-width: 0;\n  height: 100%;\n  padding: 0;\n  border: 0;\n  background: transparent;\n  color: var(--ccw-text);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  line-height: 1;\n  text-align: left;\n  cursor: pointer;\n}\n\n.ccw-chevron {\n  color: var(--ccw-text-tertiary);\n  transition: transform 120ms ease;\n}\n\n.ccw-section.is-collapsed .ccw-chevron {\n  transform: rotate(-90deg);\n}\n\n.ccw-section-icon {\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-section-title {\n  overflow: hidden;\n  min-width: 0;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-count {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 20px;\n  height: 18px;\n  padding: 0 5px;\n  flex: none;\n  border-radius: 9px;\n  background: var(--ccw-surface-active);\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  font-weight: 500;\n  line-height: 1;\n}\n\n.ccw-section-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  flex: none;\n}\n\n.ccw-section-actions .ccw-iconbtn {\n  width: 26px;\n  height: 26px;\n}\n\n.ccw-section-body {\n  padding: 0 10px 12px;\n  border-top: 1px solid var(--ccw-border);\n  background: var(--ccw-surface-base);\n}\n\n.ccw-section-body > :first-child {\n  margin-top: 10px;\n}\n\n.ccw-hint {\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.5;\n  overflow-wrap: anywhere;\n}\n\n.ccw-empty {\n  display: grid;\n  place-items: center;\n  height: 100%;\n  padding: var(--ccw-space-4);\n  color: var(--ccw-text-secondary);\n  background: var(--dsw-alias-bg-base);\n  font-family: var(--ccw-font-ui);\n  font-size: var(--ccw-text-ui);\n}\n\n/* --------------------------------------------------------- mask & sliders */\n\n.ccw-mask-controls {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-3);\n}\n\n.ccw-control-group {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n}\n\n.ccw-group-label {\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  letter-spacing: 0.02em;\n}\n\n.ccw-range-grid {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 10px 12px;\n}\n\n.ccw-range {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  min-width: 0;\n}\n\n.ccw-range-head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 6px;\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-range-value {\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  white-space: nowrap;\n}\n\n.ccw-range-input {\n  width: 100%;\n  height: 16px;\n  margin: 0;\n  padding: 0;\n  accent-color: var(--ccw-accent);\n  background: transparent;\n  cursor: pointer;\n  -webkit-appearance: none;\n  appearance: none;\n}\n\n.ccw-range-input::-webkit-slider-runnable-track {\n  height: 3px;\n  border-radius: 2px;\n  background: var(--ccw-surface-strong);\n}\n\n.ccw-range-input::-webkit-slider-thumb {\n  width: 12px;\n  height: 12px;\n  margin-top: -4.5px;\n  border: 1px solid color-mix(in srgb, var(--ccw-accent) 68%, var(--ccw-border-strong));\n  border-radius: 50%;\n  background: var(--ccw-accent);\n  -webkit-appearance: none;\n  appearance: none;\n}\n\n.ccw-range-input::-moz-range-track {\n  height: 3px;\n  border-radius: 2px;\n  background: var(--ccw-surface-strong);\n}\n\n.ccw-range-input::-moz-range-thumb {\n  width: 12px;\n  height: 12px;\n  border: 1px solid color-mix(in srgb, var(--ccw-accent) 68%, var(--ccw-border-strong));\n  border-radius: 50%;\n  background: var(--ccw-accent);\n}\n\n.ccw-range-input:focus-visible {\n  outline: 2px solid var(--ccw-accent);\n  outline-offset: 2px;\n}\n\n.ccw-toggle-row {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: var(--ccw-space-2) 14px;\n}\n\n.ccw-check {\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n  min-height: 24px;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  cursor: pointer;\n}\n\n.ccw-check input {\n  width: 14px;\n  height: 14px;\n  margin: 0;\n  accent-color: var(--ccw-accent);\n  cursor: pointer;\n}\n\n.ccw-danger-zone {\n  margin-top: 2px;\n  padding-top: var(--ccw-space-2);\n  border-top: 1px solid var(--ccw-border);\n}\n\n/* ------------------------------------------------------------ form fields */\n\n.ccw-field {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-1);\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-field > span {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-field input,\n.ccw-field select,\n.ccw-field textarea,\n.ccw-node-title-input,\n.ccw-name,\n.ccw-workflow-select,\n.ccw-model-controls select {\n  width: 100%;\n  min-width: 0;\n  border: 1px solid var(--ccw-border-strong);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-base);\n  color: var(--ccw-text);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  line-height: 1.35;\n  outline: none;\n}\n\n.ccw-field input,\n.ccw-field select,\n.ccw-node-title-input,\n.ccw-name,\n.ccw-workflow-select,\n.ccw-model-controls select {\n  height: 28px;\n  padding: 0 7px;\n}\n\n.ccw-field textarea {\n  min-height: 50px;\n  padding: 6px 7px;\n  resize: vertical;\n}\n\n.ccw-field textarea,\n.ccw-node-title-input {\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-field input[type="number"],\n.ccw-seed input {\n  font-family: var(--ccw-font-mono);\n  font-variant-numeric: tabular-nums;\n}\n\n.ccw-field input::placeholder,\n.ccw-field textarea::placeholder,\n.ccw-node-title-input::placeholder,\n.ccw-name::placeholder {\n  color: var(--ccw-text-tertiary);\n}\n\n.ccw-field input:focus,\n.ccw-field select:focus,\n.ccw-field textarea:focus,\n.ccw-node-title-input:focus,\n.ccw-name:focus,\n.ccw-workflow-select:focus,\n.ccw-model-controls select:focus {\n  border-color: var(--ccw-accent);\n}\n\n.ccw-field select,\n.ccw-workflow-select,\n.ccw-model-controls select {\n  cursor: pointer;\n}\n\n.ccw-subsection + .ccw-subsection {\n  margin-top: var(--ccw-space-3);\n  padding-top: var(--ccw-space-3);\n  border-top: 1px solid var(--ccw-border);\n}\n\n.ccw-subsection > .ccw-field,\n.ccw-subsection > .ccw-size-grid,\n.ccw-subsection > .ccw-size-readout {\n  margin-top: var(--ccw-space-2);\n}\n\n.ccw-subhead {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  letter-spacing: 0.02em;\n}\n\n.ccw-subhead-row {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n}\n\n.ccw-subhead-meta {\n  color: var(--ccw-text-tertiary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-size-grid {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: var(--ccw-space-2);\n}\n\n.ccw-size-readout {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  flex-wrap: wrap;\n  min-width: 0;\n}\n\n.ccw-size-value {\n  display: inline-flex;\n  align-items: center;\n  height: 24px;\n  padding: 0 7px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-size-readout .ccw-hint {\n  overflow: hidden;\n  min-width: 0;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-select-hint {\n  display: flex;\n  align-items: flex-start;\n  gap: 6px;\n  margin-top: var(--ccw-space-2);\n  padding: var(--ccw-space-2);\n  border: 1px dashed var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-surface-panel) 60%, transparent);\n}\n\n.ccw-select-hint .ccw-icon {\n  margin-top: 1px;\n  color: var(--ccw-text-tertiary);\n}\n\n/* ------------------------------------------------------------- prompt box */\n\n.ccw-prompt {\n  width: 100%;\n  height: 112px;\n  min-height: 84px;\n  max-height: 45vh;\n  padding: var(--ccw-space-2);\n  resize: vertical;\n  border: 1px solid var(--ccw-border-strong);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-base);\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.55;\n  outline: none;\n}\n\n.ccw-prompt:focus {\n  border-color: var(--ccw-accent);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ccw-accent) 20%, transparent);\n}\n\n.ccw-prompt::placeholder {\n  color: var(--ccw-text-tertiary);\n}\n\n.ccw-prompt-source {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-prompt-source > span:first-child {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-source-mode {\n  display: inline-flex;\n  align-items: center;\n  height: 20px;\n  padding: 0 6px;\n  flex: none;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  white-space: nowrap;\n}\n\n.ccw-source-mode.is-layout {\n  border-color: color-mix(in srgb, var(--ccw-success) 32%, var(--ccw-border));\n  color: var(--ccw-success);\n}\n\n.ccw-action-row {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n  padding-top: var(--ccw-space-2);\n  border-top: 1px solid var(--ccw-border);\n}\n\n.ccw-btn-compile {\n  margin-left: auto;\n  height: 30px;\n  padding: 0 12px;\n  font-weight: 600;\n}\n\n/* ------------------------------------------------------------ box editor */\n\n.ccw-box-editor {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n  margin-top: var(--ccw-space-2);\n  padding: var(--ccw-space-2);\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n}\n\n.ccw-box-editor-top {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 150px);\n  gap: var(--ccw-space-2);\n  align-items: start;\n}\n\n.ccw-bbox-readout {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-1);\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-bbox-readout code {\n  display: block;\n  overflow: hidden;\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  line-height: 28px;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-boxes {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  margin-top: var(--ccw-space-2);\n  padding: 0;\n  list-style: none;\n}\n\n.ccw-box-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  width: 100%;\n  min-width: 0;\n  padding: 5px 6px;\n  border: 1px solid transparent;\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--ccw-text);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  text-align: left;\n  cursor: pointer;\n}\n\n.ccw-box-row:hover {\n  background: var(--ccw-surface-raised);\n}\n\n.ccw-box-row.is-selected {\n  border-color: color-mix(in srgb, var(--ccw-accent) 42%, var(--ccw-border));\n  background: var(--ccw-surface-raised);\n}\n\n.ccw-box-index {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 22px;\n  flex: none;\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-active);\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  line-height: 1;\n}\n\n.ccw-box-row.is-selected .ccw-box-index {\n  background: color-mix(in srgb, var(--ccw-accent) 16%, var(--ccw-surface-active));\n  color: var(--ccw-accent);\n}\n\n.ccw-box-main {\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ccw-box-label {\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  line-height: 1.25;\n}\n\n.ccw-box-caption {\n  display: block;\n  overflow: hidden;\n  color: var(--ccw-text);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.3;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-box-chevron {\n  color: var(--ccw-text-tertiary);\n}\n\n/* --------------------------------------------------------------- workflow */\n\n.ccw-workflow-bar {\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  flex-wrap: wrap;\n  min-width: 0;\n  padding: 6px 8px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n}\n\n.ccw-workflow-picker {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  flex: 1 1 300px;\n  min-width: 0;\n}\n\n.ccw-selector-icon {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 24px;\n  height: 24px;\n  flex: none;\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-workflow-select {\n  flex: 1 1 auto;\n  min-width: 0;\n  width: auto;\n}\n\n.ccw-workflow-file-actions {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: 6px;\n  flex: 0 1 auto;\n  min-width: 0;\n}\n\n.ccw-name {\n  width: 180px;\n  flex: 0 1 180px;\n  font-family: var(--ccw-font-mono);\n}\n\n.ccw-workflow-empty {\n  flex: 1 1 auto;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: var(--ccw-space-2);\n  min-height: 160px;\n  padding: var(--ccw-space-4);\n  margin-top: var(--ccw-space-2);\n  border: 1px dashed var(--ccw-border-strong);\n  border-radius: var(--ccw-radius-md);\n  background: color-mix(in srgb, var(--ccw-surface-panel) 58%, transparent);\n  color: var(--ccw-text-secondary);\n  text-align: center;\n}\n\n.ccw-empty-icon {\n  display: grid;\n  place-items: center;\n  width: 42px;\n  height: 42px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-workflow-empty p {\n  max-width: 360px;\n  font-size: var(--ccw-text-ui);\n  line-height: 1.5;\n}\n\n.ccw-workflow-grid {\n  flex: 1 1 auto;\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) 300px;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n  min-height: 0;\n  margin-top: var(--ccw-space-2);\n}\n\n.ccw-workflow-graph-col {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  min-width: 0;\n  min-height: 0;\n}\n\n.ccw-workflow-graph-col > .ccw-hint {\n  flex: none;\n}\n\n.ccw-workflow-rail {\n  min-width: 0;\n  min-height: 0;\n  overflow-x: hidden;\n  overflow-y: auto;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n}\n\n.ccw-workflow-rail .ccw-section:first-child {\n  border-top-left-radius: var(--ccw-radius-md);\n  border-top-right-radius: var(--ccw-radius-md);\n}\n\n.ccw-workflow-rail .ccw-section:last-child {\n  border-bottom-left-radius: var(--ccw-radius-md);\n  border-bottom-right-radius: var(--ccw-radius-md);\n}\n\n/* ------------------------------------------------------------ graph canvas */\n\n.ccw-graph {\n  position: relative;\n  flex: 1 1 auto;\n  min-height: 300px;\n  min-width: 0;\n  overflow: hidden;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background-color: var(--ccw-surface-base);\n  background-image: radial-gradient(\n    circle,\n    color-mix(in srgb, var(--ccw-border) 72%, transparent) 1px,\n    transparent 1.4px\n  );\n  background-size: 18px 18px;\n  cursor: grab;\n  touch-action: none;\n}\n\n.ccw-graph:active {\n  cursor: grabbing;\n}\n\n.ccw-graph-inner {\n  position: absolute;\n  top: 0;\n  left: 0;\n  transform-origin: 0 0;\n  will-change: transform;\n}\n\n.ccw-graph-links {\n  position: absolute;\n  inset: 0;\n  overflow: visible;\n  pointer-events: none;\n}\n\n.ccw-graph-links path {\n  fill: none;\n  stroke: color-mix(in srgb, var(--ccw-accent) 58%, transparent);\n  stroke-width: 1.6;\n}\n\n.ccw-graph-links path.is-bypassed {\n  stroke: var(--ccw-warning);\n  stroke-dasharray: 5 4;\n}\n\n.ccw-gnode {\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  min-width: 0;\n  padding: 0;\n  overflow: hidden;\n  border: 1px solid var(--ccw-border-strong);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n  color: var(--ccw-text);\n  font-family: inherit;\n  text-align: left;\n  cursor: pointer;\n  box-shadow:\n    0 8px 20px color-mix(in srgb, var(--ccw-surface-base) 55%, transparent),\n    inset 0 1px 0 color-mix(in srgb, var(--ccw-text) 4%, transparent);\n}\n\n.ccw-gnode:hover {\n  border-color: var(--ccw-border-bright);\n}\n\n.ccw-gnode.is-selected {\n  border-color: var(--ccw-accent);\n  box-shadow:\n    0 0 0 1px var(--ccw-accent),\n    0 10px 24px color-mix(in srgb, var(--ccw-surface-base) 60%, transparent);\n}\n\n.ccw-gnode.is-bypassed {\n  border-style: dashed;\n  opacity: 0.58;\n}\n\n.ccw-gnode.is-muted {\n  opacity: 0.42;\n}\n\n.ccw-gnode-head {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 6px;\n  min-width: 0;\n  padding: 5px 7px;\n  border-bottom: 1px solid var(--ccw-border);\n  background: color-mix(in srgb, var(--ccw-surface-active) 48%, var(--ccw-surface-panel));\n}\n\n.ccw-gnode-title {\n  overflow: hidden;\n  min-width: 0;\n  color: var(--ccw-text);\n  font-size: var(--ccw-text-ui);\n  font-weight: 600;\n  line-height: 1.25;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-gnode-flag {\n  flex: none;\n  color: var(--ccw-warning);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.1;\n}\n\n.ccw-gnode-type {\n  display: block;\n  overflow: hidden;\n  padding: 3px 7px 0;\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.25;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n\n.ccw-gnode-widgets {\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  overflow: hidden;\n  padding: 4px 7px 6px;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.3;\n}\n\n.ccw-gnode-widget {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: 6px;\n  min-width: 0;\n  white-space: nowrap;\n}\n\n.ccw-gnode-widget > span {\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.ccw-gnode-widget b {\n  overflow: hidden;\n  color: var(--ccw-text);\n  font-weight: 500;\n  text-align: right;\n  text-overflow: ellipsis;\n}\n\n.ccw-graph-hud {\n  position: absolute;\n  top: 8px;\n  left: 8px;\n  z-index: 2;\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  max-width: calc(100% - 96px);\n  height: 24px;\n  padding: 0 8px;\n  overflow: hidden;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: color-mix(in srgb, var(--ccw-surface-overlay) 90%, transparent);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  white-space: nowrap;\n  pointer-events: none;\n  backdrop-filter: blur(4px);\n}\n\n.ccw-graph-hud-title {\n  overflow: hidden;\n  max-width: 200px;\n  color: var(--ccw-text);\n  font-weight: 600;\n  text-overflow: ellipsis;\n}\n\n.ccw-graph-hud-sep {\n  width: 1px;\n  height: 10px;\n  flex: none;\n  background: var(--ccw-border);\n}\n\n.ccw-graph-actions {\n  position: absolute;\n  right: 8px;\n  bottom: 8px;\n  z-index: 3;\n  display: flex;\n  align-items: center;\n  gap: 1px;\n  padding: 3px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: color-mix(in srgb, var(--ccw-surface-overlay) 92%, transparent);\n  backdrop-filter: blur(4px);\n}\n\n.ccw-graph-actions .ccw-iconbtn {\n  width: 26px;\n  height: 26px;\n}\n\n.ccw-zoom-readout {\n  min-width: 38px;\n  padding: 0 2px;\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  text-align: center;\n}\n\n/* --------------------------------------------------------- node inspector */\n\n.ccw-rail-empty {\n  display: flex;\n  align-items: flex-start;\n  gap: var(--ccw-space-2);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n  line-height: 1.5;\n}\n\n.ccw-rail-empty .ccw-icon {\n  margin-top: 2px;\n  color: var(--ccw-text-tertiary);\n}\n\n.ccw-node-editor {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n}\n\n.ccw-node-meta {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-node-id {\n  display: inline-flex;\n  align-items: center;\n  height: 20px;\n  padding: 0 5px;\n  flex: none;\n  border-radius: var(--ccw-radius-sm);\n  background: var(--ccw-surface-active);\n  color: var(--ccw-text);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-node-type {\n  overflow: hidden;\n  min-width: 0;\n  font-family: var(--ccw-font-mono);\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-node-mode-row {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-1);\n}\n\n.ccw-chip-toggle {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 26px;\n  padding: 0 8px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--ccw-text-secondary);\n  font-family: inherit;\n  font-size: var(--ccw-text-ui);\n  line-height: 1;\n  cursor: pointer;\n}\n\n.ccw-chip-toggle:hover {\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n}\n\n.ccw-chip-toggle.is-active {\n  border-color: color-mix(in srgb, var(--ccw-warning) 40%, var(--ccw-border));\n  background: color-mix(in srgb, var(--ccw-warning) 10%, transparent);\n  color: var(--ccw-warning);\n}\n\n.ccw-widgets {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n  padding-top: var(--ccw-space-2);\n  border-top: 1px solid var(--ccw-border);\n}\n\n.ccw-widget-field {\n  gap: var(--ccw-space-1);\n}\n\n.ccw-widget-field,\n.ccw-widget-label {\n  width: 100%;\n  max-width: 100%;\n  min-width: 0;\n}\n\n.ccw-widget-label {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n  overflow: hidden;\n}\n\n.ccw-widget-label > span {\n  overflow: hidden;\n  min-width: 0;\n  flex: 1 1 auto;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-widget-label em {\n  flex: none;\n  color: var(--ccw-text-tertiary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  font-style: normal;\n}\n\n.ccw-widget-field input[type="checkbox"] {\n  width: 14px;\n  height: 14px;\n  accent-color: var(--ccw-accent);\n}\n\n/* -------------------------------------------------------------- bindings */\n\n.ccw-binding-grid {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: var(--ccw-space-2);\n  margin-top: var(--ccw-space-2);\n}\n\n.ccw-binding-grid > .ccw-field:last-child:nth-child(odd) {\n  grid-column: 1 / -1;\n}\n\n/* -------------------------------------------------------------- run panel */\n\n.ccw-run-controls {\n  display: flex;\n  align-items: flex-end;\n  flex-wrap: wrap;\n  gap: var(--ccw-space-2);\n}\n\n.ccw-seed {\n  flex: 0 1 92px;\n  width: 92px;\n}\n\n.ccw-btn-run {\n  flex: 1 1 120px;\n  height: 30px;\n  font-weight: 600;\n}\n\n.ccw-run-meta {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n  margin-top: var(--ccw-space-2);\n  padding-top: var(--ccw-space-2);\n  border-top: 1px solid var(--ccw-border);\n  color: var(--ccw-text-secondary);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-run-state {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  flex: none;\n  color: var(--ccw-text-secondary);\n}\n\n.ccw-run-state.is-live .ccw-statusdot { background: var(--ccw-warning); }\n.ccw-run-state.is-ok .ccw-statusdot { background: var(--ccw-success); }\n.ccw-run-state.is-error .ccw-statusdot { background: var(--ccw-danger); }\n\n.ccw-run-meta code {\n  overflow: hidden;\n  min-width: 0;\n  color: var(--ccw-text-tertiary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-outputs {\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n  margin-top: var(--ccw-space-2);\n}\n\n.ccw-output-empty {\n  display: flex;\n  align-items: flex-start;\n  gap: var(--ccw-space-2);\n  min-height: 112px;\n  margin-top: var(--ccw-space-2);\n  padding: var(--ccw-space-3);\n  border: 1px dashed var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: color-mix(in srgb, var(--ccw-surface-panel) 54%, transparent);\n}\n\n.ccw-output-empty .ccw-empty-icon {\n  width: 34px;\n  height: 34px;\n  flex: none;\n}\n\n.ccw-output-empty .ccw-hint {\n  max-width: 220px;\n}\n\n.ccw-output {\n  overflow: hidden;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-raised);\n}\n\n.ccw-output img,\n.ccw-output video {\n  display: block;\n  width: 100%;\n  max-height: 260px;\n  object-fit: contain;\n  background: var(--ccw-surface-base);\n}\n\n.ccw-output-meta {\n  display: flex;\n  align-items: center;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n  padding: 5px 6px;\n  border-top: 1px solid var(--ccw-border);\n}\n\n.ccw-output-meta > span {\n  flex: 1 1 auto;\n  overflow: hidden;\n  min-width: 0;\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n/* --------------------------------------------------------- model browser */\n\n.ccw-model-browser {\n  flex: none;\n  display: flex;\n  flex-direction: column;\n  gap: var(--ccw-space-2);\n  margin-top: var(--ccw-space-2);\n  padding: var(--ccw-space-2) 10px 10px;\n  border: 1px solid var(--ccw-border);\n  border-radius: var(--ccw-radius-md);\n  background: var(--ccw-surface-panel);\n}\n\n.ccw-model-head {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n  min-width: 0;\n}\n\n.ccw-model-copied {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  flex: none;\n  color: var(--ccw-success);\n  font-size: var(--ccw-text-ui);\n}\n\n.ccw-model-controls select {\n  height: 28px;\n}\n\n.ccw-model-list {\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  max-height: 160px;\n  overflow-y: auto;\n  padding-top: 4px;\n  border-top: 1px solid var(--ccw-border);\n}\n\n.ccw-model-row {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--ccw-space-2);\n  width: 100%;\n  min-width: 0;\n  padding: 5px 6px;\n  border: 0;\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--ccw-text-secondary);\n  font-family: var(--ccw-font-mono);\n  font-size: var(--ccw-text-ui);\n  text-align: left;\n  cursor: pointer;\n}\n\n.ccw-model-row:hover {\n  background: var(--ccw-surface-raised);\n  color: var(--ccw-text);\n}\n\n.ccw-model-row > span {\n  overflow: hidden;\n  min-width: 0;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ccw-model-row.is-copied {\n  color: var(--ccw-success);\n}\n\n.ccw-model-browser .ccw-hint {\n  font-size: var(--ccw-text-ui);\n}\n\n/* ------------------------------------------- host composer / tab bits (entry) */\n\n.ccw-tab-title {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n}\n\n.ccw-icon-btn {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 28px;\n  padding: 0 7px;\n  border: 1px solid transparent;\n  border-radius: var(--ccw-radius-sm);\n  background: transparent;\n  color: var(--dsw-alias-label-secondary);\n  font: inherit;\n  font-size: 12px;\n  line-height: 1;\n  cursor: pointer;\n}\n\n.ccw-icon-btn:hover:not(:disabled) {\n  background: var(--dsw-alias-bg-layer-2);\n  color: var(--dsw-alias-label-primary);\n}\n\n.ccw-icon-btn:focus-visible {\n  outline: 2px solid var(--dsw-alias-brand-primary);\n  outline-offset: 1px;\n}\n\n.ccw-icon-btn-label {\n  font-size: 12px;\n}\n\n/* ------------------------------------------------------------ responsive */\n\n@container ccw-canvas (min-width: 1100px) {\n  .ccw-editor {\n    grid-template-columns: 48px minmax(0, 1fr) 332px;\n  }\n\n  .ccw-toolrail {\n    padding-left: 7px;\n    padding-right: 7px;\n  }\n\n  .ccw-toolrail .ccw-iconbtn {\n    width: 34px;\n    height: 34px;\n  }\n}\n\n@container ccw-workflow (min-width: 1100px) {\n  .ccw-workflow-grid {\n    grid-template-columns: minmax(0, 1fr) 332px;\n  }\n}\n\n@container ccw-canvas (min-width: 761px) and (max-width: 980px) {\n  .ccw-editor {\n    grid-template-columns: 42px minmax(0, 1fr) 280px;\n  }\n\n  .ccw-toolrail .ccw-iconbtn {\n    width: 30px;\n    height: 30px;\n  }\n}\n\n@container ccw-workflow (min-width: 761px) and (max-width: 980px) {\n  .ccw-workflow-grid {\n    grid-template-columns: minmax(0, 1fr) 280px;\n  }\n}\n\n@container ccw-canvas (max-width: 760px) {\n  .ccw-editor {\n    display: flex;\n    flex-direction: column;\n    flex: none;\n    min-height: 0;\n  }\n\n  .ccw-toolrail {\n    flex-direction: row;\n    align-items: center;\n    flex-wrap: nowrap;\n    width: 100%;\n    min-height: 44px;\n    padding: 6px 8px;\n    overflow-x: auto;\n    overflow-y: hidden;\n    border-right: 0;\n    border-bottom: 1px solid var(--ccw-border);\n  }\n\n  .ccw-toolgroup {\n    flex-direction: row;\n    align-items: center;\n    flex: none;\n  }\n\n  .ccw-rail-divider {\n    width: 1px;\n    height: 22px;\n    margin: 0 4px;\n  }\n\n  .ccw-rail-spacer,\n  .ccw-toolgroup-end {\n    display: none;\n  }\n\n  .ccw-toolrail .ccw-iconbtn {\n    width: 32px;\n    height: 32px;\n  }\n\n  .ccw-stagecol {\n    flex: none;\n    height: clamp(320px, 38vh, 400px);\n    min-height: 0;\n  }\n\n  .ccw-canvas-wrap {\n    margin: 8px;\n  }\n\n  .ccw-inspector {\n    overflow: visible;\n    border-top: 1px solid var(--ccw-border);\n    border-left: 0;\n  }\n\n  .ccw-workflow-host {\n    display: block;\n    flex: none;\n    min-height: 0;\n  }\n\n  .ccw-workflow {\n    height: auto;\n    min-height: 0;\n    overflow: visible;\n    padding: 8px;\n  }\n}\n\n@container ccw-workflow (max-width: 760px) {\n  .ccw-workflow-grid {\n    display: flex;\n    flex-direction: column;\n    flex: none;\n  }\n\n  .ccw-workflow-graph-col {\n    flex: none;\n  }\n\n  .ccw-graph {\n    flex: none;\n    height: 320px;\n    min-height: 320px;\n  }\n\n  .ccw-workflow-rail {\n    overflow: visible;\n  }\n}\n\n@container ccw-canvas (max-width: 520px) {\n  .ccw-appbar {\n    gap: var(--ccw-space-2);\n    padding: 0 8px;\n  }\n\n  .ccw-appbar-meta {\n    display: none;\n  }\n\n  .ccw-viewtab {\n    padding: 0 8px;\n  }\n\n  .ccw-health {\n    padding: 0 6px;\n  }\n\n  .ccw-health-label {\n    display: none;\n  }\n\n  .ccw-notices {\n    padding: 8px 8px 0;\n  }\n\n  .ccw-stagebar {\n    gap: 6px;\n    padding: 0 8px;\n  }\n\n  .ccw-stagebar-title .ccw-badge {\n    display: none;\n  }\n\n  .ccw-stagebar-actions {\n    gap: 1px;\n  }\n\n  .ccw-stagebar-actions .ccw-iconbtn {\n    width: 26px;\n    height: 26px;\n    min-width: 26px;\n  }\n\n  .ccw-bar-divider {\n    margin: 0 3px;\n  }\n\n  .ccw-statusbar {\n    gap: 6px;\n    padding: 0 8px;\n  }\n\n  .ccw-status-file {\n    max-width: 90px;\n  }\n\n  .ccw-section-head {\n    padding: 0 4px 0 6px;\n  }\n\n  .ccw-section-body {\n    padding: 0 8px 10px;\n  }\n}\n\n@container ccw-workflow (max-width: 520px) {\n  .ccw-workflow-picker {\n    flex: 1 1 100%;\n  }\n\n  .ccw-workflow-file-actions {\n    flex: 1 1 100%;\n    justify-content: flex-start;\n    flex-wrap: wrap;\n  }\n\n  .ccw-name {\n    flex: 1 1 100%;\n    width: 100%;\n  }\n\n  .ccw-binding-grid {\n    gap: 6px;\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .ccw-root *,\n  .ccw-workflow * {\n    scroll-behavior: auto !important;\n    animation-duration: 0.01ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.01ms !important;\n  }\n\n  .ccw-chevron {\n    transition: none;\n  }\n}\n';
 
 // src/client/CanvasTab.jsx
 var import_react2 = __toESM(require("react"), 1);
@@ -888,7 +888,7 @@ var CanvasStage = forwardRef(function CanvasStage2(props, ref) {
   return React.createElement(
     "div",
     {
-      className: `ccw-stage-wrap ccw-tool-${tool}`,
+      className: `ccw-stage-wrap ccw-tool-${tool} ${imageUrl ? "has-image" : "is-empty"}`,
       ref: containerRef,
       onPointerDown,
       onPointerMove,
@@ -913,10 +913,15 @@ var CanvasStage = forwardRef(function CanvasStage2(props, ref) {
           refreshProcessed();
         }
       }) : null,
-      React.createElement("canvas", { ref: maskDisplayRef, className: "ccw-stage-layer" }),
-      React.createElement("canvas", { ref: overlayRef, className: "ccw-stage-layer" })
+      React.createElement("canvas", { ref: maskDisplayRef, className: "ccw-stage-layer ccw-stage-mask" }),
+      React.createElement("canvas", { ref: overlayRef, className: "ccw-stage-layer ccw-stage-overlay" })
     ),
-    React.createElement("div", { className: "ccw-zoom-hint" }, `${Math.round(view.scale * 100)}%`)
+    React.createElement(
+      "div",
+      { className: "ccw-zoom-hint", "aria-hidden": true },
+      React.createElement("span", { className: "ccw-zoom-dot" }),
+      React.createElement("span", null, `${Math.round(view.scale * 100)}%`)
+    )
   );
 });
 
@@ -1069,42 +1074,301 @@ function workflowLinks(workflow) {
   return result;
 }
 
-// src/client/WorkflowView.jsx
-function NodeCard({ node, selected, left, top, info, onClick }) {
-  const size = nodeSize(node);
-  const height = Math.min(180, Math.max(74, size.height));
-  const widgets = nodeWidgets(node, info).slice(0, 4);
-  return import_react.default.createElement(
-    "div",
-    {
-      className: `ccw-gnode ${selected ? "is-selected" : ""} ${node.mode === 4 ? "is-bypassed" : ""} ${node.mode === 2 ? "is-muted" : ""}`,
-      style: { left, top, width: Math.max(150, Math.min(280, size.width)), height },
-      onClick: (event) => {
-        event.stopPropagation();
-        onClick();
-      }
-    },
-    import_react.default.createElement("div", { className: "ccw-gnode-title" }, nodeTitle(node)),
-    import_react.default.createElement("div", { className: "ccw-gnode-type" }, node.type),
-    import_react.default.createElement(
+// src/client/ui.jsx
+var React2 = __toESM(require("react"), 1);
+var ICONS = {
+  image: [
+    ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2 }],
+    ["circle", { cx: 8.5, cy: 8.5, r: 1.5 }],
+    ["path", { d: "m21 15-5-5L5 21" }]
+  ],
+  workflow: [
+    ["rect", { x: 3, y: 3, width: 6, height: 6, rx: 1.5 }],
+    ["rect", { x: 15, y: 15, width: 6, height: 6, rx: 1.5 }],
+    ["rect", { x: 15, y: 3, width: 6, height: 6, rx: 1.5 }],
+    ["path", { d: "M9 6h6" }],
+    ["path", { d: "M18 9v6" }],
+    ["path", { d: "M6 9v6a3 3 0 0 0 3 3h6" }]
+  ],
+  layout: [
+    ["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2 }],
+    ["path", { d: "M3 9h18" }],
+    ["path", { d: "M9 21V9" }]
+  ],
+  layers: [
+    ["path", { d: "m12 3 9 5-9 5-9-5 9-5Z" }],
+    ["path", { d: "m3 12 9 5 9-5" }],
+    ["path", { d: "m3 16 9 5 9-5" }]
+  ],
+  brush: [
+    ["path", { d: "M9.5 14.5 4 20v-4.5l5.5-5.5" }],
+    ["path", { d: "m14.5 4.5-5 5 5 5 5-5a3.54 3.54 0 0 0-5-5Z" }],
+    ["path", { d: "M4 20c2.5 0 4.5-1 4.5-3.5S6.5 14 5.5 14" }]
+  ],
+  eraser: [
+    ["path", { d: "m7 21-4.3-4.3a1.7 1.7 0 0 1 0-2.4L14 3a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L9 21" }],
+    ["path", { d: "M22 21H7" }],
+    ["path", { d: "m5 11 9 9" }]
+  ],
+  square: [
+    ["rect", { x: 4, y: 4, width: 16, height: 16, rx: 1.5 }]
+  ],
+  box: [
+    ["rect", { x: 3.5, y: 3.5, width: 17, height: 17, rx: 1.5, strokeDasharray: "3 3" }],
+    ["path", { d: "M8 8h8v8H8z" }]
+  ],
+  circle: [
+    ["circle", { cx: 12, cy: 12, r: 8.5 }]
+  ],
+  pointer: [
+    ["path", { d: "M5 3.5 19 11l-6.2 1.8L10 19 5 3.5Z" }]
+  ],
+  hand: [
+    ["path", { d: "M18 11V6a2 2 0 0 0-4 0v5" }],
+    ["path", { d: "M14 10V4a2 2 0 0 0-4 0v6" }],
+    ["path", { d: "M10 10.5V6a2 2 0 0 0-4 0v8" }],
+    ["path", { d: "M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" }]
+  ],
+  undo: [
+    ["path", { d: "M9 14 4 9l5-5" }],
+    ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 0 11H11" }]
+  ],
+  redo: [
+    ["path", { d: "m15 14 5-5-5-5" }],
+    ["path", { d: "M20 9H9.5a5.5 5.5 0 0 0 0 11H13" }]
+  ],
+  maximize: [
+    ["path", { d: "M8 3H5a2 2 0 0 0-2 2v3" }],
+    ["path", { d: "M21 8V5a2 2 0 0 0-2-2h-3" }],
+    ["path", { d: "M3 16v3a2 2 0 0 0 2 2h3" }],
+    ["path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" }]
+  ],
+  zoomIn: [
+    ["circle", { cx: 11, cy: 11, r: 7.5 }],
+    ["path", { d: "m21 21-4.35-4.35" }],
+    ["path", { d: "M11 8v6" }],
+    ["path", { d: "M8 11h6" }]
+  ],
+  zoomOut: [
+    ["circle", { cx: 11, cy: 11, r: 7.5 }],
+    ["path", { d: "m21 21-4.35-4.35" }],
+    ["path", { d: "M8 11h6" }]
+  ],
+  upload: [
+    ["path", { d: "M12 16V3" }],
+    ["path", { d: "m7 8 5-5 5 5" }],
+    ["path", { d: "M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4" }]
+  ],
+  trash: [
+    ["path", { d: "M3 6h18" }],
+    ["path", { d: "M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" }],
+    ["path", { d: "m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }],
+    ["path", { d: "M10 11v6" }],
+    ["path", { d: "M14 11v6" }]
+  ],
+  copy: [
+    ["rect", { x: 9, y: 9, width: 12, height: 12, rx: 2 }],
+    ["path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" }]
+  ],
+  check: [
+    ["path", { d: "m20 6-11 11-5-5" }]
+  ],
+  chevronDown: [
+    ["path", { d: "m6 9 6 6 6-6" }]
+  ],
+  chevronRight: [
+    ["path", { d: "m9 18 6-6-6-6" }]
+  ],
+  x: [
+    ["path", { d: "M18 6 6 18" }],
+    ["path", { d: "m6 6 12 12" }]
+  ],
+  plus: [
+    ["path", { d: "M12 5v14" }],
+    ["path", { d: "M5 12h14" }]
+  ],
+  minus: [
+    ["path", { d: "M5 12h14" }]
+  ],
+  refresh: [
+    ["path", { d: "M21 12a9 9 0 1 1-2.64-6.36" }],
+    ["path", { d: "M21 3v6h-6" }]
+  ],
+  play: [
+    ["path", { d: "m7 4 13 8-13 8V4Z" }]
+  ],
+  stop: [
+    ["rect", { x: 5, y: 5, width: 14, height: 14, rx: 1.5 }]
+  ],
+  save: [
+    ["path", { d: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" }],
+    ["path", { d: "M17 21v-8H7v8" }],
+    ["path", { d: "M7 3v5h8" }]
+  ],
+  folder: [
+    ["path", { d: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" }]
+  ],
+  link: [
+    ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" }],
+    ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" }]
+  ],
+  sliders: [
+    ["path", { d: "M4 21v-7" }],
+    ["path", { d: "M4 10V3" }],
+    ["path", { d: "M12 21v-9" }],
+    ["path", { d: "M12 8V3" }],
+    ["path", { d: "M20 21v-5" }],
+    ["path", { d: "M20 12V3" }],
+    ["path", { d: "M1 14h6" }],
+    ["path", { d: "M9 8h6" }],
+    ["path", { d: "M17 16h6" }]
+  ],
+  sparkles: [
+    ["path", { d: "m12 3 1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z" }],
+    ["path", { d: "m19 15 .9 2.1 2.1.9-2.1.9L19 21l-.9-2.1-2.1-.9 2.1-.9L19 15Z" }],
+    ["path", { d: "m5 15 .7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7L5 15Z" }]
+  ],
+  circleSlash: [
+    ["circle", { cx: 12, cy: 12, r: 9 }],
+    ["path", { d: "m5.6 5.6 12.8 12.8" }]
+  ],
+  eyeOff: [
+    ["path", { d: "M10.7 5.1A10.9 10.9 0 0 1 12 5c7 0 10 7 10 7a17.8 17.8 0 0 1-3.2 3.9" }],
+    ["path", { d: "M6.6 6.6C3.6 8.3 2 12 2 12s3 7 10 7c1.6 0 3-.35 4.3-.9" }],
+    ["path", { d: "M9.9 9.9a3 3 0 0 0 4.2 4.2" }],
+    ["path", { d: "m2 2 20 20" }]
+  ],
+  imageOff: [
+    ["path", { d: "M3 3h18v18H3z" }],
+    ["path", { d: "m3 3 18 18" }],
+    ["path", { d: "m21 15-5-5L5 21" }]
+  ],
+  cornerDownLeft: [
+    ["path", { d: "m9 10-5 5 5 5" }],
+    ["path", { d: "M20 4v7a4 4 0 0 1-4 4H4" }]
+  ],
+  alert: [
+    ["path", { d: "M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z" }],
+    ["path", { d: "M12 9v4" }],
+    ["path", { d: "M12 17h.01" }]
+  ],
+  info: [
+    ["circle", { cx: 12, cy: 12, r: 9 }],
+    ["path", { d: "M12 11v5" }],
+    ["path", { d: "M12 8h.01" }]
+  ],
+  dot: [
+    ["circle", { cx: 12, cy: 12, r: 3, fill: "currentColor", stroke: "none" }]
+  ]
+};
+function Icon({ name, size = 16, className = "", strokeWidth = 1.5 }) {
+  const children = ICONS[name] ?? ICONS.image;
+  return React2.createElement("svg", {
+    viewBox: "0 0 24 24",
+    width: size,
+    height: size,
+    className: `ccw-icon ${className}`.trim(),
+    "aria-hidden": "true",
+    focusable: "false",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth,
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, children.map(([tag, attrs], index) => React2.createElement(tag, { ...attrs, key: index })));
+}
+function IconButton({
+  icon,
+  label,
+  title,
+  active,
+  className = "",
+  size = 16,
+  type = "button",
+  ...rest
+}) {
+  return React2.createElement("button", {
+    ...rest,
+    type,
+    className: `ccw-iconbtn ${active ? "is-active" : ""} ${className}`.trim(),
+    title: title ?? label,
+    "aria-label": label,
+    "aria-pressed": active === void 0 ? void 0 : active
+  }, React2.createElement(Icon, { name: icon, size }));
+}
+function Section({
+  title,
+  icon,
+  count,
+  actions,
+  children,
+  defaultOpen = true,
+  className = "",
+  bodyClassName = ""
+}) {
+  const [open, setOpen] = React2.useState(defaultOpen);
+  return React2.createElement(
+    "section",
+    { className: `ccw-section ${open ? "is-open" : "is-collapsed"} ${className}`.trim() },
+    React2.createElement(
       "div",
-      { className: "ccw-gnode-widgets" },
-      widgets.map((widget) => import_react.default.createElement(
-        "div",
-        { key: widget.name, className: "ccw-gnode-widget" },
-        import_react.default.createElement("span", null, widget.name),
-        import_react.default.createElement("b", null, formatValue(widget.value))
-      ))
-    )
+      { className: "ccw-section-head" },
+      React2.createElement(
+        "button",
+        {
+          type: "button",
+          className: "ccw-section-toggle",
+          "aria-expanded": open,
+          title,
+          onClick: () => setOpen((value) => !value)
+        },
+        React2.createElement(Icon, { name: "chevronDown", size: 14, className: "ccw-chevron" }),
+        icon ? React2.createElement(Icon, { name: icon, size: 14, className: "ccw-section-icon" }) : null,
+        React2.createElement("span", { className: "ccw-section-title" }, title),
+        count !== void 0 && count !== null ? React2.createElement("span", { className: "ccw-count" }, String(count)) : null
+      ),
+      actions ? React2.createElement("div", { className: "ccw-section-actions" }, actions) : null
+    ),
+    open ? React2.createElement("div", { className: `ccw-section-body ${bodyClassName}`.trim() }, children) : null
   );
 }
+
+// src/client/WorkflowView.jsx
 function formatValue(value) {
   if (value === null || value === void 0) return "\u2014";
   if (typeof value === "string") return value.length > 34 ? `${value.slice(0, 32)}\u2026` : value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   return "\u2026";
 }
-function Graph({ workflow, infos, selectedId, onSelect, t }) {
+function formatWidgetType(type) {
+  if (typeof type === "string") return type;
+  if (Array.isArray(type)) return "COMBO";
+  return "";
+}
+function NodeCard({ node, selected, left, top, info, onClick, t }) {
+  const size = nodeSize(node);
+  const height = Math.min(180, Math.max(74, size.height));
+  const widgets = nodeWidgets(node, info).slice(0, 4);
+  const flag = node.mode === 4 ? t("workflow.bypass") : node.mode === 2 ? t("workflow.mute") : "";
+  return /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-gnode ${selected ? "is-selected" : ""} ${node.mode === 4 ? "is-bypassed" : ""} ${node.mode === 2 ? "is-muted" : ""}`,
+      style: { left, top, width: Math.max(150, Math.min(280, size.width)), height },
+      "aria-pressed": selected,
+      title: `${nodeTitle(node)} \xB7 ${node.type}`,
+      onClick: (event) => {
+        event.stopPropagation();
+        onClick();
+      }
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-gnode-head" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-gnode-title" }, nodeTitle(node)), flag !== "" ? /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-gnode-flag" }, flag) : null),
+    /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-gnode-type" }, node.type),
+    /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-gnode-widgets" }, widgets.map((widget) => /* @__PURE__ */ import_react.default.createElement("span", { key: widget.name, className: "ccw-gnode-widget" }, /* @__PURE__ */ import_react.default.createElement("span", null, widget.name), /* @__PURE__ */ import_react.default.createElement("b", null, formatValue(widget.value)))))
+  );
+}
+function Graph({ workflow, title, infos, selectedId, onSelect, t }) {
   const wrapRef = (0, import_react.useRef)(null);
   const [view, setView] = (0, import_react.useState)({ scale: 1, x: 20, y: 20 });
   const gestureRef = (0, import_react.useRef)(null);
@@ -1124,14 +1388,40 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
       y: (rect.height - bounds.height * scale) / 2
     });
   }
+  function zoomBy(factor) {
+    const el = wrapRef.current;
+    if (!el) return;
+    touchedRef.current = true;
+    const rect = el.getBoundingClientRect();
+    setView((current) => {
+      const nextScale = Math.min(3, Math.max(0.15, current.scale * factor));
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const gx = (cx - current.x) / current.scale;
+      const gy = (cy - current.y) / current.scale;
+      return { scale: nextScale, x: cx - gx * nextScale, y: cy - gy * nextScale };
+    });
+  }
+  const fitRef = (0, import_react.useRef)(fit);
+  fitRef.current = fit;
+  const touchedRef = (0, import_react.useRef)(false);
   (0, import_react.useEffect)(() => {
-    fit();
+    const el = wrapRef.current;
+    if (!el) return void 0;
+    fitRef.current();
+    if (typeof ResizeObserver !== "function") return void 0;
+    const observer = new ResizeObserver(() => {
+      if (!touchedRef.current) fitRef.current();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
   (0, import_react.useEffect)(() => {
     const el = wrapRef.current;
     if (!el) return void 0;
     const onWheel = (event) => {
       event.preventDefault();
+      touchedRef.current = true;
       const rect = el.getBoundingClientRect();
       const factor = Math.exp(-event.deltaY * 15e-4);
       setView((current) => {
@@ -1146,13 +1436,16 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
-  return import_react.default.createElement(
+  return /* @__PURE__ */ import_react.default.createElement(
     "div",
     {
       className: "ccw-graph",
       ref: wrapRef,
+      "aria-label": t("workflow.graph"),
       onPointerDown: (event) => {
+        if (event.target.closest?.(".ccw-graph-actions, .ccw-graph-hud") !== null) return;
         if (event.target !== event.currentTarget && event.target.closest?.(".ccw-gnode") !== null) return;
+        touchedRef.current = true;
         gestureRef.current = { x: event.clientX, y: event.clientY, view, moved: false };
         event.currentTarget.setPointerCapture(event.pointerId);
       },
@@ -1174,7 +1467,7 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
         }
       }
     },
-    import_react.default.createElement(
+    /* @__PURE__ */ import_react.default.createElement(
       "div",
       {
         className: "ccw-graph-inner",
@@ -1184,71 +1477,77 @@ function Graph({ workflow, infos, selectedId, onSelect, t }) {
           transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`
         }
       },
-      import_react.default.createElement(
-        "svg",
-        { className: "ccw-graph-links", width: bounds.width, height: bounds.height },
-        links.map((link) => {
-          const from = byId.get(link.originId);
-          const to = byId.get(link.targetId);
-          if (from === void 0 || to === void 0) return null;
-          const fs = nodeSize(from);
-          const fx = (from.pos?.[0] ?? 0) - bounds.minX + Math.max(150, Math.min(280, fs.width));
-          const fy = (from.pos?.[1] ?? 0) - bounds.minY + 38 + link.originSlot * 15;
-          const tx = (to.pos?.[0] ?? 0) - bounds.minX;
-          const ty = (to.pos?.[1] ?? 0) - bounds.minY + 38 + link.targetSlot * 15;
-          const dx = Math.max(30, Math.abs(tx - fx) * 0.45);
-          return import_react.default.createElement("path", {
+      /* @__PURE__ */ import_react.default.createElement("svg", { className: "ccw-graph-links", width: bounds.width, height: bounds.height }, links.map((link) => {
+        const from = byId.get(link.originId);
+        const to = byId.get(link.targetId);
+        if (from === void 0 || to === void 0) return null;
+        const fs = nodeSize(from);
+        const fx = (from.pos?.[0] ?? 0) - bounds.minX + Math.max(150, Math.min(280, fs.width));
+        const fy = (from.pos?.[1] ?? 0) - bounds.minY + 38 + link.originSlot * 15;
+        const tx = (to.pos?.[0] ?? 0) - bounds.minX;
+        const ty = (to.pos?.[1] ?? 0) - bounds.minY + 38 + link.targetSlot * 15;
+        const dx = Math.max(30, Math.abs(tx - fx) * 0.45);
+        return /* @__PURE__ */ import_react.default.createElement(
+          "path",
+          {
             key: link.id,
             d: `M ${fx} ${fy} C ${fx + dx} ${fy}, ${tx - dx} ${ty}, ${tx} ${ty}`,
             className: from.mode === 4 ? "is-bypassed" : ""
-          });
-        })
-      ),
-      nodes.map((node) => import_react.default.createElement(NodeCard, {
-        key: node.id,
-        node,
-        info: infos[node.type],
-        selected: String(selectedId) === String(node.id),
-        left: (node.pos?.[0] ?? 0) - bounds.minX,
-        top: (node.pos?.[1] ?? 0) - bounds.minY,
-        onClick: () => onSelect(node.id)
-      }))
+          }
+        );
+      })),
+      nodes.map((node) => /* @__PURE__ */ import_react.default.createElement(
+        NodeCard,
+        {
+          key: node.id,
+          node,
+          info: infos[node.type],
+          selected: String(selectedId) === String(node.id),
+          left: (node.pos?.[0] ?? 0) - bounds.minX,
+          top: (node.pos?.[1] ?? 0) - bounds.minY,
+          onClick: () => onSelect(node.id),
+          t
+        }
+      ))
     ),
-    import_react.default.createElement(
-      "div",
-      { className: "ccw-graph-actions" },
-      import_react.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: fit }, t("canvas.fit")),
-      import_react.default.createElement("span", { className: "ccw-muted" }, `${Math.round(view.scale * 100)}%`)
-    )
+    /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-graph-hud" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-graph-hud-title", title }, title || t("workflow.graph")), /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.nodes").replace("{count}", String(nodes.length))), /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-graph-hud-sep", "aria-hidden": "true" }), /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.links").replace("{count}", String(links.length)))),
+    /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-graph-actions", role: "toolbar", "aria-label": t("workflow.graph") }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-zoom-readout", "aria-hidden": "true" }, Math.round(view.scale * 100), "%"), /* @__PURE__ */ import_react.default.createElement(IconButton, { icon: "zoomOut", label: t("canvas.zoomOut"), onClick: () => zoomBy(1 / 1.2) }), /* @__PURE__ */ import_react.default.createElement(IconButton, { icon: "zoomIn", label: t("canvas.zoomIn"), onClick: () => zoomBy(1.2) }), /* @__PURE__ */ import_react.default.createElement(IconButton, { icon: "maximize", label: t("canvas.fit"), onClick: () => {
+      touchedRef.current = false;
+      fit();
+    } }))
   );
 }
 function WidgetEditor({ node, info, onChange, t }) {
   const widgets = nodeWidgets(node, info);
-  if (widgets.length === 0) return import_react.default.createElement("p", { className: "ccw-hint" }, t("workflow.noWidgets"));
-  return import_react.default.createElement(
-    "div",
-    { className: "ccw-widgets" },
-    widgets.map((widget) => {
-      const options = comboOptions(widget);
-      let control;
-      if (options.length > 0) {
-        control = import_react.default.createElement(
-          "select",
-          {
-            value: String(widget.value ?? ""),
-            onChange: (event) => onChange(widget.name, event.target.value)
-          },
-          options.map((option) => import_react.default.createElement("option", { key: String(option), value: String(option) }, String(option)))
-        );
-      } else if (typeof widget.value === "boolean") {
-        control = import_react.default.createElement("input", {
+  if (widgets.length === 0) {
+    return /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("workflow.noWidgets"));
+  }
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-widgets" }, widgets.map((widget) => {
+    const options = comboOptions(widget);
+    let control;
+    if (options.length > 0) {
+      control = /* @__PURE__ */ import_react.default.createElement(
+        "select",
+        {
+          value: String(widget.value ?? ""),
+          onChange: (event) => onChange(widget.name, event.target.value)
+        },
+        options.map((option) => /* @__PURE__ */ import_react.default.createElement("option", { key: String(option), value: String(option) }, String(option)))
+      );
+    } else if (typeof widget.value === "boolean") {
+      control = /* @__PURE__ */ import_react.default.createElement(
+        "input",
+        {
           type: "checkbox",
           checked: widget.value,
           onChange: (event) => onChange(widget.name, event.target.checked)
-        });
-      } else if (typeof widget.value === "number") {
-        const integer = widget.type === "INT";
-        control = import_react.default.createElement("input", {
+        }
+      );
+    } else if (typeof widget.value === "number") {
+      const integer = widget.type === "INT";
+      control = /* @__PURE__ */ import_react.default.createElement(
+        "input",
+        {
           type: "number",
           value: widget.value,
           step: integer ? 1 : "any",
@@ -1256,28 +1555,62 @@ function WidgetEditor({ node, info, onChange, t }) {
             const value = Number(event.target.value);
             if (Number.isFinite(value)) onChange(widget.name, integer ? Math.round(value) : value);
           }
-        });
-      } else if (widget.options?.multiline === true || typeof widget.value === "string" && widget.value.length > 70) {
-        control = import_react.default.createElement("textarea", {
+        }
+      );
+    } else if (widget.options?.multiline === true || typeof widget.value === "string" && widget.value.length > 70) {
+      control = /* @__PURE__ */ import_react.default.createElement(
+        "textarea",
+        {
           rows: 3,
           value: String(widget.value ?? ""),
           onChange: (event) => onChange(widget.name, event.target.value)
-        });
-      } else {
-        control = import_react.default.createElement("input", {
+        }
+      );
+    } else {
+      control = /* @__PURE__ */ import_react.default.createElement(
+        "input",
+        {
           type: "text",
           value: String(widget.value ?? ""),
           onChange: (event) => onChange(widget.name, event.target.value)
-        });
-      }
-      return import_react.default.createElement(
-        "label",
-        { key: widget.name, className: "ccw-field ccw-widget-field" },
-        import_react.default.createElement("span", null, widget.name, import_react.default.createElement("em", null, widget.type)),
-        control
+        }
       );
-    })
-  );
+    }
+    return /* @__PURE__ */ import_react.default.createElement("label", { key: widget.name, className: "ccw-field ccw-widget-field" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-widget-label" }, /* @__PURE__ */ import_react.default.createElement("span", null, widget.name), /* @__PURE__ */ import_react.default.createElement("em", null, formatWidgetType(widget.type))), control);
+  }));
+}
+function NodeEditor({ node, info, onChange, onTitle, onToggleMode, t }) {
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-node-editor" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-node-meta" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-node-id" }, "#", node.id), /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-node-type" }, node.type)), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      className: "ccw-node-title-input",
+      value: node.title ?? "",
+      placeholder: t("workflow.title"),
+      title: t("workflow.title"),
+      "aria-label": t("workflow.title"),
+      onChange: (event) => onTitle(event.target.value)
+    }
+  ), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-node-mode-row" }, /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-chip-toggle ${node.mode === 4 ? "is-active" : ""}`,
+      "aria-pressed": node.mode === 4,
+      onClick: () => onToggleMode(4)
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "circleSlash", size: 14 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.bypass"))
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-chip-toggle ${node.mode === 2 ? "is-active" : ""}`,
+      "aria-pressed": node.mode === 2,
+      onClick: () => onToggleMode(2)
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "eyeOff", size: 14 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.mute"))
+  )), /* @__PURE__ */ import_react.default.createElement(WidgetEditor, { node, info, onChange, t }));
 }
 function ModelBrowser({ t, setError }) {
   const [folders, setFolders] = (0, import_react.useState)(null);
@@ -1291,35 +1624,37 @@ function ModelBrowser({ t, setError }) {
     if (folder === "") return;
     listModels(folder).then((result) => setFiles(result.files ?? [])).catch((error) => setError(error.message));
   }, [folder, setError]);
-  return import_react.default.createElement(
-    "div",
-    { className: "ccw-model-browser" },
-    import_react.default.createElement(
-      "select",
-      {
-        value: folder,
-        onChange: (event) => setFolder(event.target.value)
-      },
-      import_react.default.createElement("option", { value: "" }, t("models.folder")),
-      (folders ?? []).map((name) => import_react.default.createElement("option", { key: name, value: name }, name))
-    ),
-    import_react.default.createElement(
-      "div",
-      { className: "ccw-model-list" },
-      files.slice(0, 300).map((file) => import_react.default.createElement("button", {
-        key: file,
-        type: "button",
-        className: `ccw-model-row ${copied === file ? "is-copied" : ""}`,
-        title: file,
-        onClick: async () => {
-          await navigator.clipboard.writeText(file);
-          setCopied(file);
-          setTimeout(() => setCopied(""), 900);
-        }
-      }, file))
-    ),
-    import_react.default.createElement("p", { className: "ccw-hint" }, t("models.hint"))
-  );
+  return /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-model-browser" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-model-head" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-subhead" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "folder", size: 14 }), t("models.title")), copied !== "" ? /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-model-copied", role: "status" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "check", size: 13 }), t("models.copied")) : /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-subhead-meta" }, files.length > 0 ? t("models.count").replace("{count}", String(files.length)) : "")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-model-controls" }, /* @__PURE__ */ import_react.default.createElement(
+    "select",
+    {
+      value: folder,
+      "aria-label": t("models.folder"),
+      onChange: (event) => setFolder(event.target.value)
+    },
+    /* @__PURE__ */ import_react.default.createElement("option", { value: "" }, t("models.folder")),
+    (folders ?? []).map((name) => /* @__PURE__ */ import_react.default.createElement("option", { key: name, value: name }, name))
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-model-list" }, files.length === 0 ? /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("models.empty")) : null, files.slice(0, 300).map((file) => /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      key: file,
+      type: "button",
+      className: `ccw-model-row ${copied === file ? "is-copied" : ""}`,
+      title: file,
+      onClick: async () => {
+        await navigator.clipboard.writeText(file);
+        setCopied(file);
+        setTimeout(() => setCopied(""), 900);
+      }
+    },
+    /* @__PURE__ */ import_react.default.createElement("span", null, file),
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: copied === file ? "check" : "copy", size: 13 })
+  ))), /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("models.hint")));
+}
+function runTone(status) {
+  if (status === "completed" || status === "success") return "is-ok";
+  if (status === "failed" || status === "error") return "is-error";
+  if (status === "running" || status === "queued") return "is-live";
+  return "";
 }
 function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const [workflows, setWorkflows] = (0, import_react.useState)([]);
@@ -1469,171 +1804,129 @@ function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }
   }
   const latestRun = doc?.runs?.[0] ?? null;
+  const outputs = (latestRun?.outputs ?? []).filter((output) => output.asset);
   const selected = workflow?.nodes?.find((node) => String(node.id) === String(selectedNode)) ?? null;
   const bindings = doc?.workflow?.bindings ?? {};
-  return import_react.default.createElement(
-    "section",
-    { className: "ccw-workflow" },
-    import_react.default.createElement(
-      "div",
-      { className: "ccw-workflow-bar" },
-      import_react.default.createElement(
-        "select",
-        {
-          value: selectedName,
-          onChange: (event) => setSelectedName(event.target.value),
-          title: t("workflow.pick")
-        },
-        import_react.default.createElement("option", { value: "" }, t("workflow.pick")),
-        workflows.map((entry) => import_react.default.createElement("option", { key: entry.path, value: entry.path }, entry.path))
-      ),
-      import_react.default.createElement("button", {
-        type: "button",
-        className: "ccw-btn",
-        disabled: busy || selectedName === "",
-        onClick: () => load(selectedName)
-      }, t("workflow.load")),
-      import_react.default.createElement("input", {
-        className: "ccw-name",
-        value: saveName,
-        placeholder: t("workflow.name"),
-        title: t("workflow.name"),
-        onChange: (event) => setSaveName(event.target.value)
-      }),
-      import_react.default.createElement("button", {
-        type: "button",
-        className: "ccw-btn",
-        disabled: busy || workflow === null || dirty === false || (saveName || selectedName) === "",
-        onClick: save
-      }, t("workflow.save")),
-      import_react.default.createElement("button", {
-        type: "button",
-        className: "ccw-btn ccw-btn-ghost",
-        onClick: () => setShowModels((value) => !value)
-      }, t("models.open"))
-    ),
-    showModels ? import_react.default.createElement(ModelBrowser, { t, setError }) : null,
-    workflow === null ? import_react.default.createElement("div", { className: "ccw-workflow-empty" }, t("workflow.empty")) : import_react.default.createElement(
-      import_react.default.Fragment,
-      null,
-      import_react.default.createElement(Graph, {
-        key: doc?.workflow?.loadedAt ?? "workflow",
-        workflow,
-        infos,
-        selectedId: selectedNode,
-        onSelect: setSelectedNode,
-        t
-      }),
-      Array.isArray(workflow.nodes) && workflow.nodes.length === 0 ? import_react.default.createElement("p", { className: "ccw-hint" }, t("workflow.apiOnly")) : null,
-      selected ? import_react.default.createElement(
-        "div",
-        { className: "ccw-node-editor" },
-        import_react.default.createElement(
-          "div",
-          { className: "ccw-panel-head" },
-          import_react.default.createElement("h3", null, nodeTitle(selected), import_react.default.createElement("span", { className: "ccw-muted" }, ` #${selected.id} \xB7 ${selected.type}`)),
-          import_react.default.createElement("button", {
-            type: "button",
-            className: "ccw-btn ccw-btn-ghost",
-            onClick: () => setSelectedNode(null)
-          }, "\xD7")
-        ),
-        import_react.default.createElement(
-          "div",
-          { className: "ccw-row ccw-node-title-row" },
-          import_react.default.createElement("input", {
-            className: "ccw-node-title-input",
-            value: selected.title ?? "",
-            placeholder: nodeTitle(selected),
-            title: t("workflow.title"),
-            onChange: (event) => setNodeField(selected.id, { title: event.target.value })
-          }),
-          import_react.default.createElement("button", {
-            type: "button",
-            className: `ccw-btn ccw-btn-ghost ${selected.mode === 4 ? "is-active" : ""}`,
-            onClick: () => setNodeField(selected.id, { mode: selected.mode === 4 ? 0 : 4 })
-          }, t("workflow.bypass")),
-          import_react.default.createElement("button", {
-            type: "button",
-            className: `ccw-btn ccw-btn-ghost ${selected.mode === 2 ? "is-active" : ""}`,
-            onClick: () => setNodeField(selected.id, { mode: selected.mode === 2 ? 0 : 2 })
-          }, t("workflow.mute"))
-        ),
-        import_react.default.createElement(WidgetEditor, {
-          node: selected,
-          info: infos[selected.type],
-          t,
-          onChange: (name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))
-        })
-      ) : null,
-      import_react.default.createElement(
-        "details",
-        { className: "ccw-bindings" },
-        import_react.default.createElement("summary", null, t("workflow.bindings")),
-        import_react.default.createElement(
-          "div",
-          { className: "ccw-binding-grid" },
-          ["prompt", "image", "mask", "width", "height", "seed", "bboxes"].map((key) => import_react.default.createElement(
-            "label",
-            { key, className: "ccw-field" },
-            import_react.default.createElement("span", null, t(`bind.${key}`)),
-            import_react.default.createElement(
-              "select",
-              {
-                value: bindings[key] ?? "",
-                onChange: (event) => updateBinding(key, event.target.value)
-              },
-              import_react.default.createElement("option", { value: "" }, "\u2014"),
-              (workflow.nodes ?? []).map((node) => import_react.default.createElement("option", {
-                key: node.id,
-                value: String(node.id)
-              }, `#${node.id} ${nodeTitle(node)}`))
-            )
-          ))
-        )
-      ),
-      import_react.default.createElement(
-        "div",
-        { className: "ccw-runbar" },
-        import_react.default.createElement(
-          "label",
-          { className: "ccw-field ccw-seed" },
-          t("run.seed"),
-          import_react.default.createElement("input", {
-            type: "number",
-            value: seed,
-            placeholder: t("run.random"),
-            onChange: (event) => setSeed(event.target.value)
-          })
-        ),
-        import_react.default.createElement("button", {
-          type: "button",
-          className: "ccw-btn",
-          disabled: busy,
-          onClick: run
-        }, t("run.start")),
-        latestRun && ["queued", "running"].includes(latestRun.status) ? import_react.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: cancel }, t("run.cancel")) : null,
-        import_react.default.createElement("span", { className: "ccw-muted" }, latestRun ? `${latestRun.status} \xB7 ${latestRun.id}` : t("run.none"))
-      ),
-      latestRun?.error ? import_react.default.createElement("div", { className: "ccw-error" }, latestRun.error) : null,
-      latestRun?.notes?.length > 0 ? import_react.default.createElement("div", { className: "ccw-hint" }, latestRun.notes.join(" \xB7 ")) : null,
-      latestRun?.outputs?.length > 0 ? import_react.default.createElement(
-        "div",
-        { className: "ccw-outputs" },
-        latestRun.outputs.filter((output) => output.asset).map((output) => import_react.default.createElement(
-          "div",
-          { key: output.asset, className: "ccw-output" },
-          String(output.contentType ?? "").startsWith("video/") ? import_react.default.createElement("video", { src: assetUrl(sessionId, output.asset), controls: true }) : import_react.default.createElement("img", { src: assetUrl(sessionId, output.asset), alt: output.filename }),
-          import_react.default.createElement(
-            "div",
-            { className: "ccw-row" },
-            import_react.default.createElement("span", { className: "ccw-muted" }, output.filename),
-            import_react.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: () => useOutput(output) }, t("run.use"))
-          )
-        ))
-      ) : null
-    )
-  );
+  return /* @__PURE__ */ import_react.default.createElement("section", { className: "ccw-workflow", "aria-label": t("view.workflow") }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-bar" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-picker" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-selector-icon", "aria-hidden": "true" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "workflow", size: 15 })), /* @__PURE__ */ import_react.default.createElement(
+    "select",
+    {
+      className: "ccw-workflow-select",
+      value: selectedName,
+      "aria-label": t("workflow.pick"),
+      title: t("workflow.pick"),
+      onChange: (event) => setSelectedName(event.target.value)
+    },
+    /* @__PURE__ */ import_react.default.createElement("option", { value: "" }, t("workflow.pick")),
+    workflows.map((entry) => /* @__PURE__ */ import_react.default.createElement("option", { key: entry.path, value: entry.path }, entry.path))
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: "ccw-btn ccw-btn-secondary ccw-btn-small",
+      disabled: busy || selectedName === "",
+      onClick: () => load(selectedName)
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "cornerDownLeft", size: 14 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.load"))
+  )), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-file-actions" }, /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      className: "ccw-name",
+      value: saveName,
+      placeholder: t("workflow.name"),
+      title: t("workflow.name"),
+      "aria-label": t("workflow.name"),
+      onChange: (event) => setSaveName(event.target.value)
+    }
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: "ccw-btn ccw-btn-ghost ccw-btn-small",
+      disabled: busy || workflow === null || dirty === false || (saveName || selectedName) === "",
+      onClick: save
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "save", size: 14 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("workflow.save"))
+  ), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-btn ccw-btn-ghost ccw-btn-small ${showModels ? "is-active" : ""}`,
+      "aria-expanded": showModels,
+      onClick: () => setShowModels((value) => !value)
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "folder", size: 14 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("models.open"))
+  ))), showModels ? /* @__PURE__ */ import_react.default.createElement(ModelBrowser, { t, setError }) : null, workflow === null ? /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-empty" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-empty-icon" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "workflow", size: 22 })), /* @__PURE__ */ import_react.default.createElement("p", null, t("workflow.empty"))) : /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-grid" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-workflow-graph-col", "aria-label": t("workflow.graph") }, /* @__PURE__ */ import_react.default.createElement(
+    Graph,
+    {
+      key: doc?.workflow?.loadedAt ?? "workflow",
+      workflow,
+      title: selectedName || doc?.workflow?.name || t("workflow.graph"),
+      infos,
+      selectedId: selectedNode,
+      onSelect: setSelectedNode,
+      t
+    }
+  ), Array.isArray(workflow.nodes) && workflow.nodes.length === 0 ? /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("workflow.apiOnly")) : null), /* @__PURE__ */ import_react.default.createElement("aside", { className: "ccw-workflow-rail", "aria-label": t("workflow.settings") }, /* @__PURE__ */ import_react.default.createElement(
+    Section,
+    {
+      title: t("workflow.node"),
+      icon: "box",
+      defaultOpen: true,
+      className: "ccw-section-node",
+      actions: selected !== null ? /* @__PURE__ */ import_react.default.createElement(IconButton, { icon: "x", label: t("workflow.close"), onClick: () => setSelectedNode(null) }) : null
+    },
+    selected !== null ? /* @__PURE__ */ import_react.default.createElement(
+      NodeEditor,
+      {
+        node: selected,
+        info: infos[selected.type],
+        t,
+        onTitle: (value) => setNodeField(selected.id, { title: value }),
+        onToggleMode: (mode) => setNodeField(selected.id, { mode: selected.mode === mode ? 0 : mode }),
+        onChange: (name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))
+      }
+    ) : /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-rail-empty" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "pointer", size: 16 }), /* @__PURE__ */ import_react.default.createElement("p", null, t("workflow.noSelection")))
+  ), /* @__PURE__ */ import_react.default.createElement(Section, { title: t("workflow.bindings"), icon: "link", defaultOpen: true, className: "ccw-section-bindings" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("bindings.hint")), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-binding-grid" }, ["prompt", "image", "mask", "width", "height", "seed", "bboxes"].map((key) => /* @__PURE__ */ import_react.default.createElement("label", { key, className: "ccw-field" }, /* @__PURE__ */ import_react.default.createElement("span", null, t(`bind.${key}`)), /* @__PURE__ */ import_react.default.createElement(
+    "select",
+    {
+      value: bindings[key] ?? "",
+      "aria-label": t(`bind.${key}`),
+      onChange: (event) => updateBinding(key, event.target.value)
+    },
+    /* @__PURE__ */ import_react.default.createElement("option", { value: "" }, "\u2014"),
+    (workflow.nodes ?? []).map((node) => /* @__PURE__ */ import_react.default.createElement("option", { key: node.id, value: String(node.id) }, "#", node.id, " ", nodeTitle(node)))
+  ))))), /* @__PURE__ */ import_react.default.createElement(Section, { title: t("run.section"), icon: "play", defaultOpen: true, className: "ccw-section-run" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-run-controls" }, /* @__PURE__ */ import_react.default.createElement("label", { className: "ccw-field ccw-seed" }, /* @__PURE__ */ import_react.default.createElement("span", null, t("run.seed")), /* @__PURE__ */ import_react.default.createElement(
+    "input",
+    {
+      type: "number",
+      value: seed,
+      placeholder: t("run.random"),
+      onChange: (event) => setSeed(event.target.value)
+    }
+  )), /* @__PURE__ */ import_react.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: "ccw-btn ccw-btn-primary ccw-btn-run",
+      disabled: busy,
+      onClick: run
+    },
+    /* @__PURE__ */ import_react.default.createElement(Icon, { name: "play", size: 15 }),
+    /* @__PURE__ */ import_react.default.createElement("span", null, t("run.start"))
+  ), latestRun && ["queued", "running"].includes(latestRun.status) ? /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-secondary ccw-btn-small", onClick: cancel }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "stop", size: 14 }), /* @__PURE__ */ import_react.default.createElement("span", null, t("run.cancel"))) : null), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-run-meta" }, /* @__PURE__ */ import_react.default.createElement("span", { className: `ccw-run-state ${latestRun ? runTone(latestRun.status) : ""}` }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-statusdot", "aria-hidden": "true" }), latestRun ? latestRun.status : t("run.none")), latestRun ? /* @__PURE__ */ import_react.default.createElement("code", { title: latestRun.id }, latestRun.id) : null), latestRun?.error ? /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-inline-error", role: "alert" }, latestRun.error) : null, latestRun?.notes?.length > 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-hint" }, latestRun.notes.join(" \xB7 ")) : null), /* @__PURE__ */ import_react.default.createElement(
+    Section,
+    {
+      title: t("run.output"),
+      icon: "image",
+      count: outputs.length > 0 ? outputs.length : void 0,
+      defaultOpen: true,
+      className: "ccw-section-outputs"
+    },
+    outputs.length > 0 ? /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-outputs" }, outputs.map((output) => /* @__PURE__ */ import_react.default.createElement("div", { key: output.asset, className: "ccw-output" }, String(output.contentType ?? "").startsWith("video/") ? /* @__PURE__ */ import_react.default.createElement("video", { src: assetUrl(sessionId, output.asset), controls: true }) : /* @__PURE__ */ import_react.default.createElement("img", { src: assetUrl(sessionId, output.asset), alt: output.filename }), /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-output-meta" }, /* @__PURE__ */ import_react.default.createElement("span", { title: output.filename }, output.filename), /* @__PURE__ */ import_react.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost ccw-btn-small", onClick: () => useOutput(output) }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "cornerDownLeft", size: 13 }), /* @__PURE__ */ import_react.default.createElement("span", null, t("run.use"))))))) : /* @__PURE__ */ import_react.default.createElement("div", { className: "ccw-output-empty" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "ccw-empty-icon" }, /* @__PURE__ */ import_react.default.createElement(Icon, { name: "image", size: 18 })), /* @__PURE__ */ import_react.default.createElement("p", { className: "ccw-hint" }, t("run.outputsEmpty")))
+  ))));
 }
 
 // src/client/CanvasTab.jsx
@@ -1677,111 +1970,121 @@ function useDoc(sessionId, setError) {
   }, [sessionId, setError]);
   return { doc, setDoc, status };
 }
+var TOOL_ICONS = {
+  brush: "brush",
+  eraser: "eraser",
+  rect: "square",
+  ellipse: "circle",
+  select: "pointer",
+  box: "box",
+  pan: "hand"
+};
 function Slider({ label, value, min, max, step = 1, onChange, suffix = "" }) {
-  return import_react2.default.createElement(
-    "label",
-    { className: "ccw-slider" },
-    import_react2.default.createElement("span", { className: "ccw-slider-label" }, label),
-    import_react2.default.createElement("input", {
+  return /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-range" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-range-head" }, /* @__PURE__ */ import_react2.default.createElement("span", null, label), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-range-value" }, value, suffix)), /* @__PURE__ */ import_react2.default.createElement(
+    "input",
+    {
+      className: "ccw-range-input",
       type: "range",
       min,
       max,
       step,
       value,
+      "aria-label": label,
       onChange: (event) => onChange(Number(event.target.value))
-    }),
-    import_react2.default.createElement("span", { className: "ccw-slider-value" }, `${value}${suffix}`)
-  );
-}
-function ToolButton({ active, onClick, children, title }) {
-  return import_react2.default.createElement("button", {
-    type: "button",
-    className: `ccw-tool-btn ${active ? "is-active" : ""}`,
-    onClick,
-    title
-  }, children);
+    }
+  ));
 }
 function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
-  return import_react2.default.createElement(
-    "section",
-    { className: "ccw-tools-row" },
-    import_react2.default.createElement(
-      "div",
-      { className: "ccw-tools-col" },
-      import_react2.default.createElement(Slider, {
-        label: t("brush.size"),
-        value: brush.size,
-        min: 1,
-        max: 400,
-        onChange: (value) => setBrush((current) => ({ ...current, size: value }))
-      }),
-      import_react2.default.createElement(Slider, {
-        label: t("brush.hardness"),
-        value: Math.round(brush.hardness * 100),
-        min: 0,
-        max: 100,
-        onChange: (value) => setBrush((current) => ({ ...current, hardness: value / 100 })),
-        suffix: "%"
-      }),
-      import_react2.default.createElement(Slider, {
-        label: t("brush.opacity"),
-        value: Math.round(brush.opacity * 100),
-        min: 1,
-        max: 100,
-        onChange: (value) => setBrush((current) => ({ ...current, opacity: value / 100 })),
-        suffix: "%"
-      })
-    ),
-    import_react2.default.createElement(
-      "div",
-      { className: "ccw-tools-col" },
-      import_react2.default.createElement(Slider, {
-        label: t("mask.feather"),
-        value: mask.feather,
-        min: 0,
-        max: 128,
-        onChange: (value) => setMask((current) => ({ ...current, feather: value })),
-        suffix: "px"
-      }),
-      import_react2.default.createElement(Slider, {
-        label: t("mask.grow"),
-        value: mask.grow,
-        min: -128,
-        max: 128,
-        onChange: (value) => setMask((current) => ({ ...current, grow: value })),
-        suffix: "px"
-      }),
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-row" },
-        import_react2.default.createElement(
-          "label",
-          { className: "ccw-check" },
-          import_react2.default.createElement("input", {
-            type: "checkbox",
-            checked: mask.inverted,
-            onChange: (event) => setMask((current) => ({ ...current, inverted: event.target.checked }))
-          }),
-          t("mask.invert")
-        ),
-        import_react2.default.createElement(
-          "label",
-          { className: "ccw-check" },
-          import_react2.default.createElement("input", {
-            type: "checkbox",
-            checked: mask.visible,
-            onChange: (event) => setMask((current) => ({ ...current, visible: event.target.checked }))
-          }),
-          t("mask.visible")
-        ),
-        import_react2.default.createElement("button", {
-          type: "button",
-          className: "ccw-btn ccw-btn-ghost",
-          onClick: onClear
-        }, t("mask.clear"))
-      )
-    )
-  );
+  return /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-mask-controls" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-control-group" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-group-label" }, t("brush.group")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-range-grid" }, /* @__PURE__ */ import_react2.default.createElement(
+    Slider,
+    {
+      label: t("brush.size"),
+      value: brush.size,
+      min: 1,
+      max: 400,
+      onChange: (value) => setBrush((current) => ({ ...current, size: value }))
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    Slider,
+    {
+      label: t("brush.hardness"),
+      value: Math.round(brush.hardness * 100),
+      min: 0,
+      max: 100,
+      onChange: (value) => setBrush((current) => ({ ...current, hardness: value / 100 })),
+      suffix: "%"
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    Slider,
+    {
+      label: t("brush.opacity"),
+      value: Math.round(brush.opacity * 100),
+      min: 1,
+      max: 100,
+      onChange: (value) => setBrush((current) => ({ ...current, opacity: value / 100 })),
+      suffix: "%"
+    }
+  ))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-control-group" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-group-label" }, t("mask.group")), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-range-grid" }, /* @__PURE__ */ import_react2.default.createElement(
+    Slider,
+    {
+      label: t("mask.feather"),
+      value: mask.feather,
+      min: 0,
+      max: 128,
+      onChange: (value) => setMask((current) => ({ ...current, feather: value })),
+      suffix: "px"
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    Slider,
+    {
+      label: t("mask.grow"),
+      value: mask.grow,
+      min: -128,
+      max: 128,
+      onChange: (value) => setMask((current) => ({ ...current, grow: value })),
+      suffix: "px"
+    }
+  )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-toggle-row" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-check" }, /* @__PURE__ */ import_react2.default.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: mask.inverted,
+      onChange: (event) => setMask((current) => ({ ...current, inverted: event.target.checked }))
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement("span", null, t("mask.invert"))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-check" }, /* @__PURE__ */ import_react2.default.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: mask.visible,
+      onChange: (event) => setMask((current) => ({ ...current, visible: event.target.checked }))
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement("span", null, t("mask.visible"))))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-danger-zone" }, /* @__PURE__ */ import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-danger-ghost", onClick: onClear }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "eraser", size: 14 }), /* @__PURE__ */ import_react2.default.createElement("span", null, t("mask.clear")))));
+}
+function BoxEditor({ selected, updateSelected, removeSelected, t }) {
+  return /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-box-editor" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-box-editor-top" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("box.label")), /* @__PURE__ */ import_react2.default.createElement(
+    "select",
+    {
+      value: selected.label,
+      onChange: (event) => updateSelected({ label: event.target.value })
+    },
+    /* @__PURE__ */ import_react2.default.createElement("option", { value: "object" }, "object"),
+    /* @__PURE__ */ import_react2.default.createElement("option", { value: "character" }, "character"),
+    /* @__PURE__ */ import_react2.default.createElement("option", { value: "text" }, "text")
+  )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-bbox-readout" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.bbox")), /* @__PURE__ */ import_react2.default.createElement("code", null, selected.bbox.map((number) => Math.round(number)).join(", ")))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("box.caption")), /* @__PURE__ */ import_react2.default.createElement(
+    "textarea",
+    {
+      rows: 2,
+      value: selected.caption,
+      onChange: (event) => updateSelected({ caption: event.target.value })
+    }
+  )), selected.label === "text" ? /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("box.text")), /* @__PURE__ */ import_react2.default.createElement(
+    "input",
+    {
+      type: "text",
+      value: selected.text,
+      onChange: (event) => updateSelected({ text: event.target.value })
+    }
+  )) : null, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-danger-zone" }, /* @__PURE__ */ import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-danger-ghost", onClick: removeSelected }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "trash", size: 14 }), /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.deleteBox")))));
 }
 function CanvasTab(props) {
   const { sessionId } = props;
@@ -1800,7 +2103,7 @@ function CanvasTab(props) {
   const [brush, setBrush] = (0, import_react2.useState)({ size: 64, hardness: 0.7, opacity: 0.9 });
   const [mask, setMask] = (0, import_react2.useState)({ feather: 8, grow: 0, inverted: false, visible: true, color: "#ff3b30", opacity: 0.45, hasMask: false });
   const [summary, setSummary] = (0, import_react2.useState)("");
-  const [showMaskTools, setShowMaskTools] = (0, import_react2.useState)(true);
+  const [showMaskTools] = (0, import_react2.useState)(true);
   const maskInit = (0, import_react2.useRef)(false);
   const saveTimer = (0, import_react2.useRef)(null);
   const maskSaveTimer = (0, import_react2.useRef)(null);
@@ -2073,316 +2376,210 @@ function CanvasTab(props) {
     { id: "select", label: t("tool.select") },
     { id: "pan", label: t("tool.pan") }
   ];
-  if (!sessionId) return import_react2.default.createElement("div", { className: "ccw-empty" }, "This tab needs a session.");
-  const toolbar = import_react2.default.createElement(
-    "div",
-    { className: "ccw-toolbar" },
-    import_react2.default.createElement(
-      "div",
-      { className: "ccw-segmented ccw-viewswitch" },
-      import_react2.default.createElement("button", {
-        type: "button",
-        className: view === "canvas" ? "is-active" : "",
-        onClick: () => setView("canvas")
-      }, t("view.canvas")),
-      import_react2.default.createElement("button", {
-        type: "button",
-        className: view === "workflow" ? "is-active" : "",
-        onClick: () => setView("workflow")
-      }, t("view.workflow"))
-    ),
-    import_react2.default.createElement(
-      "div",
-      { className: "ccw-segmented" },
-      import_react2.default.createElement("button", {
-        type: "button",
-        className: doc?.mode === "image" ? "is-active" : "",
-        onClick: () => setMode("image")
-      }, t("mode.edit")),
-      import_react2.default.createElement("button", {
-        type: "button",
-        className: doc?.mode === "layout" ? "is-active" : "",
-        onClick: () => setMode("layout")
-      }, t("mode.layout"))
-    ),
-    tools.map((item) => import_react2.default.createElement(ToolButton, {
+  const activeTool = tools.find((item) => item.id === tool) ?? null;
+  if (!sessionId) {
+    return /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-empty", role: "status" }, /* @__PURE__ */ import_react2.default.createElement("p", null, t("tab.noSession")));
+  }
+  const statusLabel = t(`status.${status}`);
+  const comfyLabel = comfy?.comfy?.connected ? t("status.comfyOk").replace("{version}", String(comfy.comfy.version ?? "")).trim() : t("status.comfy");
+  const canvasLabel = doc?.mode === "layout" ? t("mode.layout") : t("mode.edit");
+  return /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-root" }, /* @__PURE__ */ import_react2.default.createElement("header", { className: "ccw-appbar" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-appbar-brand" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-brandmark", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "layers", size: 17 })), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-brand-copy" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-appbar-title" }, t("tab.title")), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-appbar-meta" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: `ccw-statusdot is-${status}`, "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement("span", null, statusLabel), saving ? /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-meta-sep" }, "\xB7"), /* @__PURE__ */ import_react2.default.createElement("span", null, t("unsaved"))) : null))), /* @__PURE__ */ import_react2.default.createElement("nav", { className: "ccw-viewtabs", "aria-label": t("view.switch") }, /* @__PURE__ */ import_react2.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-viewtab ${view === "canvas" ? "is-active" : ""}`,
+      "aria-pressed": view === "canvas",
+      onClick: () => setView("canvas")
+    },
+    /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "image", size: 15 }),
+    /* @__PURE__ */ import_react2.default.createElement("span", null, t("view.canvas"))
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    "button",
+    {
+      type: "button",
+      className: `ccw-viewtab ${view === "workflow" ? "is-active" : ""}`,
+      "aria-pressed": view === "workflow",
+      onClick: () => setView("workflow")
+    },
+    /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "workflow", size: 15 }),
+    /* @__PURE__ */ import_react2.default.createElement("span", null, t("view.workflow"))
+  )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-appbar-actions" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: `ccw-health ${comfy?.comfy?.connected ? "is-ok" : ""}`, title: comfyLabel }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-health-dot", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-health-label" }, comfyLabel)), /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "refresh", label: t("probe"), onClick: probe, className: "ccw-appbar-probe" }))), error !== "" || probeError !== "" || incoming !== "" ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-notices" }, error !== "" ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-error", role: "alert" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "alert", size: 15 }), /* @__PURE__ */ import_react2.default.createElement("span", null, error)) : null, probeError !== "" ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-error", role: "alert" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "alert", size: 15 }), /* @__PURE__ */ import_react2.default.createElement("span", null, probeError)) : null, incoming !== "" ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-banner", role: "status" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "sparkles", size: 15 }), /* @__PURE__ */ import_react2.default.createElement("span", null, t("agent.updated")), /* @__PURE__ */ import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-primary ccw-btn-small", onClick: applyIncoming }, t("agent.load")), /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "x", label: t("banner.dismiss"), onClick: () => setIncoming("") })) : null) : null, /* @__PURE__ */ import_react2.default.createElement("div", { className: `ccw-editor ${view === "workflow" ? "is-hidden" : ""}` }, /* @__PURE__ */ import_react2.default.createElement("aside", { className: "ccw-toolrail", "aria-label": t("tools.label") }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-toolgroup", role: "group", "aria-label": t("mode.edit") }, /* @__PURE__ */ import_react2.default.createElement(
+    IconButton,
+    {
+      icon: "image",
+      label: t("mode.edit"),
+      active: doc?.mode === "image",
+      onClick: () => setMode("image")
+    }
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    IconButton,
+    {
+      icon: "layout",
+      label: t("mode.layout"),
+      active: doc?.mode === "layout",
+      onClick: () => setMode("layout")
+    }
+  )), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-rail-divider", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-toolgroup", role: "group", "aria-label": t("tools.label") }, tools.map((item) => /* @__PURE__ */ import_react2.default.createElement(
+    IconButton,
+    {
       key: item.id,
+      icon: TOOL_ICONS[item.id] ?? "box",
+      label: item.label,
       active: tool === item.id,
-      onClick: () => setTool(item.id),
-      title: item.label
-    }, item.label)),
-    import_react2.default.createElement("span", { className: "ccw-spacer" }),
-    import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: () => stageRef.current?.undo() }, "\u21B6"),
-    import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: () => stageRef.current?.redo() }, "\u21B7"),
-    import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: () => stageRef.current?.fit() }, t("canvas.fit"))
-  );
-  const workflowArea = view === "workflow" ? import_react2.default.createElement(WorkflowView, { sessionId, doc, setDoc, t, setError }) : null;
-  return import_react2.default.createElement(
-    "div",
-    { className: "ccw-root" },
-    import_react2.default.createElement(
-      "header",
-      { className: "ccw-header" },
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-title" },
-        import_react2.default.createElement("span", { className: `ccw-dot ccw-dot-${status}`, title: t(`status.${status}`) }),
-        import_react2.default.createElement("span", null, t("tab.title")),
-        saving ? import_react2.default.createElement("span", { className: "ccw-muted" }, `\xB7 ${t("unsaved")}`) : null
-      ),
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-header-actions" },
-        import_react2.default.createElement(
-          "span",
-          { className: "ccw-muted" },
-          t("status.comfy"),
-          comfy?.comfy?.connected ? ` ${comfy.comfy.version ?? ""}` : ""
-        ),
-        import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: probe }, t("probe"))
-      )
-    ),
-    error !== "" ? import_react2.default.createElement("div", { className: "ccw-error", role: "alert" }, error) : null,
-    probeError !== "" ? import_react2.default.createElement("div", { className: "ccw-error" }, probeError) : null,
-    incoming !== "" ? import_react2.default.createElement(
-      "div",
-      { className: "ccw-banner" },
-      import_react2.default.createElement("span", null, t("agent.updated")),
-      import_react2.default.createElement("button", { type: "button", className: "ccw-btn", onClick: applyIncoming }, t("agent.load")),
-      import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: () => setIncoming("") }, "\xD7")
-    ) : null,
-    toolbar,
-    import_react2.default.createElement(
-      "section",
-      { className: "ccw-canvas-wrap", style: view === "workflow" ? { display: "none" } : void 0 },
-      import_react2.default.createElement(CanvasStage, {
-        ref: stageRef,
-        sessionId,
-        imageUrl,
-        width: doc?.canvas?.width ?? 1024,
-        height: doc?.canvas?.height ?? 1024,
-        tool,
-        brush,
-        maskSettings: mask,
-        boxes: items,
-        selectedId: doc?.selected?.id ?? null,
-        onBoxCreate: createBox,
-        onBoxCommit: commitBox,
-        onBoxSelect: selectBox,
-        onMaskReady: handleMaskReady,
-        onMessage: setError
-      }),
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-canvas-tools" },
-        image ? import_react2.default.createElement(
-          import_react2.default.Fragment,
-          null,
-          import_react2.default.createElement(
-            "label",
-            { className: "ccw-btn ccw-btn-ghost ccw-file" },
-            t("image.load"),
-            import_react2.default.createElement("input", { type: "file", accept: "image/*", onChange: (event) => loadImage(event.target.files?.[0]) })
-          ),
-          import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: clearImage }, t("image.clear"))
-        ) : import_react2.default.createElement(
-          "label",
-          { className: "ccw-btn ccw-file" },
-          t("image.load"),
-          import_react2.default.createElement("input", { type: "file", accept: "image/*", onChange: (event) => loadImage(event.target.files?.[0]) })
-        )
-      ),
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-canvas-status" },
-        import_react2.default.createElement(
-          "span",
-          null,
-          doc?.mode === "layout" && !image ? `${doc?.canvas?.width ?? "\u2014"} \xD7 ${doc?.canvas?.height ?? "\u2014"}` : image ? `${image.width} \xD7 ${image.height}` : "\u2014"
-        ),
-        image ? import_react2.default.createElement("span", { className: "ccw-muted" }, image.name ?? "") : null,
-        import_react2.default.createElement("span", { className: "ccw-muted" }, mask.hasMask ? t("mask.painted") : t("mask.empty"))
-      )
-    ),
-    showMaskTools && view === "canvas" ? import_react2.default.createElement(MaskSliders, {
+      onClick: () => setTool(item.id)
+    }
+  ))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-rail-spacer", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-toolgroup ccw-toolgroup-end", "aria-hidden": "true" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-rail-mark" }))), /* @__PURE__ */ import_react2.default.createElement("section", { className: "ccw-stagecol", "aria-label": t("view.canvas") }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-stagebar" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-stagebar-title" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "image", size: 15 }), /* @__PURE__ */ import_react2.default.createElement("span", null, t("view.canvas")), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-badge" }, canvasLabel)), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-stagebar-actions" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-iconbtn ccw-file", title: t("image.load"), "aria-label": t("image.load") }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "upload", size: 15 }), /* @__PURE__ */ import_react2.default.createElement("input", { type: "file", accept: "image/*", onChange: (event) => loadImage(event.target.files?.[0]) })), image ? /* @__PURE__ */ import_react2.default.createElement(
+    IconButton,
+    {
+      icon: "trash",
+      label: t("image.clear"),
+      className: "ccw-iconbtn-danger",
+      onClick: clearImage
+    }
+  ) : null, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-bar-divider", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "undo", label: t("history.undo"), onClick: () => stageRef.current?.undo() }), /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "redo", label: t("history.redo"), onClick: () => stageRef.current?.redo() }), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-bar-divider", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "maximize", label: t("canvas.fit"), onClick: () => stageRef.current?.fit() }))), /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-canvas-wrap" }, /* @__PURE__ */ import_react2.default.createElement(
+    CanvasStage,
+    {
+      ref: stageRef,
+      sessionId,
+      imageUrl,
+      width: doc?.canvas?.width ?? 1024,
+      height: doc?.canvas?.height ?? 1024,
+      tool,
+      brush,
+      maskSettings: mask,
+      boxes: items,
+      selectedId: doc?.selected?.id ?? null,
+      onBoxCreate: createBox,
+      onBoxCommit: commitBox,
+      onBoxSelect: selectBox,
+      onMaskReady: handleMaskReady,
+      onMessage: setError
+    }
+  )), /* @__PURE__ */ import_react2.default.createElement("footer", { className: "ccw-statusbar", "aria-label": t("canvas.status") }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-status-item ccw-status-strong" }, doc?.mode === "layout" && !image ? `${doc?.canvas?.width ?? "\u2014"} \xD7 ${doc?.canvas?.height ?? "\u2014"}` : image ? `${image.width} \xD7 ${image.height}` : "\u2014"), image ? /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-status-item ccw-status-file", title: image.name ?? "" }, image.name ?? "") : null, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-status-sep", "aria-hidden": "true" }), /* @__PURE__ */ import_react2.default.createElement("span", { className: `ccw-status-item ccw-mask-state ${mask.hasMask ? "is-on" : ""}` }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-statusdot", "aria-hidden": "true" }), mask.hasMask ? t("mask.painted") : t("mask.empty")), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-status-spacer", "aria-hidden": "true" }), activeTool ? /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-status-item" }, activeTool.label) : null)), /* @__PURE__ */ import_react2.default.createElement("aside", { className: "ccw-inspector", "aria-label": t("inspector.label") }, showMaskTools ? /* @__PURE__ */ import_react2.default.createElement(Section, { title: t("mask.title"), icon: "sliders", className: "ccw-section-mask" }, /* @__PURE__ */ import_react2.default.createElement(
+    MaskSliders,
+    {
       brush,
       setBrush,
       mask,
       setMask,
       t,
       onClear: () => stageRef.current?.clearMask()
-    }) : null,
-    workflowArea,
-    import_react2.default.createElement(
-      "section",
-      { className: "ccw-panel" },
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-panel-head" },
-        import_react2.default.createElement("h3", null, t("prompt.title")),
-        import_react2.default.createElement(
-          "div",
-          { className: "ccw-row" },
-          import_react2.default.createElement("button", {
-            type: "button",
-            className: "ccw-btn ccw-btn-ghost",
-            onClick: async () => {
-              await navigator.clipboard.writeText(draft);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1200);
-            }
-          }, copied ? t("prompt.copied") : t("prompt.copy")),
-          import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: recompile, disabled: !hasBoxes }, t("prompt.compile"))
-        )
-      ),
-      import_react2.default.createElement("p", { className: "ccw-hint" }, t("prompt.hint")),
-      import_react2.default.createElement("textarea", {
+    }
+  )) : null, /* @__PURE__ */ import_react2.default.createElement(
+    Section,
+    {
+      title: t("prompt.title"),
+      icon: "sparkles",
+      count: hasBoxes ? items.length : void 0,
+      className: "ccw-section-prompt"
+    },
+    /* @__PURE__ */ import_react2.default.createElement("p", { className: "ccw-hint" }, t("prompt.hint")),
+    /* @__PURE__ */ import_react2.default.createElement(
+      "textarea",
+      {
         className: "ccw-prompt",
         value: draft,
         placeholder: t("prompt.placeholder"),
         spellCheck: false,
+        "aria-label": t("prompt.title"),
         onChange: (event) => onPromptChange(event.target.value),
         onFocus: () => setFocused(true),
         onBlur: onPromptBlur
-      }),
-      doc?.promptError ? import_react2.default.createElement("div", { className: "ccw-error" }, doc.promptError) : null,
-      hasBoxes ? import_react2.default.createElement(
-        "div",
-        { className: "ccw-prompt-source" },
-        import_react2.default.createElement("span", null, t("prompt.compiled").replace("{count}", String(items.length))),
-        import_react2.default.createElement("span", { className: "ccw-muted" }, compiled ? t("prompt.modeLayout") : t("prompt.manual"))
-      ) : null
+      }
     ),
-    doc?.mode === "layout" && view === "canvas" ? import_react2.default.createElement(
-      "section",
-      { className: "ccw-panel ccw-layout-settings" },
-      import_react2.default.createElement("div", { className: "ccw-panel-head" }, import_react2.default.createElement("h3", null, t("layout.canvas"))),
-      image ? import_react2.default.createElement("div", { className: "ccw-muted" }, `${image.width} \xD7 ${image.height}`) : import_react2.default.createElement(
-        "div",
-        { className: "ccw-row" },
-        import_react2.default.createElement(
-          "label",
-          { className: "ccw-field" },
-          t("layout.width"),
-          import_react2.default.createElement("input", {
-            type: "number",
-            min: 16,
-            max: 16384,
-            step: 16,
-            value: doc?.canvas?.width ?? 1024,
-            onChange: (event) => setCanvasSize(Number(event.target.value), doc?.canvas?.height ?? 1024)
-          })
-        ),
-        import_react2.default.createElement(
-          "label",
-          { className: "ccw-field" },
-          t("layout.height"),
-          import_react2.default.createElement("input", {
-            type: "number",
-            min: 16,
-            max: 16384,
-            step: 16,
-            value: doc?.canvas?.height ?? 1024,
-            onChange: (event) => setCanvasSize(doc?.canvas?.width ?? 1024, Number(event.target.value))
-          })
-        )
-      ),
-      import_react2.default.createElement(
-        "label",
-        { className: "ccw-field ccw-field-wide" },
-        t("layout.summary"),
-        import_react2.default.createElement("textarea", {
-          rows: 2,
-          value: summary,
-          placeholder: t("layout.summaryPlaceholder"),
-          onChange: (event) => saveSummary(event.target.value)
-        })
-      )
-    ) : null,
-    import_react2.default.createElement(
-      "section",
-      { className: "ccw-panel ccw-layout" },
-      import_react2.default.createElement(
-        "div",
-        { className: "ccw-panel-head" },
-        import_react2.default.createElement("h3", null, t("layout.title")),
-        import_react2.default.createElement(
-          "div",
-          { className: "ccw-row" },
-          import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: addBox }, t("layout.add")),
-          import_react2.default.createElement("button", { type: "button", className: "ccw-btn ccw-btn-ghost", onClick: removeSelected, disabled: !doc?.selected?.id }, t("layout.delete"))
-        )
-      ),
-      selected ? import_react2.default.createElement(
-        "div",
-        { className: "ccw-box-editor" },
-        import_react2.default.createElement(
-          "div",
-          { className: "ccw-row" },
-          import_react2.default.createElement(
-            "label",
-            { className: "ccw-field" },
-            t("box.label"),
-            import_react2.default.createElement(
-              "select",
-              {
-                value: selected.label,
-                onChange: (event) => updateSelected({ label: event.target.value })
-              },
-              import_react2.default.createElement("option", { value: "object" }, "object"),
-              import_react2.default.createElement("option", { value: "character" }, "character"),
-              import_react2.default.createElement("option", { value: "text" }, "text")
-            )
-          ),
-          import_react2.default.createElement("span", { className: "ccw-muted" }, selected.bbox.map((n) => Math.round(n)).join(", "))
-        ),
-        import_react2.default.createElement(
-          "label",
-          { className: "ccw-field ccw-field-wide" },
-          t("box.caption"),
-          import_react2.default.createElement("textarea", {
-            rows: 2,
-            value: selected.caption,
-            onChange: (event) => updateSelected({ caption: event.target.value })
-          })
-        ),
-        selected.label === "text" ? import_react2.default.createElement(
-          "label",
-          { className: "ccw-field ccw-field-wide" },
-          t("box.text"),
-          import_react2.default.createElement("input", {
-            type: "text",
-            value: selected.text,
-            onChange: (event) => updateSelected({ text: event.target.value })
-          })
-        ) : null
-      ) : null,
-      items.length === 0 ? import_react2.default.createElement("p", { className: "ccw-hint" }, t("layout.empty")) : import_react2.default.createElement(
-        "ul",
-        { className: "ccw-boxes" },
-        items.map((item, index) => import_react2.default.createElement(
-          "li",
-          { key: item.id || index },
-          import_react2.default.createElement(
-            "button",
-            {
-              type: "button",
-              className: `ccw-box-row ${doc?.selected?.id === item.id ? "is-selected" : ""}`,
-              onClick: () => selectBox(item.id)
-            },
-            import_react2.default.createElement("span", { className: "ccw-box-index" }, index + 1),
-            import_react2.default.createElement("span", { className: "ccw-box-label" }, item.label),
-            import_react2.default.createElement("span", { className: "ccw-box-caption" }, item.caption || t("layout.caption"))
-          )
-        ))
-      )
-    )
-  );
+    doc?.promptError ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-inline-error", role: "alert" }, doc.promptError) : null,
+    hasBoxes ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-prompt-source" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("prompt.compiled").replace("{count}", String(items.length))), /* @__PURE__ */ import_react2.default.createElement("span", { className: `ccw-source-mode ${compiled ? "is-layout" : ""}` }, compiled ? t("prompt.modeLayout") : t("prompt.manual"))) : null,
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-action-row" }, /* @__PURE__ */ import_react2.default.createElement(
+      "button",
+      {
+        type: "button",
+        className: "ccw-btn ccw-btn-ghost ccw-btn-small",
+        onClick: async () => {
+          await navigator.clipboard.writeText(draft);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1200);
+        }
+      },
+      /* @__PURE__ */ import_react2.default.createElement(Icon, { name: copied ? "check" : "copy", size: 14 }),
+      /* @__PURE__ */ import_react2.default.createElement("span", null, copied ? t("prompt.copied") : t("prompt.copy"))
+    ), /* @__PURE__ */ import_react2.default.createElement(
+      "button",
+      {
+        type: "button",
+        className: "ccw-btn ccw-btn-primary ccw-btn-compile",
+        onClick: recompile,
+        disabled: !hasBoxes
+      },
+      /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "sparkles", size: 15 }),
+      /* @__PURE__ */ import_react2.default.createElement("span", null, t("prompt.compile"))
+    ))
+  ), /* @__PURE__ */ import_react2.default.createElement(
+    Section,
+    {
+      title: t("layout.title"),
+      icon: "layout",
+      count: items.length,
+      className: "ccw-section-layout",
+      actions: /* @__PURE__ */ import_react2.default.createElement(IconButton, { icon: "plus", label: t("layout.add"), onClick: addBox })
+    },
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subsection" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subhead" }, t("layout.settings")), image ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-size-readout" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-size-value" }, image.width, " \xD7 ", image.height), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-hint" }, image.name ?? "")) : /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-size-grid" }, /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.width")), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        type: "number",
+        min: 16,
+        max: 16384,
+        step: 16,
+        value: doc?.canvas?.width ?? 1024,
+        onChange: (event) => setCanvasSize(Number(event.target.value), doc?.canvas?.height ?? 1024)
+      }
+    )), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.height")), /* @__PURE__ */ import_react2.default.createElement(
+      "input",
+      {
+        type: "number",
+        min: 16,
+        max: 16384,
+        step: 16,
+        value: doc?.canvas?.height ?? 1024,
+        onChange: (event) => setCanvasSize(doc?.canvas?.width ?? 1024, Number(event.target.value))
+      }
+    ))), /* @__PURE__ */ import_react2.default.createElement("label", { className: "ccw-field" }, /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.summary")), /* @__PURE__ */ import_react2.default.createElement(
+      "textarea",
+      {
+        rows: 2,
+        value: summary,
+        placeholder: t("layout.summaryPlaceholder"),
+        onChange: (event) => saveSummary(event.target.value)
+      }
+    ))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subsection" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subhead-row" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subhead" }, t("layout.selected")), selected ? /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-subhead-meta" }, "#", items.findIndex((item) => item.id === selected.id) + 1) : null), selected ? /* @__PURE__ */ import_react2.default.createElement(
+      BoxEditor,
+      {
+        selected,
+        updateSelected,
+        removeSelected,
+        t
+      }
+    ) : /* @__PURE__ */ import_react2.default.createElement("p", { className: "ccw-hint ccw-select-hint" }, /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "pointer", size: 14 }), /* @__PURE__ */ import_react2.default.createElement("span", null, t("layout.selectHint")))),
+    /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subsection" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subhead-row" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-subhead" }, t("layout.list")), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-subhead-meta" }, items.length)), items.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("p", { className: "ccw-hint" }, t("layout.empty")) : /* @__PURE__ */ import_react2.default.createElement("ul", { className: "ccw-boxes" }, items.map((item, index) => /* @__PURE__ */ import_react2.default.createElement("li", { key: item.id || index }, /* @__PURE__ */ import_react2.default.createElement(
+      "button",
+      {
+        type: "button",
+        className: `ccw-box-row ${doc?.selected?.id === item.id ? "is-selected" : ""}`,
+        "aria-pressed": doc?.selected?.id === item.id,
+        title: item.caption || void 0,
+        onClick: () => selectBox(item.id)
+      },
+      /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-box-index" }, String(index + 1).padStart(2, "0")),
+      /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-box-main" }, /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-box-label" }, item.label), /* @__PURE__ */ import_react2.default.createElement("span", { className: "ccw-box-caption" }, item.caption || t("layout.caption"))),
+      /* @__PURE__ */ import_react2.default.createElement(Icon, { name: "chevronRight", size: 13, className: "ccw-box-chevron" })
+    )))))
+  ))), view === "workflow" ? /* @__PURE__ */ import_react2.default.createElement("div", { className: "ccw-workflow-host" }, /* @__PURE__ */ import_react2.default.createElement(WorkflowView, { sessionId, doc, setDoc, t, setError })) : null);
 }
 
 // src/client/locales.js
 var en = {
   "tab.title": "Comfy canvas",
+  "tab.noSession": "Open this canvas from a chat: a tab in a session-less pane has no canvas to edit.",
   "composer.open": "Canvas",
   "composer.title": "Open the Comfy canvas",
   "prompt.title": "Prompt",
@@ -2469,10 +2666,49 @@ var en = {
   "workflow.name": "name.json",
   "workflow.title": "Node title",
   "workflow.bypass": "Bypass",
-  "workflow.mute": "Mute"
+  "workflow.mute": "Mute",
+  "view.switch": "Workspace view",
+  "tools.label": "Tools",
+  "inspector.label": "Inspector",
+  "history.undo": "Undo",
+  "history.redo": "Redo",
+  "canvas.zoomOut": "Zoom out",
+  "canvas.zoomIn": "Zoom in",
+  "canvas.status": "Canvas status",
+  "banner.dismiss": "Dismiss update",
+  "mask.title": "Brush & mask",
+  "brush.group": "Brush",
+  "mask.group": "Mask",
+  "layout.settings": "Canvas & caption",
+  "layout.selected": "Selected box",
+  "layout.selectHint": "Select a box on the canvas or in the list to edit it.",
+  "layout.bbox": "Bounds",
+  "layout.deleteBox": "Delete box",
+  "layout.list": "Box list",
+  "prompt.actions": "Prompt actions",
+  "workflow.node": "Node properties",
+  "workflow.close": "Close node editor",
+  "workflow.nodes": "{count} nodes",
+  "workflow.links": "{count} links",
+  "workflow.graph": "Workflow graph",
+  "workflow.noSelection": "Select a node in the graph to edit it.",
+  "workflow.settings": "Workflow settings",
+  "bindings.hint": "Map canvas values to workflow widget values.",
+  "bindings.selectNode": "Target node",
+  "run.section": "Run",
+  "run.output": "Outputs",
+  "run.latest": "Latest run",
+  "run.status": "Run status",
+  "models.title": "Model files",
+  "models.count": "{count} files",
+  "models.copied": "Name copied",
+  "models.empty": "Choose a folder to browse files.",
+  "workflow.chooseHint": "Workflow graph and node parameters",
+  "run.outputsEmpty": "No outputs yet. Queue a run to see results here."
 };
 var zh = {
   "tab.title": "Comfy \u753B\u5E03",
+  "tab.noSession": "\u8BF7\u4ECE\u67D0\u4E2A\u804A\u5929\u91CC\u6253\u5F00\u753B\u5E03\uFF1A\u6CA1\u6709\u4F1A\u8BDD\u7684\u9762\u677F\u6CA1\u6709\u53EF\u7F16\u8F91\u7684\u753B\u5E03\u3002",
   "composer.open": "\u753B\u5E03",
   "composer.title": "\u6253\u5F00 Comfy \u753B\u5E03",
   "prompt.title": "\u63D0\u793A\u8BCD",
@@ -2559,7 +2795,45 @@ var zh = {
   "workflow.name": "\u6587\u4EF6\u540D.json",
   "workflow.title": "\u8282\u70B9\u6807\u9898",
   "workflow.bypass": "\u7ED5\u8FC7",
-  "workflow.mute": "\u9759\u97F3"
+  "workflow.mute": "\u9759\u97F3",
+  "view.switch": "\u5DE5\u4F5C\u533A\u89C6\u56FE",
+  "tools.label": "\u5DE5\u5177",
+  "inspector.label": "\u5C5E\u6027\u9762\u677F",
+  "history.undo": "\u64A4\u9500",
+  "history.redo": "\u91CD\u505A",
+  "canvas.zoomOut": "\u7F29\u5C0F",
+  "canvas.zoomIn": "\u653E\u5927",
+  "canvas.status": "\u753B\u5E03\u72B6\u6001",
+  "banner.dismiss": "\u5173\u95ED\u66F4\u65B0\u63D0\u793A",
+  "mask.title": "\u753B\u7B14\u4E0E\u8499\u7248",
+  "brush.group": "\u753B\u7B14",
+  "mask.group": "\u8499\u7248",
+  "layout.settings": "\u753B\u5E03\u4E0E\u63CF\u8FF0",
+  "layout.selected": "\u9009\u4E2D\u7684\u6846",
+  "layout.selectHint": "\u5728\u753B\u5E03\u6216\u5217\u8868\u4E2D\u9009\u62E9\u4E00\u4E2A\u6846\u8FDB\u884C\u7F16\u8F91\u3002",
+  "layout.bbox": "\u5750\u6807",
+  "layout.deleteBox": "\u5220\u9664\u6B64\u6846",
+  "layout.list": "\u6846\u5217\u8868",
+  "prompt.actions": "\u63D0\u793A\u8BCD\u64CD\u4F5C",
+  "workflow.node": "\u8282\u70B9\u5C5E\u6027",
+  "workflow.close": "\u5173\u95ED\u8282\u70B9\u7F16\u8F91\u5668",
+  "workflow.nodes": "{count} \u4E2A\u8282\u70B9",
+  "workflow.links": "{count} \u6761\u8FDE\u7EBF",
+  "workflow.graph": "\u5DE5\u4F5C\u6D41\u56FE",
+  "workflow.noSelection": "\u5728\u56FE\u4E2D\u9009\u62E9\u4E00\u4E2A\u8282\u70B9\u5373\u53EF\u7F16\u8F91\u3002",
+  "workflow.settings": "\u5DE5\u4F5C\u6D41\u8BBE\u7F6E",
+  "bindings.hint": "\u5C06\u753B\u5E03\u6570\u636E\u6620\u5C04\u5230\u5DE5\u4F5C\u6D41\u53C2\u6570\u3002",
+  "bindings.selectNode": "\u76EE\u6807\u8282\u70B9",
+  "run.section": "\u8FD0\u884C",
+  "run.output": "\u8F93\u51FA",
+  "run.latest": "\u6700\u8FD1\u8FD0\u884C",
+  "run.status": "\u8FD0\u884C\u72B6\u6001",
+  "models.title": "\u6A21\u578B\u6587\u4EF6",
+  "models.count": "{count} \u4E2A\u6587\u4EF6",
+  "models.copied": "\u540D\u79F0\u5DF2\u590D\u5236",
+  "models.empty": "\u9009\u62E9\u76EE\u5F55\u4EE5\u6D4F\u89C8\u6587\u4EF6\u3002",
+  "workflow.chooseHint": "\u5DE5\u4F5C\u6D41\u56FE\u4E0E\u8282\u70B9\u53C2\u6570",
+  "run.outputsEmpty": "\u8FD8\u6CA1\u6709\u8F93\u51FA\u3002\u6392\u961F\u8FD0\u884C\u540E\u5728\u8FD9\u91CC\u67E5\u770B\u7ED3\u679C\u3002"
 };
 
 // src/client/entry.jsx
@@ -2587,7 +2861,7 @@ function openCanvas(ctx, sessionId) {
   setTimeout(open, 60);
 }
 function CanvasIcon({ size = 16 }) {
-  return React4.createElement(
+  return React5.createElement(
     "svg",
     {
       viewBox: "0 0 20 20",
@@ -2600,16 +2874,16 @@ function CanvasIcon({ size = 16 }) {
       strokeLinecap: "round",
       strokeLinejoin: "round"
     },
-    React4.createElement("rect", { x: 2.5, y: 3, width: 15, height: 14, rx: 2.5 }),
-    React4.createElement("path", { d: "M6 13.5c1.4-3.4 3.2-5.6 6-7.2" }),
-    React4.createElement("path", { d: "M12.6 6.6c.9.3 1.6.9 2 1.8-1.7 2.1-3.7 3.7-6.1 4.7" }),
-    React4.createElement("rect", { x: 12.2, y: 11.4, width: 4.4, height: 3.2, rx: 0.6, strokeDasharray: "1.5 1.2" })
+    React5.createElement("rect", { x: 2.5, y: 3, width: 15, height: 14, rx: 2.5 }),
+    React5.createElement("path", { d: "M6 13.5c1.4-3.4 3.2-5.6 6-7.2" }),
+    React5.createElement("path", { d: "M12.6 6.6c.9.3 1.6.9 2 1.8-1.7 2.1-3.7 3.7-6.1 4.7" }),
+    React5.createElement("rect", { x: 12.2, y: 11.4, width: 4.4, height: 3.2, rx: 0.6, strokeDasharray: "1.5 1.2" })
   );
 }
 function OpenCanvasButton(props) {
   const t = props.t;
-  const lastOpen = React4.useRef(null);
-  React4.useEffect(() => {
+  const lastOpen = React5.useRef(null);
+  React5.useEffect(() => {
     if (!props.sessionId) return void 0;
     const streamUrl = eventUrl(props.sessionId);
     if (streamUrl === "") return void 0;
@@ -2630,21 +2904,21 @@ function OpenCanvasButton(props) {
     source.addEventListener("doc", onDoc);
     return () => source.close();
   }, [props.sessionId]);
-  return React4.createElement("button", {
+  return React5.createElement("button", {
     type: "button",
     className: "ccw-icon-btn",
     title: t("composer.title"),
     onClick: () => props.onOpen?.(),
     "aria-label": t("composer.open")
-  }, React4.createElement(CanvasIcon, { size: 17 }), React4.createElement("span", { className: "ccw-icon-btn-label" }, t("composer.open")));
+  }, React5.createElement(CanvasIcon, { size: 17 }), React5.createElement("span", { className: "ccw-icon-btn-label" }, t("composer.open")));
 }
 function CanvasTitle(props) {
   const t = props.t;
-  return React4.createElement(
+  return React5.createElement(
     "span",
     { className: "ccw-tab-title" },
-    React4.createElement(CanvasIcon, { size: 15 }),
-    React4.createElement("span", null, t("tab.title"))
+    React5.createElement(CanvasIcon, { size: 15 }),
+    React5.createElement("span", null, t("tab.title"))
   );
 }
 function apply(ctx) {

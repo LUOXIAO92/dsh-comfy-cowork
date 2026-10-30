@@ -580,7 +580,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   }
 
   return React.createElement('div', {
-    className: `ccw-stage-wrap ccw-tool-${tool}`,
+    className: `ccw-stage-wrap ccw-tool-${tool} ${imageUrl ? 'has-image' : 'is-empty'}`,
     ref: containerRef,
     onPointerDown,
     onPointerMove,
@@ -605,7 +605,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
           },
         })
       : null,
-    React.createElement('canvas', { ref: maskDisplayRef, className: 'ccw-stage-layer' }),
-    React.createElement('canvas', { ref: overlayRef, className: 'ccw-stage-layer' })),
-  React.createElement('div', { className: 'ccw-zoom-hint' }, `${Math.round(view.scale * 100)}%`))
+    React.createElement('canvas', { ref: maskDisplayRef, className: 'ccw-stage-layer ccw-stage-mask' }),
+    React.createElement('canvas', { ref: overlayRef, className: 'ccw-stage-layer ccw-stage-overlay' })),
+  React.createElement('div', { className: 'ccw-zoom-hint', 'aria-hidden': true },
+    React.createElement('span', { className: 'ccw-zoom-dot' }),
+    React.createElement('span', null, `${Math.round(view.scale * 100)}%`)))
 })

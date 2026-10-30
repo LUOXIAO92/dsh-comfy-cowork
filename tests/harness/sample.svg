@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="linen" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#e7e0d2"/>
+      <stop offset="0.55" stop-color="#d7cdbd"/>
+      <stop offset="1" stop-color="#bfb39f"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0.28" cy="0.18" r="0.85">
+      <stop offset="0" stop-color="#faf5e8" stop-opacity="0.9"/>
+      <stop offset="0.58" stop-color="#f5eddf" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#14110e" stop-opacity="0.22"/>
+    </radialGradient>
+    <linearGradient id="apple" x1="0.2" y1="0.05" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#e04a42"/>
+      <stop offset="0.42" stop-color="#b51f27"/>
+      <stop offset="1" stop-color="#6e0e19"/>
+    </linearGradient>
+    <radialGradient id="appleShine" cx="0.32" cy="0.24" r="0.46">
+      <stop offset="0" stop-color="#ff8a73" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#ff8a73" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cup" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7fa8c9"/>
+      <stop offset="0.48" stop-color="#396a99"/>
+      <stop offset="1" stop-color="#1b3d64"/>
+    </linearGradient>
+    <linearGradient id="cupInside" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#173450"/>
+      <stop offset="1" stop-color="#315b82"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#linen)"/>
+  <g opacity="0.16" stroke="#8b7c67" stroke-width="1.2">
+    <path d="M0 74h1024M0 168h1024M0 262h1024M0 356h1024M0 450h1024M0 544h1024M0 638h1024M0 732h1024M0 826h1024M0 920h1024"/>
+    <path d="M74 0v1024M168 0v1024M262 0v1024M356 0v1024M450 0v1024M544 0v1024M638 0v1024M732 0v1024M826 0v1024M920 0v1024"/>
+  </g>
+  <rect width="1024" height="1024" fill="url(#light)"/>
+
+  <ellipse cx="300" cy="745" rx="220" ry="62" fill="#473728" opacity="0.36" filter="url(#soft)"/>
+  <ellipse cx="742" cy="744" rx="186" ry="52" fill="#3b3025" opacity="0.3" filter="url(#soft)"/>
+
+  <g>
+    <path d="M300 420c-75 2-142 56-151 151-10 105 44 200 148 202 110 2 165-99 152-206-12-101-77-149-149-147Z" fill="url(#apple)"/>
+    <path d="M300 420c-75 2-142 56-151 151-10 105 44 200 148 202 110 2 165-99 152-206-12-101-77-149-149-147Z" fill="url(#appleShine)"/>
+    <path d="M301 422c10-40 3-82-17-103 30-1 60 18 70 53 3 12 3 27 0 41-17-2-35 1-53 9Z" fill="#41552e"/>
+    <path d="M284 405c-25-35-58-48-95-46 18 31 48 53 95 57Z" fill="#5b713b"/>
+    <ellipse cx="235" cy="505" rx="37" ry="57" fill="#e37366" opacity="0.25" transform="rotate(-26 235 505)"/>
+  </g>
+
+  <g>
+    <path d="M610 510h262v178c0 54-48 91-131 91s-131-37-131-91V510Z" fill="url(#cup)"/>
+    <path d="M610 510c0-28 58-51 131-51s131 23 131 51-58 51-131 51-131-23-131-51Z" fill="url(#cupInside)"/>
+    <ellipse cx="741" cy="508" rx="105" ry="38" fill="#244e73"/>
+    <ellipse cx="741" cy="503" rx="88" ry="27" fill="#10283e"/>
+    <path d="M872 559c77-8 105 42 89 93-15 48-64 69-111 62l6-38c36 5 64-9 68-35 4-27-12-43-57-40l5-42Z" fill="url(#cup)"/>
+    <path d="M628 548c12 72 39 128 89 161-54-13-88-59-97-132l8-29Z" fill="#d6e6ef" opacity="0.2"/>
+    <path d="M695 585c7 60 15 105 28 141" stroke="#a9cbe0" stroke-width="4" stroke-linecap="round" opacity="0.32"/>
+  </g>
+
+  <g fill="#4c5141" opacity="0.9">
+    <text x="142" y="891" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-style="italic" letter-spacing="2">quiet afternoon</text>
+  </g>
+  <path d="M142 911h308" stroke="#5c594b" stroke-width="2" opacity="0.45"/>
+
+</svg>

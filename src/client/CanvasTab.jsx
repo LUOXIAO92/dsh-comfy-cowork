@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   assetUrl,
   deleteAsset,
@@ -15,6 +15,7 @@ import {
 } from './api.js'
 import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
+import { Icon, IconButton, Section } from './ui.jsx'
 
 function useDoc(sessionId, setError) {
   const [doc, setDoc] = useState(null)
@@ -59,65 +60,165 @@ function useDoc(sessionId, setError) {
   return { doc, setDoc, status }
 }
 
-function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
-  return React.createElement('label', { className: 'ccw-slider' },
-    React.createElement('span', { className: 'ccw-slider-label' }, label),
-    React.createElement('input', {
-      type: 'range', min, max, step, value,
-      onChange: (event) => onChange(Number(event.target.value)),
-    }),
-    React.createElement('span', { className: 'ccw-slider-value' }, `${value}${suffix}`))
+const TOOL_ICONS = {
+  brush: 'brush',
+  eraser: 'eraser',
+  rect: 'square',
+  ellipse: 'circle',
+  select: 'pointer',
+  box: 'box',
+  pan: 'hand',
 }
 
-function ToolButton({ active, onClick, children, title }) {
-  return React.createElement('button', {
-    type: 'button',
-    className: `ccw-tool-btn ${active ? 'is-active' : ''}`,
-    onClick,
-    title,
-  }, children)
+function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
+  return (
+    <label className="ccw-range">
+      <span className="ccw-range-head">
+        <span>{label}</span>
+        <span className="ccw-range-value">{value}{suffix}</span>
+      </span>
+      <input
+        className="ccw-range-input"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </label>
+  )
 }
 
 function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
-  return React.createElement('section', { className: 'ccw-tools-row' },
-    React.createElement('div', { className: 'ccw-tools-col' },
-      React.createElement(Slider, {
-        label: t('brush.size'), value: brush.size, min: 1, max: 400,
-        onChange: (value) => setBrush((current) => ({ ...current, size: value })),
-      }),
-      React.createElement(Slider, {
-        label: t('brush.hardness'), value: Math.round(brush.hardness * 100), min: 0, max: 100,
-        onChange: (value) => setBrush((current) => ({ ...current, hardness: value / 100 })), suffix: '%',
-      }),
-      React.createElement(Slider, {
-        label: t('brush.opacity'), value: Math.round(brush.opacity * 100), min: 1, max: 100,
-        onChange: (value) => setBrush((current) => ({ ...current, opacity: value / 100 })), suffix: '%',
-      })),
-    React.createElement('div', { className: 'ccw-tools-col' },
-      React.createElement(Slider, {
-        label: t('mask.feather'), value: mask.feather, min: 0, max: 128,
-        onChange: (value) => setMask((current) => ({ ...current, feather: value })), suffix: 'px',
-      }),
-      React.createElement(Slider, {
-        label: t('mask.grow'), value: mask.grow, min: -128, max: 128,
-        onChange: (value) => setMask((current) => ({ ...current, grow: value })), suffix: 'px',
-      }),
-      React.createElement('div', { className: 'ccw-row' },
-        React.createElement('label', { className: 'ccw-check' },
-          React.createElement('input', {
-            type: 'checkbox', checked: mask.inverted,
-            onChange: (event) => setMask((current) => ({ ...current, inverted: event.target.checked })),
-          }),
-          t('mask.invert')),
-        React.createElement('label', { className: 'ccw-check' },
-          React.createElement('input', {
-            type: 'checkbox', checked: mask.visible,
-            onChange: (event) => setMask((current) => ({ ...current, visible: event.target.checked })),
-          }),
-          t('mask.visible')),
-        React.createElement('button', {
-          type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: onClear,
-        }, t('mask.clear')))))
+  return (
+    <div className="ccw-mask-controls">
+      <div className="ccw-control-group">
+        <div className="ccw-group-label">{t('brush.group')}</div>
+        <div className="ccw-range-grid">
+          <Slider
+            label={t('brush.size')}
+            value={brush.size}
+            min={1}
+            max={400}
+            onChange={(value) => setBrush((current) => ({ ...current, size: value }))}
+          />
+          <Slider
+            label={t('brush.hardness')}
+            value={Math.round(brush.hardness * 100)}
+            min={0}
+            max={100}
+            onChange={(value) => setBrush((current) => ({ ...current, hardness: value / 100 }))}
+            suffix="%"
+          />
+          <Slider
+            label={t('brush.opacity')}
+            value={Math.round(brush.opacity * 100)}
+            min={1}
+            max={100}
+            onChange={(value) => setBrush((current) => ({ ...current, opacity: value / 100 }))}
+            suffix="%"
+          />
+        </div>
+      </div>
+
+      <div className="ccw-control-group">
+        <div className="ccw-group-label">{t('mask.group')}</div>
+        <div className="ccw-range-grid">
+          <Slider
+            label={t('mask.feather')}
+            value={mask.feather}
+            min={0}
+            max={128}
+            onChange={(value) => setMask((current) => ({ ...current, feather: value }))}
+            suffix="px"
+          />
+          <Slider
+            label={t('mask.grow')}
+            value={mask.grow}
+            min={-128}
+            max={128}
+            onChange={(value) => setMask((current) => ({ ...current, grow: value }))}
+            suffix="px"
+          />
+        </div>
+        <div className="ccw-toggle-row">
+          <label className="ccw-check">
+            <input
+              type="checkbox"
+              checked={mask.inverted}
+              onChange={(event) => setMask((current) => ({ ...current, inverted: event.target.checked }))}
+            />
+            <span>{t('mask.invert')}</span>
+          </label>
+          <label className="ccw-check">
+            <input
+              type="checkbox"
+              checked={mask.visible}
+              onChange={(event) => setMask((current) => ({ ...current, visible: event.target.checked }))}
+            />
+            <span>{t('mask.visible')}</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="ccw-danger-zone">
+        <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={onClear}>
+          <Icon name="eraser" size={14} />
+          <span>{t('mask.clear')}</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function BoxEditor({ selected, updateSelected, removeSelected, t }) {
+  return (
+    <div className="ccw-box-editor">
+      <div className="ccw-box-editor-top">
+        <label className="ccw-field">
+          <span>{t('box.label')}</span>
+          <select
+            value={selected.label}
+            onChange={(event) => updateSelected({ label: event.target.value })}
+          >
+            <option value="object">object</option>
+            <option value="character">character</option>
+            <option value="text">text</option>
+          </select>
+        </label>
+        <div className="ccw-bbox-readout">
+          <span>{t('layout.bbox')}</span>
+          <code>{selected.bbox.map((number) => Math.round(number)).join(', ')}</code>
+        </div>
+      </div>
+      <label className="ccw-field">
+        <span>{t('box.caption')}</span>
+        <textarea
+          rows={2}
+          value={selected.caption}
+          onChange={(event) => updateSelected({ caption: event.target.value })}
+        />
+      </label>
+      {selected.label === 'text' ? (
+        <label className="ccw-field">
+          <span>{t('box.text')}</span>
+          <input
+            type="text"
+            value={selected.text}
+            onChange={(event) => updateSelected({ text: event.target.value })}
+          />
+        </label>
+      ) : null}
+      <div className="ccw-danger-zone">
+        <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={removeSelected}>
+          <Icon name="trash" size={14} />
+          <span>{t('layout.deleteBox')}</span>
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function CanvasTab(props) {
@@ -137,7 +238,7 @@ export function CanvasTab(props) {
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
   const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
   const [summary, setSummary] = useState('')
-  const [showMaskTools, setShowMaskTools] = useState(true)
+  const [showMaskTools] = useState(true)
   const maskInit = useRef(false)
   const saveTimer = useRef(null)
   const maskSaveTimer = useRef(null)
@@ -436,188 +537,372 @@ export function CanvasTab(props) {
         { id: 'select', label: t('tool.select') },
         { id: 'pan', label: t('tool.pan') },
       ]
+  const activeTool = tools.find((item) => item.id === tool) ?? null
 
-  if (!sessionId) return React.createElement('div', { className: 'ccw-empty' }, 'This tab needs a session.')
+  if (!sessionId) {
+    return (
+      <div className="ccw-empty" role="status">
+        <p>{t('tab.noSession')}</p>
+      </div>
+    )
+  }
 
-  const toolbar = React.createElement('div', { className: 'ccw-toolbar' },
-    React.createElement('div', { className: 'ccw-segmented ccw-viewswitch' },
-      React.createElement('button', {
-        type: 'button', className: view === 'canvas' ? 'is-active' : '', onClick: () => setView('canvas'),
-      }, t('view.canvas')),
-      React.createElement('button', {
-        type: 'button', className: view === 'workflow' ? 'is-active' : '', onClick: () => setView('workflow'),
-      }, t('view.workflow'))),
-    React.createElement('div', { className: 'ccw-segmented' },
-      React.createElement('button', {
-        type: 'button', className: doc?.mode === 'image' ? 'is-active' : '', onClick: () => setMode('image'),
-      }, t('mode.edit')),
-      React.createElement('button', {
-        type: 'button', className: doc?.mode === 'layout' ? 'is-active' : '', onClick: () => setMode('layout'),
-      }, t('mode.layout'))),
-    tools.map((item) => React.createElement(ToolButton, {
-      key: item.id, active: tool === item.id, onClick: () => setTool(item.id), title: item.label,
-    }, item.label)),
-    React.createElement('span', { className: 'ccw-spacer' }),
-    React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => stageRef.current?.undo() }, '↶'),
-    React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => stageRef.current?.redo() }, '↷'),
-    React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => stageRef.current?.fit() }, t('canvas.fit')))
+  const statusLabel = t(`status.${status}`)
+  const comfyLabel = comfy?.comfy?.connected
+    ? t('status.comfyOk').replace('{version}', String(comfy.comfy.version ?? '')).trim()
+    : t('status.comfy')
+  const canvasLabel = doc?.mode === 'layout' ? t('mode.layout') : t('mode.edit')
 
-  const workflowArea = view === 'workflow'
-    ? React.createElement(WorkflowView, { sessionId, doc, setDoc, t, setError })
-    : null
+  return (
+    <div className="ccw-root">
+      <header className="ccw-appbar">
+        <div className="ccw-appbar-brand">
+          <span className="ccw-brandmark" aria-hidden="true"><Icon name="layers" size={17} /></span>
+          <span className="ccw-brand-copy">
+            <span className="ccw-appbar-title">{t('tab.title')}</span>
+            <span className="ccw-appbar-meta">
+              <span className={`ccw-statusdot is-${status}`} aria-hidden="true" />
+              <span>{statusLabel}</span>
+              {saving ? <><span className="ccw-meta-sep">·</span><span>{t('unsaved')}</span></> : null}
+            </span>
+          </span>
+        </div>
 
-  return React.createElement('div', { className: 'ccw-root' },
-    React.createElement('header', { className: 'ccw-header' },
-      React.createElement('div', { className: 'ccw-title' },
-        React.createElement('span', { className: `ccw-dot ccw-dot-${status}`, title: t(`status.${status}`) }),
-        React.createElement('span', null, t('tab.title')),
-        saving ? React.createElement('span', { className: 'ccw-muted' }, `· ${t('unsaved')}`) : null),
-      React.createElement('div', { className: 'ccw-header-actions' },
-        React.createElement('span', { className: 'ccw-muted' },
-          t('status.comfy'), comfy?.comfy?.connected ? ` ${comfy.comfy.version ?? ''}` : ''),
-        React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: probe }, t('probe')))),
-    error !== '' ? React.createElement('div', { className: 'ccw-error', role: 'alert' }, error) : null,
-    probeError !== '' ? React.createElement('div', { className: 'ccw-error' }, probeError) : null,
-    incoming !== ''
-      ? React.createElement('div', { className: 'ccw-banner' },
-          React.createElement('span', null, t('agent.updated')),
-          React.createElement('button', { type: 'button', className: 'ccw-btn', onClick: applyIncoming }, t('agent.load')),
-          React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: () => setIncoming('') }, '×'))
-      : null,
-    toolbar,
-    React.createElement('section', { className: 'ccw-canvas-wrap', style: view === 'workflow' ? { display: 'none' } : undefined },
-      React.createElement(CanvasStage, {
-        ref: stageRef,
-        sessionId,
-        imageUrl,
-        width: doc?.canvas?.width ?? 1024,
-        height: doc?.canvas?.height ?? 1024,
-        tool,
-        brush,
-        maskSettings: mask,
-        boxes: items,
-        selectedId: doc?.selected?.id ?? null,
-        onBoxCreate: createBox,
-        onBoxCommit: commitBox,
-        onBoxSelect: selectBox,
-        onMaskReady: handleMaskReady,
-        onMessage: setError,
-      }),
-      React.createElement('div', { className: 'ccw-canvas-tools' },
-        image
-          ? React.createElement(React.Fragment, null,
-              React.createElement('label', { className: 'ccw-btn ccw-btn-ghost ccw-file' },
-                t('image.load'),
-                React.createElement('input', { type: 'file', accept: 'image/*', onChange: (event) => loadImage(event.target.files?.[0]) })),
-              React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: clearImage }, t('image.clear')))
-          : React.createElement('label', { className: 'ccw-btn ccw-file' },
-              t('image.load'),
-              React.createElement('input', { type: 'file', accept: 'image/*', onChange: (event) => loadImage(event.target.files?.[0]) }))),
-      React.createElement('div', { className: 'ccw-canvas-status' },
-        React.createElement('span', null,
-          doc?.mode === 'layout' && !image
-            ? `${doc?.canvas?.width ?? '—'} × ${doc?.canvas?.height ?? '—'}`
-            : image ? `${image.width} × ${image.height}` : '—'),
-        image ? React.createElement('span', { className: 'ccw-muted' }, image.name ?? '') : null,
-        React.createElement('span', { className: 'ccw-muted' }, mask.hasMask ? t('mask.painted') : t('mask.empty')))),
-    showMaskTools && view === 'canvas'
-      ? React.createElement(MaskSliders, {
-          brush, setBrush, mask, setMask, t,
-          onClear: () => stageRef.current?.clearMask(),
-        })
-      : null,
-    workflowArea,
-    React.createElement('section', { className: 'ccw-panel' },
-      React.createElement('div', { className: 'ccw-panel-head' },
-        React.createElement('h3', null, t('prompt.title')),
-        React.createElement('div', { className: 'ccw-row' },
-          React.createElement('button', {
-            type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: async () => {
-              await navigator.clipboard.writeText(draft)
-              setCopied(true)
-              setTimeout(() => setCopied(false), 1200)
-            },
-          }, copied ? t('prompt.copied') : t('prompt.copy')),
-          React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: recompile, disabled: !hasBoxes }, t('prompt.compile')))),
-      React.createElement('p', { className: 'ccw-hint' }, t('prompt.hint')),
-      React.createElement('textarea', {
-        className: 'ccw-prompt',
-        value: draft,
-        placeholder: t('prompt.placeholder'),
-        spellCheck: false,
-        onChange: (event) => onPromptChange(event.target.value),
-        onFocus: () => setFocused(true),
-        onBlur: onPromptBlur,
-      }),
-      doc?.promptError ? React.createElement('div', { className: 'ccw-error' }, doc.promptError) : null,
-      hasBoxes
-        ? React.createElement('div', { className: 'ccw-prompt-source' },
-            React.createElement('span', null, t('prompt.compiled').replace('{count}', String(items.length))),
-            React.createElement('span', { className: 'ccw-muted' }, compiled ? t('prompt.modeLayout') : t('prompt.manual')))
-        : null),
-    doc?.mode === 'layout' && view === 'canvas'
-      ? React.createElement('section', { className: 'ccw-panel ccw-layout-settings' },
-          React.createElement('div', { className: 'ccw-panel-head' }, React.createElement('h3', null, t('layout.canvas'))),
-          image
-            ? React.createElement('div', { className: 'ccw-muted' }, `${image.width} × ${image.height}`)
-            : React.createElement('div', { className: 'ccw-row' },
-                React.createElement('label', { className: 'ccw-field' }, t('layout.width'),
-                  React.createElement('input', {
-                    type: 'number', min: 16, max: 16384, step: 16, value: doc?.canvas?.width ?? 1024,
-                    onChange: (event) => setCanvasSize(Number(event.target.value), doc?.canvas?.height ?? 1024),
-                  })),
-                React.createElement('label', { className: 'ccw-field' }, t('layout.height'),
-                  React.createElement('input', {
-                    type: 'number', min: 16, max: 16384, step: 16, value: doc?.canvas?.height ?? 1024,
-                    onChange: (event) => setCanvasSize(doc?.canvas?.width ?? 1024, Number(event.target.value)),
-                  }))),
-          React.createElement('label', { className: 'ccw-field ccw-field-wide' }, t('layout.summary'),
-            React.createElement('textarea', {
-              rows: 2, value: summary, placeholder: t('layout.summaryPlaceholder'),
-              onChange: (event) => saveSummary(event.target.value),
-            })))
-      : null,
-    React.createElement('section', { className: 'ccw-panel ccw-layout' },
-      React.createElement('div', { className: 'ccw-panel-head' },
-        React.createElement('h3', null, t('layout.title')),
-        React.createElement('div', { className: 'ccw-row' },
-          React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: addBox }, t('layout.add')),
-          React.createElement('button', { type: 'button', className: 'ccw-btn ccw-btn-ghost', onClick: removeSelected, disabled: !doc?.selected?.id }, t('layout.delete')))),
-      selected
-        ? React.createElement('div', { className: 'ccw-box-editor' },
-            React.createElement('div', { className: 'ccw-row' },
-              React.createElement('label', { className: 'ccw-field' }, t('box.label'),
-                React.createElement('select', {
-                  value: selected.label,
-                  onChange: (event) => updateSelected({ label: event.target.value }),
-                },
-                React.createElement('option', { value: 'object' }, 'object'),
-                React.createElement('option', { value: 'character' }, 'character'),
-                React.createElement('option', { value: 'text' }, 'text'))),
-              React.createElement('span', { className: 'ccw-muted' }, selected.bbox.map((n) => Math.round(n)).join(', '))),
-            React.createElement('label', { className: 'ccw-field ccw-field-wide' }, t('box.caption'),
-              React.createElement('textarea', {
-                rows: 2, value: selected.caption,
-                onChange: (event) => updateSelected({ caption: event.target.value }),
-              })),
-            selected.label === 'text'
-              ? React.createElement('label', { className: 'ccw-field ccw-field-wide' }, t('box.text'),
-                  React.createElement('input', {
-                    type: 'text', value: selected.text,
-                    onChange: (event) => updateSelected({ text: event.target.value }),
-                  }))
-              : null)
-        : null,
-      items.length === 0
-        ? React.createElement('p', { className: 'ccw-hint' }, t('layout.empty'))
-        : React.createElement('ul', { className: 'ccw-boxes' },
-            items.map((item, index) => React.createElement('li', { key: item.id || index },
-              React.createElement('button', {
-                type: 'button',
-                className: `ccw-box-row ${doc?.selected?.id === item.id ? 'is-selected' : ''}`,
-                onClick: () => selectBox(item.id),
-              },
-              React.createElement('span', { className: 'ccw-box-index' }, index + 1),
-              React.createElement('span', { className: 'ccw-box-label' }, item.label),
-              React.createElement('span', { className: 'ccw-box-caption' }, item.caption || t('layout.caption'))))))))
+        <nav className="ccw-viewtabs" aria-label={t('view.switch')}>
+          <button
+            type="button"
+            className={`ccw-viewtab ${view === 'canvas' ? 'is-active' : ''}`}
+            aria-pressed={view === 'canvas'}
+            onClick={() => setView('canvas')}
+          >
+            <Icon name="image" size={15} />
+            <span>{t('view.canvas')}</span>
+          </button>
+          <button
+            type="button"
+            className={`ccw-viewtab ${view === 'workflow' ? 'is-active' : ''}`}
+            aria-pressed={view === 'workflow'}
+            onClick={() => setView('workflow')}
+          >
+            <Icon name="workflow" size={15} />
+            <span>{t('view.workflow')}</span>
+          </button>
+        </nav>
+
+        <div className="ccw-appbar-actions">
+          <span className={`ccw-health ${comfy?.comfy?.connected ? 'is-ok' : ''}`} title={comfyLabel}>
+            <span className="ccw-health-dot" aria-hidden="true" />
+            <span className="ccw-health-label">{comfyLabel}</span>
+          </span>
+          <IconButton icon="refresh" label={t('probe')} onClick={probe} className="ccw-appbar-probe" />
+        </div>
+      </header>
+
+      {(error !== '' || probeError !== '' || incoming !== '') ? (
+        <div className="ccw-notices">
+          {error !== '' ? (
+            <div className="ccw-error" role="alert">
+              <Icon name="alert" size={15} />
+              <span>{error}</span>
+            </div>
+          ) : null}
+          {probeError !== '' ? (
+            <div className="ccw-error" role="alert">
+              <Icon name="alert" size={15} />
+              <span>{probeError}</span>
+            </div>
+          ) : null}
+          {incoming !== '' ? (
+            <div className="ccw-banner" role="status">
+              <Icon name="sparkles" size={15} />
+              <span>{t('agent.updated')}</span>
+              <button type="button" className="ccw-btn ccw-btn-primary ccw-btn-small" onClick={applyIncoming}>{t('agent.load')}</button>
+              <IconButton icon="x" label={t('banner.dismiss')} onClick={() => setIncoming('')} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className={`ccw-editor ${view === 'workflow' ? 'is-hidden' : ''}`}>
+        <aside className="ccw-toolrail" aria-label={t('tools.label')}>
+          <div className="ccw-toolgroup" role="group" aria-label={t('mode.edit')}>
+            <IconButton
+              icon="image"
+              label={t('mode.edit')}
+              active={doc?.mode === 'image'}
+              onClick={() => setMode('image')}
+            />
+            <IconButton
+              icon="layout"
+              label={t('mode.layout')}
+              active={doc?.mode === 'layout'}
+              onClick={() => setMode('layout')}
+            />
+          </div>
+          <div className="ccw-rail-divider" aria-hidden="true" />
+          <div className="ccw-toolgroup" role="group" aria-label={t('tools.label')}>
+            {tools.map((item) => (
+              <IconButton
+                key={item.id}
+                icon={TOOL_ICONS[item.id] ?? 'box'}
+                label={item.label}
+                active={tool === item.id}
+                onClick={() => setTool(item.id)}
+              />
+            ))}
+          </div>
+          <div className="ccw-rail-spacer" aria-hidden="true" />
+          <div className="ccw-toolgroup ccw-toolgroup-end" aria-hidden="true">
+            <span className="ccw-rail-mark" />
+          </div>
+        </aside>
+
+        <section className="ccw-stagecol" aria-label={t('view.canvas')}>
+          <div className="ccw-stagebar">
+            <div className="ccw-stagebar-title">
+              <Icon name="image" size={15} />
+              <span>{t('view.canvas')}</span>
+              <span className="ccw-badge">{canvasLabel}</span>
+            </div>
+            <div className="ccw-stagebar-actions">
+              <label className="ccw-iconbtn ccw-file" title={t('image.load')} aria-label={t('image.load')}>
+                <Icon name="upload" size={15} />
+                <input type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} />
+              </label>
+              {image ? (
+                <IconButton
+                  icon="trash"
+                  label={t('image.clear')}
+                  className="ccw-iconbtn-danger"
+                  onClick={clearImage}
+                />
+              ) : null}
+              <span className="ccw-bar-divider" aria-hidden="true" />
+              <IconButton icon="undo" label={t('history.undo')} onClick={() => stageRef.current?.undo()} />
+              <IconButton icon="redo" label={t('history.redo')} onClick={() => stageRef.current?.redo()} />
+              <span className="ccw-bar-divider" aria-hidden="true" />
+              <IconButton icon="maximize" label={t('canvas.fit')} onClick={() => stageRef.current?.fit()} />
+            </div>
+          </div>
+
+          <div className="ccw-canvas-wrap">
+            <CanvasStage
+              ref={stageRef}
+              sessionId={sessionId}
+              imageUrl={imageUrl}
+              width={doc?.canvas?.width ?? 1024}
+              height={doc?.canvas?.height ?? 1024}
+              tool={tool}
+              brush={brush}
+              maskSettings={mask}
+              boxes={items}
+              selectedId={doc?.selected?.id ?? null}
+              onBoxCreate={createBox}
+              onBoxCommit={commitBox}
+              onBoxSelect={selectBox}
+              onMaskReady={handleMaskReady}
+              onMessage={setError}
+            />
+          </div>
+
+          <footer className="ccw-statusbar" aria-label={t('canvas.status')}>
+            <span className="ccw-status-item ccw-status-strong">
+              {doc?.mode === 'layout' && !image
+                ? `${doc?.canvas?.width ?? '—'} × ${doc?.canvas?.height ?? '—'}`
+                : image ? `${image.width} × ${image.height}` : '—'}
+            </span>
+            {image ? <span className="ccw-status-item ccw-status-file" title={image.name ?? ''}>{image.name ?? ''}</span> : null}
+            <span className="ccw-status-sep" aria-hidden="true" />
+            <span className={`ccw-status-item ccw-mask-state ${mask.hasMask ? 'is-on' : ''}`}>
+              <span className="ccw-statusdot" aria-hidden="true" />
+              {mask.hasMask ? t('mask.painted') : t('mask.empty')}
+            </span>
+            <span className="ccw-status-spacer" aria-hidden="true" />
+            {activeTool ? <span className="ccw-status-item">{activeTool.label}</span> : null}
+          </footer>
+        </section>
+
+        <aside className="ccw-inspector" aria-label={t('inspector.label')}>
+          {showMaskTools ? (
+            <Section title={t('mask.title')} icon="sliders" className="ccw-section-mask">
+              <MaskSliders
+                brush={brush}
+                setBrush={setBrush}
+                mask={mask}
+                setMask={setMask}
+                t={t}
+                onClear={() => stageRef.current?.clearMask()}
+              />
+            </Section>
+          ) : null}
+
+          <Section
+            title={t('prompt.title')}
+            icon="sparkles"
+            count={hasBoxes ? items.length : undefined}
+            className="ccw-section-prompt"
+          >
+            <p className="ccw-hint">{t('prompt.hint')}</p>
+            <textarea
+              className="ccw-prompt"
+              value={draft}
+              placeholder={t('prompt.placeholder')}
+              spellCheck={false}
+              aria-label={t('prompt.title')}
+              onChange={(event) => onPromptChange(event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={onPromptBlur}
+            />
+            {doc?.promptError ? (
+              <div className="ccw-inline-error" role="alert">{doc.promptError}</div>
+            ) : null}
+            {hasBoxes ? (
+              <div className="ccw-prompt-source">
+                <span>{t('prompt.compiled').replace('{count}', String(items.length))}</span>
+                <span className={`ccw-source-mode ${compiled ? 'is-layout' : ''}`}>
+                  {compiled ? t('prompt.modeLayout') : t('prompt.manual')}
+                </span>
+              </div>
+            ) : null}
+            <div className="ccw-action-row">
+              <button
+                type="button"
+                className="ccw-btn ccw-btn-ghost ccw-btn-small"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(draft)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1200)
+                }}
+              >
+                <Icon name={copied ? 'check' : 'copy'} size={14} />
+                <span>{copied ? t('prompt.copied') : t('prompt.copy')}</span>
+              </button>
+              <button
+                type="button"
+                className="ccw-btn ccw-btn-primary ccw-btn-compile"
+                onClick={recompile}
+                disabled={!hasBoxes}
+              >
+                <Icon name="sparkles" size={15} />
+                <span>{t('prompt.compile')}</span>
+              </button>
+            </div>
+          </Section>
+
+          <Section
+            title={t('layout.title')}
+            icon="layout"
+            count={items.length}
+            className="ccw-section-layout"
+            actions={(
+              <IconButton icon="plus" label={t('layout.add')} onClick={addBox} />
+            )}
+          >
+            <div className="ccw-subsection">
+              <div className="ccw-subhead">{t('layout.settings')}</div>
+              {image ? (
+                <div className="ccw-size-readout">
+                  <span className="ccw-size-value">{image.width} × {image.height}</span>
+                  <span className="ccw-hint">{image.name ?? ''}</span>
+                </div>
+              ) : (
+                <div className="ccw-size-grid">
+                  <label className="ccw-field">
+                    <span>{t('layout.width')}</span>
+                    <input
+                      type="number"
+                      min={16}
+                      max={16384}
+                      step={16}
+                      value={doc?.canvas?.width ?? 1024}
+                      onChange={(event) => setCanvasSize(Number(event.target.value), doc?.canvas?.height ?? 1024)}
+                    />
+                  </label>
+                  <label className="ccw-field">
+                    <span>{t('layout.height')}</span>
+                    <input
+                      type="number"
+                      min={16}
+                      max={16384}
+                      step={16}
+                      value={doc?.canvas?.height ?? 1024}
+                      onChange={(event) => setCanvasSize(doc?.canvas?.width ?? 1024, Number(event.target.value))}
+                    />
+                  </label>
+                </div>
+              )}
+              <label className="ccw-field">
+                <span>{t('layout.summary')}</span>
+                <textarea
+                  rows={2}
+                  value={summary}
+                  placeholder={t('layout.summaryPlaceholder')}
+                  onChange={(event) => saveSummary(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="ccw-subsection">
+              <div className="ccw-subhead-row">
+                <div className="ccw-subhead">{t('layout.selected')}</div>
+                {selected ? (
+                  <span className="ccw-subhead-meta">#{items.findIndex((item) => item.id === selected.id) + 1}</span>
+                ) : null}
+              </div>
+              {selected ? (
+                <BoxEditor
+                  selected={selected}
+                  updateSelected={updateSelected}
+                  removeSelected={removeSelected}
+                  t={t}
+                />
+              ) : (
+                <p className="ccw-hint ccw-select-hint">
+                  <Icon name="pointer" size={14} />
+                  <span>{t('layout.selectHint')}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="ccw-subsection">
+              <div className="ccw-subhead-row">
+                <div className="ccw-subhead">{t('layout.list')}</div>
+                <span className="ccw-subhead-meta">{items.length}</span>
+              </div>
+              {items.length === 0 ? (
+                <p className="ccw-hint">{t('layout.empty')}</p>
+              ) : (
+                <ul className="ccw-boxes">
+                  {items.map((item, index) => (
+                    <li key={item.id || index}>
+                      <button
+                        type="button"
+                        className={`ccw-box-row ${doc?.selected?.id === item.id ? 'is-selected' : ''}`}
+                        aria-pressed={doc?.selected?.id === item.id}
+                        title={item.caption || undefined}
+                        onClick={() => selectBox(item.id)}
+                      >
+                        <span className="ccw-box-index">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="ccw-box-main">
+                          <span className="ccw-box-label">{item.label}</span>
+                          <span className="ccw-box-caption">{item.caption || t('layout.caption')}</span>
+                        </span>
+                        <Icon name="chevronRight" size={13} className="ccw-box-chevron" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Section>
+        </aside>
+      </div>
+
+      {view === 'workflow' ? (
+        <div className="ccw-workflow-host">
+          <WorkflowView sessionId={sessionId} doc={doc} setDoc={setDoc} t={t} setError={setError} />
+        </div>
+      ) : null}
+    </div>
+  )
 }
