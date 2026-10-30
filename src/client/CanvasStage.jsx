@@ -537,6 +537,22 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     for (const shape of shapesRef.current) fillMaskShape(ctx, shape, 1, 'destination-out', true)
   }
 
+  /** Rebuild a selection mask from the island canvas after it has been moved. */
+  function maskFromRegion(region, originX, originY) {
+    const mask = new Uint8Array(limit.width * limit.height)
+    const data = region.getContext('2d').getImageData(0, 0, region.width, region.height).data
+    for (let y = 0; y < region.height; y += 1) {
+      for (let x = 0; x < region.width; x += 1) {
+        if (data[(y * region.width + x) * 4 + 3] < 12) continue
+        const globalX = Math.round(originX) + x
+        const globalY = Math.round(originY) + y
+        if (globalX < 0 || globalY < 0 || globalX >= limit.width || globalY >= limit.height) continue
+        mask[globalY * limit.width + globalX] = 1
+      }
+    }
+    return mask
+  }
+
   /** Which shapes the eraser is currently cutting, with their hole strokes. */
   function beginShapeHoles(point) {
     const radius = brush.size / 2
@@ -1279,7 +1295,11 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     if (gesture.kind === 'paint-move') {
       const draft = paintDraftRef.current
       paintDraftRef.current = null
-      if (draft !== null) setPaintSelection({ bbox: draft, mask: gesture.mask })
+      if (draft !== null) {
+        // The island moved: its selection mask must follow, otherwise Delete
+        // would cut the pixels that are still where the drag started.
+        setPaintSelection({ bbox: draft, mask: maskFromRegion(gesture.region, draft[0], draft[1]) })
+      }
       setOverlayTick((value) => value + 1)
       refreshProcessed()
       scheduleMaskExport()
