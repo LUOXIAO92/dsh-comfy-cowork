@@ -21,6 +21,7 @@ import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
 import { setNodeWidget } from './workflow-ui.js'
 import { Icon, IconButton, Section } from './ui.jsx'
+import { ColorField } from './ColorField.jsx'
 import { embedPngText } from './png.js'
 
 /** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
@@ -225,38 +226,6 @@ function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
   )
 }
 
-function PaletteSwatch({ color, index, onChange, onRemove, label, t }) {
-  const [draft, setDraft] = useState(null)
-  const normalized = /^#?[0-9a-fA-F]{6}$/.test(String(draft ?? '').trim())
-    ? `#${String(draft ?? '').trim().replace('#', '').toLowerCase()}`
-    : null
-  const commit = (raw) => {
-    setDraft(null)
-    const value = String(raw ?? '').trim()
-    if (!/^#?[0-9a-fA-F]{6}$/.test(value)) return
-    onChange(`#${value.replace('#', '').toLowerCase()}`)
-  }
-  return (
-    <span className="ccw-swatch">
-      <span className="ccw-swatch-dot" style={{ background: normalized ?? color }} aria-hidden="true" />
-      <input
-        className="ccw-swatch-hex"
-        type="text"
-        spellCheck={false}
-        value={draft ?? color}
-        aria-label={`${label} ${index + 1}`}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => commit(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') commit(event.target.value)
-          if (event.key === 'Escape') setDraft(null)
-        }}
-      />
-      <button type="button" className="ccw-swatch-remove" aria-label={t('layout.delete')} onClick={onRemove}>×</button>
-    </span>
-  )
-}
-
 function BoxEditor({ selected, updateSelected, removeSelected, t }) {
   const palette = Array.isArray(selected.palette) ? selected.palette : []
   return (
@@ -300,10 +269,9 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
         <span>{t('box.palette')}</span>
         <div className="ccw-palette">
           {palette.map((color, index) => (
-            <PaletteSwatch
+            <ColorField
               key={`${index}-${color}`}
-              color={color}
-              index={index}
+              value={color}
               label={t('box.palette')}
               t={t}
               onChange={(nextColor) => {

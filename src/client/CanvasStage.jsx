@@ -11,6 +11,7 @@ import {
   tintedMask,
 } from './mask.js'
 import { remapPathPoints, splitShapePieces } from './shapes.js'
+import { ColorField } from './ColorField.jsx'
 
 const { forwardRef, useEffect, useImperativeHandle, useRef, useState } = React
 
@@ -1528,6 +1529,54 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
           commitCaption()
         },
       }),
+      captionEdit.kind === 'box'
+        ? React.createElement('div', { className: 'ccw-caption-editor-palette-row', key: 'palette-row' }, [
+            React.createElement('span', { className: 'ccw-caption-editor-label', key: 'palette-label' }, tr('box.palette')),
+            React.createElement('div', { className: 'ccw-palette', key: 'palette' }, [
+              ...(Array.isArray(captionEdit.palette) ? captionEdit.palette : []).map((color, index) =>
+                React.createElement(ColorField, {
+                  key: `${index}-${color}`,
+                  value: color,
+                  label: tr('box.palette'),
+                  t: tr,
+                  onChange: (nextColor) => {
+                    const palette = (captionEdit.palette ?? []).slice()
+                    palette[index] = nextColor
+                    const next = { ...captionEdit, palette }
+                    setCaptionEdit(next)
+                    const box = boxes.find((item) => item.id === captionEdit.id)
+                    if (box !== undefined && typeof onBoxEdit === 'function') {
+                      onBoxEdit(box, { label: next.label, caption: next.value, palette, text: next.text ?? '' })
+                    }
+                  },
+                  onRemove: () => {
+                    const palette = (captionEdit.palette ?? []).filter((_, at) => at !== index)
+                    const next = { ...captionEdit, palette }
+                    setCaptionEdit(next)
+                    const box = boxes.find((item) => item.id === captionEdit.id)
+                    if (box !== undefined && typeof onBoxEdit === 'function') {
+                      onBoxEdit(box, { label: next.label, caption: next.value, palette, text: next.text ?? '' })
+                    }
+                  },
+                })),
+              (captionEdit.palette ?? []).length < 5
+                ? React.createElement('button', {
+                    key: 'add',
+                    type: 'button',
+                    className: 'ccw-btn ccw-btn-ghost ccw-btn-small',
+                    onClick: () => {
+                      const palette = [...(captionEdit.palette ?? []), '#cccccc']
+                      setCaptionEdit({ ...captionEdit, palette })
+                      const box = boxes.find((item) => item.id === captionEdit.id)
+                      if (box !== undefined && typeof onBoxEdit === 'function') {
+                        onBoxEdit(box, { label: captionEdit.label, caption: captionEdit.value, palette, text: captionEdit.text ?? '' })
+                      }
+                    },
+                  }, React.createElement('span', null, '+'), React.createElement('span', null, tr('box.paletteAdd')))
+                : null,
+            ]),
+          ])
+        : null,
       React.createElement('span', { className: 'ccw-caption-editor-hint', key: 'hint' }, tr('captionEditor.hint')),
     ])
   }
