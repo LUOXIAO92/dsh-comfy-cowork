@@ -2518,14 +2518,21 @@ var TAB_KIND = "comfy-coworking";
 var inject = ["slots", "locale", "sidebarRightTabs", "sidebarRight", "layout"];
 function openCanvas(ctx, sessionId) {
   try {
-    if (typeof ctx.sidebarRight?.openTabIn === "function" && sessionId) {
-      ctx.sidebarRight.openTabIn(sessionId, TAB_KIND, {});
-      return;
-    }
-    ctx.sidebarRight?.openTab?.(TAB_KIND, {});
-  } catch (error) {
-    console.error("[comfy-coworking] could not open canvas tab", error);
+    ctx.layout?.openRightbar?.(true, false);
+  } catch {
   }
+  const open = () => {
+    try {
+      if (typeof ctx.sidebarRight?.openTabIn === "function" && sessionId) {
+        ctx.sidebarRight.openTabIn(sessionId, TAB_KIND, {});
+        return;
+      }
+      ctx.sidebarRight?.openTab?.(TAB_KIND, {});
+    } catch (error) {
+      console.error("[comfy-coworking] could not open canvas tab", error);
+    }
+  };
+  setTimeout(open, 60);
 }
 function CanvasIcon({ size = 16 }) {
   return React4.createElement(
@@ -2549,6 +2556,26 @@ function CanvasIcon({ size = 16 }) {
 }
 function OpenCanvasButton(props) {
   const t = props.t;
+  const lastOpen = React4.useRef(null);
+  React4.useEffect(() => {
+    if (!props.sessionId) return void 0;
+    const source = new EventSource(eventUrl(props.sessionId));
+    const onDoc = (event) => {
+      try {
+        const doc = JSON.parse(event.data).doc;
+        const seq = doc?.ui?.openSeq ?? 0;
+        if (lastOpen.current === null) lastOpen.current = seq;
+        else if (seq > lastOpen.current) {
+          lastOpen.current = seq;
+          props.onOpen?.();
+        }
+      } catch {
+      }
+    };
+    source.addEventListener("hello", onDoc);
+    source.addEventListener("doc", onDoc);
+    return () => source.close();
+  }, [props.sessionId]);
   return React4.createElement("button", {
     type: "button",
     className: "ccw-icon-btn",

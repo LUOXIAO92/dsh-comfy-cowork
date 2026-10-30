@@ -2,6 +2,7 @@ import * as React from 'react'
 import css from './styles.css'
 import { CanvasTab } from './CanvasTab.jsx'
 import { en, zh } from './locales.js'
+import { eventUrl } from './api.js'
 
 const PACKAGE_ID = 'dsh-comfy-coworking'
 const NS = 'comfy-coworking'
@@ -12,14 +13,21 @@ export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'l
 
 function openCanvas(ctx, sessionId) {
   try {
-    if (typeof ctx.sidebarRight?.openTabIn === 'function' && sessionId) {
-      ctx.sidebarRight.openTabIn(sessionId, TAB_KIND, {})
-      return
+    ctx.layout?.openRightbar?.(true, false)
+  } catch {}
+  const open = () => {
+    try {
+      if (typeof ctx.sidebarRight?.openTabIn === 'function' && sessionId) {
+        ctx.sidebarRight.openTabIn(sessionId, TAB_KIND, {})
+        return
+      }
+      ctx.sidebarRight?.openTab?.(TAB_KIND, {})
+    } catch (error) {
+      console.error('[comfy-coworking] could not open canvas tab', error)
     }
-    ctx.sidebarRight?.openTab?.(TAB_KIND, {})
-  } catch (error) {
-    console.error('[comfy-coworking] could not open canvas tab', error)
   }
+  // The right sidebar adopts the session when it opens; give that one frame.
+  setTimeout(open, 60)
 }
 
 function CanvasIcon({ size = 16 }) {
@@ -42,6 +50,25 @@ function CanvasIcon({ size = 16 }) {
 
 function OpenCanvasButton(props) {
   const t = props.t
+  const lastOpen = React.useRef(null)
+  React.useEffect(() => {
+    if (!props.sessionId) return undefined
+    const source = new EventSource(eventUrl(props.sessionId))
+    const onDoc = (event) => {
+      try {
+        const doc = JSON.parse(event.data).doc
+        const seq = doc?.ui?.openSeq ?? 0
+        if (lastOpen.current === null) lastOpen.current = seq
+        else if (seq > lastOpen.current) {
+          lastOpen.current = seq
+          props.onOpen?.()
+        }
+      } catch {}
+    }
+    source.addEventListener('hello', onDoc)
+    source.addEventListener('doc', onDoc)
+    return () => source.close()
+  }, [props.sessionId])
   return React.createElement('button', {
     type: 'button',
     className: 'ccw-icon-btn',
