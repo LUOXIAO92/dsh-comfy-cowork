@@ -1,4 +1,5 @@
 node_modules/
+.comfy-cowork/
 .comfy-coworking/
 *.log
 tmp/

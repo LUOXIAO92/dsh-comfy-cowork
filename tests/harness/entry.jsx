@@ -112,9 +112,9 @@ window.EventSource = MockEventSource
 window.fetch = async (url, options = {}) => {
   const text = String(url)
   const method = (options.method ?? 'GET').toUpperCase()
-  if (realSession !== null && method === 'GET' && text.includes('/api/comfy-coworking/asset')) {
+  if (realSession !== null && method === 'GET' && text.includes('/api/comfy-cowork/asset')) {
     const name = new URL(text, location.href).searchParams.get('name')
-    return nativeFetch(`/.comfy-coworking/${realSession}/assets/${encodeURIComponent(name)}`)
+    return nativeFetch(`/.comfy-cowork/${realSession}/assets/${encodeURIComponent(name)}`)
   }
   if (method === 'PUT' && text.includes('/doc/selection')) {
     current.selected = bodyOf(options).selection ?? null
@@ -461,7 +461,7 @@ if (new URLSearchParams(location.search).get('errortest') === '1') {
 if (realSession !== null) {
   const boot = async () => {
     try {
-      const stored = await nativeFetch(`/.comfy-coworking/${realSession}/document.json`).then((r) => (r.ok ? r.json() : null))
+      const stored = await nativeFetch(`/.comfy-cowork/${realSession}/document.json`).then((r) => (r.ok ? r.json() : null))
       if (stored !== null) {
         Object.assign(current, stored)
         window.dispatchEvent(new CustomEvent('ccw-realdoc', { detail: stored }))

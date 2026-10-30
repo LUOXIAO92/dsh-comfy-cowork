@@ -72,7 +72,7 @@ test('recovers from a corrupt document file', async () => {
   const { store, root, cleanup } = await makeStore()
   try {
     const session = 'session-corrupt'
-    const dir = path.join(root, '.comfy-coworking', session)
+    const dir = path.join(root, '.comfy-cowork', session)
     await fs.mkdir(dir, { recursive: true })
     await fs.writeFile(path.join(dir, 'document.json'), '{not json')
     const doc = await store.snapshot(session)
@@ -158,7 +158,7 @@ test('normalizes persisted comments and drops malformed ones', async () => {
   const { store, root, cleanup } = await makeStore()
   try {
     const session = 'session-comments-old'
-    const dir = path.join(root, '.comfy-coworking', session)
+    const dir = path.join(root, '.comfy-cowork', session)
     await fs.mkdir(path.join(dir, 'assets'), { recursive: true })
     const longText = 'x'.repeat(9000)
     await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
@@ -223,7 +223,7 @@ test('clears a stale prompt error when a manual prompt needs no compilation', as
   const { store, root, cleanup } = await makeStore()
   try {
     const session = 'session-manual-error'
-    const dir = path.join(root, '.comfy-coworking', session)
+    const dir = path.join(root, '.comfy-cowork', session)
     await fs.mkdir(path.join(dir, 'assets'), { recursive: true })
     await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
       promptManual: true,
@@ -250,6 +250,43 @@ test('keeps the session enable switch in the document', async () => {
     assert.equal(reloaded.enabled, true)
     const off = await store.setEnabled(session, false)
     assert.equal(off.enabled, false)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('migrates a legacy .comfy-coworking store directory', async () => {
+  const { store, root, cleanup } = await makeStore()
+  try {
+    const session = 'session-legacy'
+    const legacyDir = path.join(root, '.comfy-coworking', session)
+    await fs.mkdir(path.join(legacyDir, 'assets'), { recursive: true })
+    await fs.writeFile(path.join(legacyDir, 'document.json'), JSON.stringify({ prompt: 'from the old directory', rev: 7 }))
+    const doc = await store.snapshot(session)
+    assert.equal(doc.rev, 7)
+    assert.equal(doc.prompt, 'from the old directory')
+    const moved = JSON.parse(await fs.readFile(path.join(root, '.comfy-cowork', session, 'document.json'), 'utf8'))
+    assert.equal(moved.prompt, 'from the old directory')
+    const entries = await fs.readdir(root)
+    assert.ok(!entries.includes('.comfy-coworking'), 'the legacy directory moved away')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('leaves an existing current store directory alone during migration', async () => {
+  const { store, root, cleanup } = await makeStore()
+  try {
+    const session = 'session-both'
+    const legacyDir = path.join(root, '.comfy-coworking', session)
+    const currentDir = path.join(root, '.comfy-cowork', session)
+    await fs.mkdir(legacyDir, { recursive: true })
+    await fs.mkdir(currentDir, { recursive: true })
+    await fs.writeFile(path.join(legacyDir, 'document.json'), JSON.stringify({ prompt: 'stale' }))
+    await fs.writeFile(path.join(currentDir, 'document.json'), JSON.stringify({ prompt: 'current' }))
+    const doc = await store.snapshot(session)
+    assert.equal(doc.prompt, 'current')
+    assert.ok(await fs.stat(legacyDir), 'the legacy directory is kept untouched')
   } finally {
     await cleanup()
   }

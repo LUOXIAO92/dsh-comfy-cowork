@@ -76,7 +76,7 @@ Agent 可调用：
 每个会话工作区：
 
 ```text
-<workspace>/.comfy-coworking/<sessionId>/
+<workspace>/.comfy-cowork/<sessionId>/
   document.json        # 画布、提示词、布局、工作流、运行记录
   assets/
     canvas.png         # 当前画布原图
@@ -87,7 +87,7 @@ Agent 可调用：
   runs/
 ```
 
-建议把 `.comfy-coworking/` 加入项目 `.gitignore`。
+建议把 `.comfy-cowork/` 加入项目 `.gitignore`。
 
 ## 关键兼容性说明
 

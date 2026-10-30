@@ -88,7 +88,7 @@ async function call(routes, req) {
 test('rejects a request the connection does not admit', async () => {
   const { routes, cleanup } = await makeRoutes({ rejection: 403 })
   try {
-    const res = await call(routes, makeReq('GET', '/api/comfy-coworking/health'))
+    const res = await call(routes, makeReq('GET', '/api/comfy-cowork/health'))
     assert.equal(res.status, 403)
   } finally {
     await cleanup()
@@ -98,7 +98,7 @@ test('rejects a request the connection does not admit', async () => {
 test('answers health for an admitted browser peer', async () => {
   const { routes, cleanup } = await makeRoutes()
   try {
-    const res = await call(routes, makeReq('GET', '/api/comfy-coworking/health'))
+    const res = await call(routes, makeReq('GET', '/api/comfy-cowork/health'))
     assert.equal(res.status, 200)
     const body = JSON.parse(res.body)
     assert.equal(body.ok, true)
@@ -114,7 +114,7 @@ test('stores a box selection and reports the updated document', async () => {
   try {
     const session = 'session-routes'
     await store.upsertBox(session, { id: 'box-1', label: 'object', caption: 'an apple', bbox: [10, 10, 100, 100] })
-    const res = await call(routes, makeReq('PUT', `/api/comfy-coworking/doc/selection?session=${session}`, {
+    const res = await call(routes, makeReq('PUT', `/api/comfy-cowork/doc/selection?session=${session}`, {
       selection: { kind: 'box', id: 'box-1' },
     }))
     assert.equal(res.status, 200)
@@ -128,16 +128,16 @@ test('stores a box selection and reports the updated document', async () => {
 test('records a rejected session id so a red banner can be traced', async () => {
   const { routes, cleanup } = await makeRoutes()
   try {
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/canvas', {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/canvas', {
       sessionId: null,
       mode: 'image',
     }))
     assert.equal(res.status, 400)
     assert.match(JSON.parse(res.body).error, /a valid session id is required/)
-    const health = await call(routes, makeReq('GET', '/api/comfy-coworking/health'))
+    const health = await call(routes, makeReq('GET', '/api/comfy-cowork/health'))
     const errors = JSON.parse(health.body).errors
     assert.equal(errors.length, 1)
-    assert.match(errors[0].request, /PUT \/api\/comfy-coworking\/doc\/canvas/)
+    assert.match(errors[0].request, /PUT \/api\/comfy-cowork\/doc\/canvas/)
   } finally {
     await cleanup()
   }
@@ -146,7 +146,7 @@ test('records a rejected session id so a red banner can be traced', async () => 
 test('refuses the literal undefined session instead of creating one', async () => {
   const { routes, store, cleanup } = await makeRoutes()
   try {
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/canvas?session=undefined', { mode: 'image' }))
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/canvas?session=undefined', { mode: 'image' }))
     assert.equal(res.status, 400)
     const dir = store.sessionDir('undefined')
     await assert.rejects(fs.access(path.join(dir, 'document.json')))
@@ -159,7 +159,7 @@ test('accepts a document write whose session id is only in the body', async () =
   const { routes, store, cleanup } = await makeRoutes()
   try {
     const session = 'session-body-only'
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/canvas', {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/canvas', {
       sessionId: session,
       mode: 'image',
       mask: { feather: 12, grow: 2, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, rev: 1, hasMask: true },
@@ -180,7 +180,7 @@ test('accepts a prompt write whose session id is only in the body', async () => 
   const { routes, store, cleanup } = await makeRoutes()
   try {
     const session = 'session-prompt-body'
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/prompt', {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/prompt', {
       sessionId: session,
       prompt: 'a red apple on linen',
       manual: true,
@@ -196,9 +196,9 @@ test('accepts a prompt write whose session id is only in the body', async () => 
 test('answers the client heartbeat', async () => {
   const { routes, cleanup } = await makeRoutes()
   try {
-    const res = await call(routes, makeReq('POST', '/api/comfy-coworking/client-hello', { build: 'test' }))
+    const res = await call(routes, makeReq('POST', '/api/comfy-cowork/client-hello', { build: 'test' }))
     assert.equal(res.status, 200)
-    const health = await call(routes, makeReq('GET', '/api/comfy-coworking/health'))
+    const health = await call(routes, makeReq('GET', '/api/comfy-cowork/health'))
     assert.equal(JSON.parse(health.body).client.build, 'test')
   } finally {
     await cleanup()
@@ -208,7 +208,7 @@ test('answers the client heartbeat', async () => {
 test('queues a run whose session id is only in the body', async () => {
   const { routes, cleanup } = await makeRoutes()
   try {
-    const res = await call(routes, makeReq('POST', '/api/comfy-coworking/run', {
+    const res = await call(routes, makeReq('POST', '/api/comfy-cowork/run', {
       sessionId: 'session-run-body',
       seed: 7,
     }))
@@ -224,7 +224,7 @@ test('stores the negative prompt separately from the canvas prompt', async () =>
   try {
     const session = 'session-negative'
     await store.setPrompt(session, 'a red apple on linen', { source: 'agent' })
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/negative', {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/negative', {
       sessionId: session,
       negative: 'blurry, watermark',
     }))
@@ -242,7 +242,7 @@ test('writes and deletes a canvas comment (session in body then query)', async (
   const { routes, store, cleanup } = await makeRoutes()
   try {
     const session = 'session-route-comments'
-    const put = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+    const put = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/comment', {
       sessionId: session,
       comment: { bbox: [10, 10, 200, 200], text: '这个图不行 这里细节不好' },
       source: 'user',
@@ -256,7 +256,7 @@ test('writes and deletes a canvas comment (session in body then query)', async (
     const id = body.doc.comments[0].id
 
     // The comment object may also arrive at the top level; the session comes from the query.
-    const update = await call(routes, makeReq('PUT', `/api/comfy-coworking/doc/comment?session=${session}`, {
+    const update = await call(routes, makeReq('PUT', `/api/comfy-cowork/doc/comment?session=${session}`, {
       id,
       bbox: [20, 20, 220, 220],
       text: '把手指改好',
@@ -268,20 +268,20 @@ test('writes and deletes a canvas comment (session in body then query)', async (
     assert.equal(body.doc.comments[0].text, '把手指改好')
     assert.equal(body.doc.comments[0].source, 'user')
 
-    const invalid = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+    const invalid = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/comment', {
       sessionId: session,
       comment: { bbox: [0, 0], text: 'bad' },
     }))
     assert.equal(invalid.status, 400)
     assert.match(JSON.parse(invalid.body).error, /bbox/)
 
-    const remove = await call(routes, makeReq('DELETE', `/api/comfy-coworking/doc/comment/${encodeURIComponent(id)}?session=${session}`))
+    const remove = await call(routes, makeReq('DELETE', `/api/comfy-cowork/doc/comment/${encodeURIComponent(id)}?session=${session}`))
     assert.equal(remove.status, 200)
     body = JSON.parse(remove.body)
     assert.deepEqual(body.doc.comments, [])
     assert.deepEqual((await store.snapshot(session)).comments, [])
 
-    const again = await call(routes, makeReq('DELETE', `/api/comfy-coworking/doc/comment/${encodeURIComponent(id)}?session=${session}`))
+    const again = await call(routes, makeReq('DELETE', `/api/comfy-cowork/doc/comment/${encodeURIComponent(id)}?session=${session}`))
     assert.equal(again.status, 200)
     assert.deepEqual(JSON.parse(again.body).doc.comments, [])
   } finally {
@@ -292,7 +292,7 @@ test('writes and deletes a canvas comment (session in body then query)', async (
 test('rejects a canvas comment write the connection does not admit', async () => {
   const { routes, store, cleanup } = await makeRoutes({ rejection: 401 })
   try {
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/comment', {
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/comment', {
       sessionId: 'session-comment-denied',
       comment: { bbox: [0, 0, 10, 10], text: 'nope' },
     }))
@@ -307,10 +307,10 @@ test('stores the session enable switch', async () => {
   const { routes, cleanup } = await makeRoutes()
   try {
     const session = 'session-enable-route'
-    const on = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/enabled', { sessionId: session, enabled: true }))
+    const on = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true }))
     assert.equal(on.status, 200)
     assert.equal(JSON.parse(on.body).doc.enabled, true)
-    const off = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/enabled?session=' + session, { enabled: false }))
+    const off = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled?session=' + session, { enabled: false }))
     assert.equal(off.status, 200)
     assert.equal(JSON.parse(off.body).doc.enabled, false)
   } finally {

@@ -18,10 +18,12 @@ pipeline that writes every prompt into the plugin prompt box.
 
 - `index.js` + `lib/plugin.js` — Host half. Injects `tools`, `webServer`, `sessions`,
   `workingDirectory`, `systemPrompt`, `connection`, `agents`.
-- `lib/routes.js` — `/api/comfy-coworking/*` HTTP routes (auth through `ctx.connection.admit`),
+- `lib/routes.js` — `/api/comfy-cowork/*` HTTP routes (auth through `ctx.connection.admit`),
   the SSE stream, and the ComfyUI proxy.
-- `lib/store.js` — per-session document store at `<workspace>/.comfy-coworking/<sessionId>/`
-  (`document.json` + `assets/`). All mutations go through `store.mutate`.
+- `lib/store.js` — per-session document store at `<workspace>/.comfy-cowork/<sessionId>/`
+  (`document.json` + `assets/`). All mutations go through `store.mutate`. On first use it
+  renames a pre-rename `.comfy-coworking/` directory in that workspace, so old canvases keep
+  working; that legacy name is the only place the old spelling belongs.
 - `lib/workflow.js` — infers canvas→workflow injection bindings from the ComfyUI JSON itself.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
 - `lib/tools.js` — the agent-facing `comfy_coworking_*` tools.
@@ -47,7 +49,7 @@ pipeline that writes every prompt into the plugin prompt box.
   disables the session again; the tools leave that agent.
 - The canvas tab has its own title (`Comfy 画布`); the *command* carries the plugin's name.
   Never call the plugin "canvas" in UI copy, and never add a composer button for it.
-- `doc.enabled` is the durable switch; `GET /api/comfy-coworking/health` reports the live
+- `doc.enabled` is the durable switch; `GET /api/comfy-cowork/health` reports the live
   attach list as `scoped`.
 
 ## Commands

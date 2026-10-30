@@ -21,7 +21,7 @@ export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'l
  */
 function setEnabled(sessionId, enabled) {
   if (typeof sessionId !== 'string' || sessionId === '') return
-  fetch('/api/comfy-coworking/doc/enabled', {
+  fetch('/api/comfy-cowork/doc/enabled', {
     method: 'PUT',
     credentials: 'same-origin',
     headers: { 'content-type': 'application/json' },
@@ -160,7 +160,7 @@ export function apply(ctx) {
   }
 
   const postHello = (extra = {}) => {
-    fetch('/api/comfy-coworking/client-hello', {
+    fetch('/api/comfy-cowork/client-hello', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },

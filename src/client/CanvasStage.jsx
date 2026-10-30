@@ -726,7 +726,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       loadedKeyRef.current = key
       if (imageUrl) {
         let cancelled = false
-        const asset = (name) => `/api/comfy-coworking/asset?session=${encodeURIComponent(sessionId)}&name=${name}&v=${Date.now()}`
+        const asset = (name) => `/api/comfy-cowork/asset?session=${encodeURIComponent(sessionId)}&name=${name}&v=${Date.now()}`
         fetch(asset('mask-brush.png'))
           .then((response) => (response.ok ? response.blob() : null))
           .then(async (blob) => {

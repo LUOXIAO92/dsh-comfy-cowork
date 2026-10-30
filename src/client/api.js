@@ -1,4 +1,4 @@
-const BASE = '/api/comfy-coworking'
+const BASE = '/api/comfy-cowork'
 const SESSION_ID = /^[A-Za-z0-9._-]{1,200}$/
 
 /** Injected by scripts/build-client.mjs; `dev` when the module runs outside the bundle. */

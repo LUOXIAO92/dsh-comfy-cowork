@@ -59,7 +59,7 @@
   - 读画布状态、写提示词、增改 bbox、读写工作流绑定、列工作流/模型、运行、取结果。
   - 所有提示词写入 `document.prompt`（即 UI 文本框），不允许只把提示词留在聊天里。
 - **持久化**
-  - 每个会话工作区：`.comfy-coworking/sessions/<sessionId>/`，含 `document.json`、`canvas.png`、`mask.png`、`runs/`。
+  - 每个会话工作区：`.comfy-cowork/sessions/<sessionId>/`，含 `document.json`、`canvas.png`、`mask.png`、`runs/`。
   - 原子写；自动保存；刷新/重启后恢复。
 
 ### 3.2 第一版不做
@@ -205,14 +205,14 @@ DSH Web UI
        ├─ sidebar.right.pane.tab  "Comfy Canvas"（聊天并排）
        ├─ 画布层：image + mask canvas + bbox layer
        ├─ 提示词/布局面板；工作流图视图；运行/历史
-       └─ fetch /api/comfy-coworking/* + SSE
+       └─ fetch /api/comfy-cowork/* + SSE
 
 DSH Host
   ├─ agent tools (comfy_coworking_*)
   ├─ session document store（内存 + JSON 原子写）
   ├─ SSE 广播（doc 变更 / run 进度）
   ├─ ComfyUI 代理（fetch，无浏览器 CORS）
-  ├─ 图片/蒙版资产（workspace/.comfy-coworking/...）
+  ├─ 图片/蒙版资产（workspace/.comfy-cowork/...）
   └─ workflow 转换 / prompt 编译（JS，可单测）
 ```
 
