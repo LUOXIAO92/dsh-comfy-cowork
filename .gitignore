@@ -1,0 +1,7 @@
+node_modules/
+.comfy-coworking/
+*.log
+tmp/
+dist/
+build/
+.DS_Store
