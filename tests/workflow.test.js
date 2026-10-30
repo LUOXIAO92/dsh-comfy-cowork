@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { workflowToPrompt, inferBindings, applyBindings } from '../lib/workflow.js'
+import { workflowToPrompt, inferBindings, applyBindings, bindingsFromWorkflow } from '../lib/workflow.js'
 
 const info = {
   LoadImage: {
@@ -135,4 +135,53 @@ test('sends a list-typed BOUNDING_BOXES default as JSON text and skips empty opt
   const { prompt } = workflowToPrompt(wf, localInfo)
   assert.equal(prompt['1'].inputs.editor_state, '[]')
   assert.equal(prompt['2'].inputs.extra_state_dict, undefined)
+})
+
+test('node declarations override inferred bindings', () => {
+  const nodes = [
+    { id: 1, type: 'CLIPTextEncode', title: 'positive', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
+    { id: 2, type: 'LoadImage', inputs: [], outputs: [{ type: 'IMAGE' }, { type: 'MASK' }] },
+    { id: 3, type: 'CLIPTextEncode', title: 'negative', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
+  ]
+  const inferred = bindingsFromWorkflow({ nodes, links: [] }, {})
+  assert.equal(inferred.prompt, '1')
+  assert.equal(inferred.image, '2')
+
+  const declared = bindingsFromWorkflow({
+    nodes: nodes.map((node) => (node.id === 3 ? { ...node, ccw: 'prompt' } : node)),
+    links: [],
+  }, {})
+  assert.equal(declared.prompt, '3', 'the declared node wins over inference')
+  assert.equal(declared.image, '2')
+})
+
+test('a size declaration feeds width and height from one node', () => {
+  const bindings = bindingsFromWorkflow({
+    nodes: [
+      { id: 5, type: 'EmptyLatentImage', ccw: 'size', inputs: [{ name: 'width' }, { name: 'height' }], outputs: [] },
+      { id: 6, type: 'KSampler', inputs: [{ name: 'seed' }], outputs: [] },
+    ],
+    links: [],
+  }, {})
+  assert.equal(bindings.width, '5')
+  assert.equal(bindings.height, '5')
+  assert.equal(bindings.seed, '6')
+})
+
+test('a none declaration keeps a node out of injection', () => {
+  const bindings = bindingsFromWorkflow({
+    nodes: [{ id: 2, type: 'LoadImage', ccw: 'none', inputs: [], outputs: [{ type: 'IMAGE' }, { type: 'MASK' }] }],
+    links: [],
+  }, {})
+  assert.equal(bindings.image, '')
+  assert.equal(bindings.mask, '')
+})
+
+test('an image declaration keeps the inferred mask on the same node', () => {
+  const bindings = bindingsFromWorkflow({
+    nodes: [{ id: 2, type: 'LoadImage', ccw: 'image', inputs: [], outputs: [{ type: 'IMAGE' }, { type: 'MASK' }] }],
+    links: [],
+  }, {})
+  assert.equal(bindings.image, '2')
+  assert.equal(bindings.mask, '2')
 })

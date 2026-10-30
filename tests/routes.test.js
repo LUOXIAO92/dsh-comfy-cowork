@@ -218,3 +218,34 @@ test('queues a run whose session id is only in the body', async () => {
     await cleanup()
   }
 })
+
+test('stores a node canvas role inside the workflow JSON', async () => {
+  const { routes, store, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-node-role'
+    await store.setWorkflow(session, {
+      name: 'role.json',
+      json: {
+        nodes: [
+          { id: 1, type: 'CLIPTextEncode', title: 'negative', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
+          { id: 2, type: 'CLIPTextEncode', title: 'positive', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
+        ],
+        links: [],
+      },
+      bindings: { prompt: '2' },
+      dirty: false,
+    }, { source: 'agent' })
+    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/workflow/node-role', {
+      sessionId: session,
+      nodeId: '1',
+      role: 'prompt',
+    }))
+    assert.equal(res.status, 200)
+    const doc = JSON.parse(res.body).doc
+    assert.equal(doc.workflow.bindings.prompt, '1')
+    assert.equal(doc.workflow.json.nodes[0].ccw, 'prompt')
+    assert.equal(doc.workflow.dirty, true)
+  } finally {
+    await cleanup()
+  }
+})
