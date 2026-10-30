@@ -334,6 +334,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     onBoxCreate,
     onBoxCommit,
     onBoxCaption,
+    onBoxEdit,
     onBoxSelect,
     onMaskReady,
     onMessage,
@@ -791,7 +792,15 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     onBoxSelect?.(hit.box.id)
-    setCaptionEdit({ kind: 'box', id: hit.box.id, value: String(hit.box.caption ?? ''), bbox: hit.box.bbox.slice() })
+    setCaptionEdit({
+      kind: 'box',
+      id: hit.box.id,
+      value: String(hit.box.caption ?? ''),
+      bbox: hit.box.bbox.slice(),
+      label: hit.box.label,
+      text: String(hit.box.text ?? ''),
+      palette: Array.isArray(hit.box.palette) ? hit.box.palette : [],
+    })
   }
 
   function commitCaption() {
@@ -805,8 +814,16 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     const box = boxes.find((item) => item.id === edit.id)
-    if (box === undefined || String(box.caption ?? '') === edit.value) return
-    onBoxCaption?.(box, edit.value)
+    if (box === undefined) return
+    const label = edit.label ?? box.label
+    const patch = { caption: edit.value, label }
+    if (label === 'text') patch.text = edit.text ?? ''
+    const changed = String(box.caption ?? '') !== edit.value
+      || box.label !== label
+      || (label === 'text' && String(box.text ?? '') !== (edit.text ?? ''))
+    if (!changed) return
+    if (typeof onBoxEdit === 'function') onBoxEdit(box, patch)
+    else onBoxCaption?.(box, edit.value)
   }
 
   /** Move the brush-size ring under the pointer without re-rendering the canvas. */
@@ -1375,7 +1392,67 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       onPointerDown: (event) => event.stopPropagation(),
       onDoubleClick: (event) => event.stopPropagation(),
     }, [
-      React.createElement('span', { className: 'ccw-caption-editor-title', key: 'title' }, captionEdit.kind === 'comment' ? tr('captionEditor.commentTitle') : tr('captionEditor.title')),
+      captionEdit.kind === 'comment'
+        ? React.createElement('span', { className: 'ccw-caption-editor-title', key: 'title' }, tr('captionEditor.commentTitle'))
+        : React.createElement('div', { className: 'ccw-caption-editor-meta', key: 'meta' }, [
+            React.createElement('span', { className: 'ccw-caption-editor-badge', key: 'badge' },
+              String(boxes.findIndex((box) => box.id === captionEdit.id) + 1).padStart(2, '0')),
+            React.createElement('span', {
+              className: `ccw-caption-editor-chip is-${captionEdit.label ?? 'object'}`,
+              key: 'type',
+            }, captionEdit.label ?? 'object'),
+            React.createElement('span', { className: 'ccw-caption-editor-bbox', key: 'bbox' },
+              captionEdit.bbox.map((value) => Math.round(value)).join(', ')),
+            Array.isArray(captionEdit.palette) && captionEdit.palette.length > 0
+              ? React.createElement('span', { className: 'ccw-caption-editor-palette', key: 'palette' },
+                  captionEdit.palette.slice(0, 5).map((color, index) => React.createElement('span', {
+                    key: `${color}-${index}`,
+                    className: 'ccw-caption-editor-swatch',
+                    style: { background: color },
+                  })))
+              : null,
+          ]),
+      captionEdit.kind === 'comment'
+        ? null
+        : React.createElement('label', { className: 'ccw-caption-editor-type', key: 'type' },
+            React.createElement('span', null, tr('box.label')),
+            React.createElement('select', {
+              value: captionEdit.label ?? 'object',
+              onChange: (event) => {
+                const nextLabel = event.target.value
+                const current = { ...captionEdit, label: nextLabel }
+                setCaptionEdit(current)
+                const box = boxes.find((item) => item.id === current.id)
+                if (box !== undefined && typeof onBoxEdit === 'function') {
+                  const patch = { label: nextLabel, caption: current.value }
+                  if (nextLabel === 'text') patch.text = current.text ?? ''
+                  onBoxEdit(box, patch)
+                }
+              },
+            }, [
+              React.createElement('option', { key: 'object', value: 'object' }, 'object'),
+              React.createElement('option', { key: 'character', value: 'character' }, 'character'),
+              React.createElement('option', { key: 'text', value: 'text' }, 'text'),
+            ])),
+      captionEdit.kind === 'box' && captionEdit.label === 'text'
+        ? React.createElement('label', { className: 'ccw-caption-editor-type', key: 'visible' },
+            React.createElement('span', null, tr('box.text')),
+            React.createElement('input', {
+              type: 'text',
+              value: captionEdit.text ?? '',
+              onChange: (event) => setCaptionEdit({ ...captionEdit, text: event.target.value }),
+              onKeyDown: (event) => {
+                event.stopPropagation()
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault()
+                  commitCaption()
+                }
+              },
+            }))
+        : null,
+      captionEdit.kind === 'box'
+        ? React.createElement('span', { className: 'ccw-caption-editor-label', key: 'caption-label' }, tr('box.caption'))
+        : null,
       React.createElement('textarea', {
         key: 'input',
         autoFocus: true,
@@ -1393,7 +1470,11 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
             commitCaption()
           }
         },
-        onBlur: () => commitCaption(),
+        onBlur: (event) => {
+          const next = event.relatedTarget
+          if (next !== null && typeof next === 'object' && typeof event.currentTarget.parentElement?.contains === 'function' && event.currentTarget.parentElement.contains(next)) return
+          commitCaption()
+        },
       }),
       React.createElement('span', { className: 'ccw-caption-editor-hint', key: 'hint' }, tr('captionEditor.hint')),
     ])

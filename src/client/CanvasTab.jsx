@@ -1264,6 +1264,7 @@ export function CanvasTab(props) {
               onBoxCreate={createBox}
               onBoxCommit={commitBox}
               onBoxCaption={(box, caption) => commitBox({ ...box, caption })}
+              onBoxEdit={(box, patch) => commitBox({ ...box, ...patch })}
               onBoxSelect={selectBox}
               t={t}
               onMaskReady={handleMaskReady}
