@@ -451,6 +451,14 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [seed, setSeed] = useState('')
+  const [graphHeight, setGraphHeight] = useState(() => {
+    try {
+      const stored = Number(window.localStorage.getItem('ccw.graphHeight'))
+      return Number.isFinite(stored) && stored >= 200 ? stored : null
+    } catch {
+      return null
+    }
+  })
   const [showModels, setShowModels] = useState(false)
   const syncKey = useRef('')
   const commitTimer = useRef(null)
@@ -546,6 +554,27 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  /** Drag the graph band height; remembered per browser. */
+  function startGraphResize(event) {
+    event.preventDefault()
+    const startY = event.clientY
+    const graph = event.currentTarget.parentElement?.querySelector('.ccw-graph')
+    const startHeight = graphHeight ?? Math.round(graph?.getBoundingClientRect().height ?? 320)
+    let last = startHeight
+    const move = (moveEvent) => {
+      last = Math.max(200, Math.min(900, Math.round(startHeight + (moveEvent.clientY - startY))))
+      setGraphHeight(last)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      try {
+        window.localStorage.setItem('ccw.graphHeight', String(last))
+      } catch {}
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up, { once: true })
   }
 
   async function run() {
@@ -659,7 +688,11 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
         </div>
       ) : (
         <div className="ccw-workflow-grid">
-          <div className="ccw-workflow-graph-col" aria-label={t('workflow.graph')}>
+          <div
+            className="ccw-workflow-graph-col"
+            aria-label={t('workflow.graph')}
+            style={graphHeight === null ? undefined : { '--ccw-graph-height': `${graphHeight}px` }}
+          >
             <Graph
               key={doc?.workflow?.loadedAt ?? 'workflow'}
               workflow={workflow}
@@ -673,6 +706,15 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
               <p className="ccw-hint">{t('workflow.apiOnly')}</p>
             ) : null}
           </div>
+
+          <div
+            className="ccw-resize-handle"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={t('workflow.resize')}
+            title={t('workflow.resize')}
+            onPointerDown={startGraphResize}
+          />
 
           <aside className="ccw-workflow-rail" aria-label={t('workflow.settings')}>
             <Section
