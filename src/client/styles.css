@@ -26,9 +26,9 @@
   --ccw-surface-active: var(--dsw-alias-bg-layer-3);
   --ccw-surface-strong: var(--dsw-alias-bg-layer-4);
   --ccw-surface-overlay: var(--dsw-alias-bg-overlay);
-  --ccw-border: var(--dsw-alias-border-l1);
-  --ccw-border-strong: var(--dsw-alias-border-l2);
-  --ccw-border-bright: var(--dsw-alias-border-l3);
+  --ccw-border: color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);
+  --ccw-border-strong: color-mix(in srgb, var(--dsw-alias-label-primary) 24%, transparent);
+  --ccw-border-bright: color-mix(in srgb, var(--dsw-alias-label-primary) 34%, transparent);
   --ccw-text: var(--dsw-alias-label-primary);
   --ccw-text-secondary: var(--dsw-alias-label-secondary);
   --ccw-text-tertiary: var(--dsw-alias-label-tertiary);
@@ -42,7 +42,7 @@
   --ccw-idle: var(--dsw-alias-state-idle-primary);
   --ccw-checker: color-mix(in srgb, var(--dsw-alias-bg-layer-4) 70%, transparent);
   --ccw-range-track: color-mix(in srgb, var(--dsw-alias-border-l2) 70%, transparent);
-  --ccw-range-fill: var(--dsw-alias-brand-primary);
+  --ccw-range-fill: var(--ccw-accent);
   color-scheme: dark;
   color: var(--ccw-text);
   font-family: var(--ccw-font-ui);
@@ -864,7 +864,7 @@
 }
 
 .ccw-section {
-  border-bottom: 1px solid var(--ccw-border);
+  border-bottom: 1px solid var(--ccw-border-strong);
   background: var(--ccw-surface-panel);
 }
 
@@ -878,6 +878,12 @@
   gap: var(--ccw-space-1);
   height: 36px;
   padding: 0 6px 0 8px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, var(--ccw-surface-base));
+  border-bottom: 1px solid var(--ccw-border-strong);
+}
+
+.ccw-section.is-collapsed .ccw-section-head {
+  border-bottom: 0;
 }
 
 .ccw-section-toggle {
@@ -950,7 +956,6 @@
 
 .ccw-section-body {
   padding: 0 10px 12px;
-  border-top: 1px solid var(--ccw-border);
   background: var(--ccw-surface-base);
 }
 
@@ -1161,6 +1166,7 @@
   border: 1px solid var(--ccw-border-strong);
   border-radius: var(--ccw-radius-sm);
   background: var(--ccw-surface-base);
+  background: var(--ccw-surface-base);
   color: var(--ccw-text);
   font-family: inherit;
   font-size: var(--ccw-text-ui);
@@ -1259,9 +1265,30 @@
 }
 
 .ccw-size-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--ccw-space-2);
+}
+
+.ccw-size-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  width: auto;
+}
+
+.ccw-size-field > span {
+  flex: none;
+  color: var(--ccw-text-secondary);
+}
+
+.ccw-size-field input {
+  width: 78px;
+  flex: none;
+  padding: 4px 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .ccw-size-readout {

@@ -3,13 +3,14 @@ import {
   assetUrl,
   deleteAsset,
   interruptRun,
-  listModels,
   listWorkflows,
   loadWorkflowFile,
   objectInfo,
   patchWorkflow,
   runWorkflow,
   saveCanvas,
+  saveNegative,
+  savePrompt,
   saveWorkflowFile,
   uploadAsset,
 } from './api.js'
@@ -222,7 +223,6 @@ function Graph({ workflow, title, infos, selectedId, onSelect, t }) {
       </div>
 
       <div className="ccw-graph-hud">
-        <span className="ccw-graph-hud-title" title={title}>{title || t('workflow.graph')}</span>
         <span>{t('workflow.nodes').replace('{count}', String(nodes.length))}</span>
         <span className="ccw-graph-hud-sep" aria-hidden="true" />
         <span>{t('workflow.links').replace('{count}', String(links.length))}</span>
@@ -369,71 +369,6 @@ function NodeEditor({ node, info, onChange, onTitle, onToggleMode, t }) {
   )
 }
 
-function ModelBrowser({ t, setError }) {
-  const [folders, setFolders] = useState(null)
-  const [folder, setFolder] = useState('')
-  const [files, setFiles] = useState([])
-  const [copied, setCopied] = useState('')
-
-  useEffect(() => {
-    listModels().then((result) => setFolders(result.folders ?? [])).catch((error) => setError(error.message))
-  }, [setError])
-
-  useEffect(() => {
-    if (folder === '') return
-    listModels(folder).then((result) => setFiles(result.files ?? [])).catch((error) => setError(error.message))
-  }, [folder, setError])
-
-  return (
-    <div className="ccw-model-browser">
-      <div className="ccw-model-head">
-        <span className="ccw-subhead">
-          <Icon name="folder" size={14} />
-          {t('models.title')}
-        </span>
-        {copied !== '' ? (
-          <span className="ccw-model-copied" role="status">
-            <Icon name="check" size={13} />
-            {t('models.copied')}
-          </span>
-        ) : (
-          <span className="ccw-subhead-meta">{files.length > 0 ? t('models.count').replace('{count}', String(files.length)) : ''}</span>
-        )}
-      </div>
-      <div className="ccw-model-controls">
-        <select
-          value={folder}
-          aria-label={t('models.folder')}
-          onChange={(event) => setFolder(event.target.value)}
-        >
-          <option value="">{t('models.folder')}</option>
-          {(folders ?? []).map((name) => <option key={name} value={name}>{name}</option>)}
-        </select>
-      </div>
-      <div className="ccw-model-list">
-        {files.length === 0 ? <p className="ccw-hint">{t('models.empty')}</p> : null}
-        {files.slice(0, 300).map((file) => (
-          <button
-            key={file}
-            type="button"
-            className={`ccw-model-row ${copied === file ? 'is-copied' : ''}`}
-            title={file}
-            onClick={async () => {
-              await navigator.clipboard.writeText(file)
-              setCopied(file)
-              setTimeout(() => setCopied(''), 900)
-            }}
-          >
-            <span>{file}</span>
-            <Icon name={copied === file ? 'check' : 'copy'} size={13} />
-          </button>
-        ))}
-      </div>
-      <p className="ccw-hint">{t('models.hint')}</p>
-    </div>
-  )
-}
-
 function runTone(status) {
   if (status === 'completed' || status === 'success') return 'is-ok'
   if (status === 'failed' || status === 'error') return 'is-error'
@@ -450,7 +385,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const [selectedNode, setSelectedNode] = useState(null)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [seed, setSeed] = useState('')
   const [graphHeight, setGraphHeight] = useState(() => {
     try {
       const stored = Number(window.localStorage.getItem('ccw.graphHeight'))
@@ -459,7 +393,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
       return null
     }
   })
-  const [showModels, setShowModels] = useState(false)
   const syncKey = useRef('')
   const commitTimer = useRef(null)
 
@@ -539,11 +472,11 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }
   }
 
-  async function save() {
-    if (workflow === null) return
+  async function save(name = saveName || selectedName) {
+    if (workflow === null || !name) return
     setBusy(true)
     try {
-      const result = await saveWorkflowFile(sessionId, saveName || selectedName, workflow)
+      const result = await saveWorkflowFile(sessionId, name, workflow)
       if (result.doc) setDoc(result.doc)
       setDirty(false)
       setError('')
@@ -554,6 +487,18 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  /** Save the graph under a new name, typed in a small dialog. */
+  async function saveAs() {
+    if (workflow === null) return
+    const suggested = saveName || selectedName || 'workflow.json'
+    const name = window.prompt(t('workflow.saveAsPrompt'), suggested)
+    if (name === null) return
+    const trimmed = name.trim()
+    if (trimmed === '') return
+    setSaveName(trimmed)
+    await save(trimmed)
   }
 
   /** Drag the graph band height; remembered per browser. */
@@ -577,10 +522,26 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     window.addEventListener('pointerup', up, { once: true })
   }
 
+  /** Keep the canvas prompt boxes and the text node the workflow uses in step. */
+  async function syncCanvasText(node, name, value) {
+    const bindings = doc?.workflow?.bindings ?? {}
+    if (typeof value !== 'string') return
+    const isPrompt = String(bindings.prompt ?? '') === String(node.id)
+    const isNegative = String(bindings.negative ?? '') === String(node.id)
+    if (!isPrompt && !isNegative) return
+    if (!['text', 'prompt', 'string', 'value'].includes(name)) return
+    try {
+      const result = isPrompt ? await savePrompt(sessionId, value, true) : await saveNegative(sessionId, value)
+      if (result.doc) setDoc(result.doc)
+    } catch (error) {
+      setError(error.message)
+    }
+  }
+
   async function run() {
     setBusy(true)
     try {
-      await runWorkflow(sessionId, { seed: seed === '' ? undefined : Number(seed) })
+      await runWorkflow(sessionId, {})
       setError('')
     } catch (error) {
       setError(error.message)
@@ -634,52 +595,36 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
             value={selectedName}
             aria-label={t('workflow.pick')}
             title={t('workflow.pick')}
-            onChange={(event) => setSelectedName(event.target.value)}
+            onChange={(event) => {
+              setSelectedName(event.target.value)
+              load(event.target.value)
+            }}
           >
             <option value="">{t('workflow.pick')}</option>
             {workflows.map((entry) => <option key={entry.path} value={entry.path}>{entry.path}</option>)}
           </select>
-          <button
-            type="button"
-            className="ccw-btn ccw-btn-secondary ccw-btn-small"
-            disabled={busy || selectedName === ''}
-            onClick={() => load(selectedName)}
-          >
-            <Icon name="cornerDownLeft" size={14} />
-            <span>{t('workflow.load')}</span>
-          </button>
         </div>
         <div className="ccw-workflow-file-actions">
-          <input
-            className="ccw-name"
-            value={saveName}
-            placeholder={t('workflow.name')}
-            title={t('workflow.name')}
-            aria-label={t('workflow.name')}
-            onChange={(event) => setSaveName(event.target.value)}
-          />
           <button
             type="button"
             className="ccw-btn ccw-btn-ghost ccw-btn-small"
-            disabled={busy || workflow === null || dirty === false || (saveName || selectedName) === ''}
-            onClick={save}
+            disabled={busy || workflow === null || dirty === false}
+            onClick={() => save()}
           >
             <Icon name="save" size={14} />
             <span>{t('workflow.save')}</span>
           </button>
           <button
             type="button"
-            className={`ccw-btn ccw-btn-ghost ccw-btn-small ${showModels ? 'is-active' : ''}`}
-            aria-expanded={showModels}
-            onClick={() => setShowModels((value) => !value)}
+            className="ccw-btn ccw-btn-ghost ccw-btn-small"
+            disabled={busy || workflow === null}
+            onClick={saveAs}
           >
-            <Icon name="folder" size={14} />
-            <span>{t('models.open')}</span>
+            <Icon name="copy" size={14} />
+            <span>{t('workflow.saveAs')}</span>
           </button>
         </div>
       </div>
-
-      {showModels ? <ModelBrowser t={t} setError={setError} /> : null}
 
       {workflow === null ? (
         <div className="ccw-workflow-empty">
@@ -734,7 +679,10 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                     t={t}
                     onTitle={(value) => setNodeField(selected.id, { title: value })}
                     onToggleMode={(mode) => setNodeField(selected.id, { mode: selected.mode === mode ? 0 : mode })}
-                    onChange={(name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))}
+                    onChange={(name, value) => {
+                      commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))
+                      syncCanvasText(selected, name, value)
+                    }}
                   />
                 </>
               ) : (
@@ -747,15 +695,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
 
             <Section title={t('run.section')} icon="play" defaultOpen className="ccw-section-run">
               <div className="ccw-run-controls">
-                <label className="ccw-field ccw-seed">
-                  <span>{t('run.seed')}</span>
-                  <input
-                    type="number"
-                    value={seed}
-                    placeholder={t('run.random')}
-                    onChange={(event) => setSeed(event.target.value)}
-                  />
-                </label>
                 <button
                   type="button"
                   className="ccw-btn ccw-btn-primary ccw-btn-run"

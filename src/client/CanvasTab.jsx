@@ -7,6 +7,7 @@ import {
   getDoc,
   health,
   saveCanvas,
+  patchWorkflow,
   saveLayout,
   saveNegative,
   savePrompt,
@@ -16,6 +17,7 @@ import {
 } from './api.js'
 import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
+import { setNodeWidget } from './workflow-ui.js'
 import { Icon, IconButton, Section } from './ui.jsx'
 
 /** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
@@ -342,6 +344,19 @@ export function CanvasTab(props) {
     }
   }, [mask.feather, mask.grow, mask.inverted, mask.visible, mask.color, mask.opacity, sessionId])
 
+  /** A hand-written prompt also updates the text node, so the graph and the box agree. */
+  async function pushPromptToNode(current, value) {
+    const workflow = current?.workflow
+    const nodeId = workflow?.bindings?.prompt
+    if (!nodeId || !workflow?.json || current.promptSource === 'layout') return
+    const node = (workflow.json.nodes ?? []).find((entry) => String(entry.id) === String(nodeId))
+    if (node === undefined || node.type === 'MOSSImageLayoutPrompt') return
+    try {
+      const result = await patchWorkflow(sessionId, { json: setNodeWidget(workflow.json, node.id, 'text', value) })
+      if (result.doc) setDoc(result.doc)
+    } catch {}
+  }
+
   async function persistPrompt(value) {
     if (!sessionId || value === docRef.current?.prompt) return
     setSaving(true)
@@ -349,6 +364,7 @@ export function CanvasTab(props) {
       const result = await savePrompt(sessionId, value, true)
       setDoc(result.doc)
       setError('')
+      await pushPromptToNode(result.doc, value)
     } catch (caught) {
       setError(caught.message)
     } finally {
@@ -863,7 +879,7 @@ export function CanvasTab(props) {
             ) : (
               <>
                 <div className="ccw-size-grid">
-                  <label className="ccw-field">
+                  <label className="ccw-field ccw-size-field">
                     <span>{t('canvasSize.width')}</span>
                     <input
                       type="number"
@@ -878,7 +894,7 @@ export function CanvasTab(props) {
                       }}
                     />
                   </label>
-                  <label className="ccw-field">
+                  <label className="ccw-field ccw-size-field">
                     <span>{t('canvasSize.height')}</span>
                     <input
                       type="number"
