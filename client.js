@@ -49,6 +49,16 @@ var import_react2 = __toESM(require("react"), 1);
 
 // src/client/api.js
 var BASE = "/api/comfy-coworking";
+var SESSION_ID = /^[A-Za-z0-9._-]{1,200}$/;
+function requireSession(sessionId) {
+  if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) {
+    throw new Error("canvas is not bound to a session yet; open it from a chat");
+  }
+  return sessionId;
+}
+function sessionQuery(sessionId) {
+  return `session=${encodeURIComponent(requireSession(sessionId))}`;
+}
 async function request(path, options = {}) {
   const response = await fetch(`${BASE}${path}`, {
     credentials: "same-origin",
@@ -72,46 +82,46 @@ async function request(path, options = {}) {
   return body;
 }
 function getDoc(sessionId) {
-  return request(`/doc?session=${encodeURIComponent(sessionId)}`);
+  return request(`/doc?${sessionQuery(sessionId)}`);
 }
 function savePrompt(sessionId, prompt, manual = true) {
   return request("/doc/prompt", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, prompt, manual, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), prompt, manual, source: "user" })
   });
 }
 function saveLayout(sessionId, summary, items) {
   return request("/doc/layout", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, summary, items, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), summary, items, source: "user" })
   });
 }
 function saveCanvas(sessionId, patch) {
   return request("/doc/canvas", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, ...patch, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), ...patch, source: "user" })
   });
 }
 function saveSelection(sessionId, selection) {
   return request("/doc/selection", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, selection, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), selection, source: "user" })
   });
 }
 function patchWorkflow(sessionId, patch) {
   return request("/doc/workflow/patch", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, patch, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), patch, source: "user" })
   });
 }
 function upsertBox(sessionId, box) {
   return request("/doc/box", {
     method: "PUT",
-    body: JSON.stringify({ sessionId, box, source: "user" })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), box, source: "user" })
   });
 }
 function deleteBox(sessionId, id) {
-  return request(`/doc/box/${encodeURIComponent(id)}?session=${encodeURIComponent(sessionId)}`, {
+  return request(`/doc/box/${encodeURIComponent(id)}?${sessionQuery(sessionId)}`, {
     method: "DELETE"
   });
 }
@@ -124,25 +134,25 @@ function listWorkflows() {
 function loadWorkflowFile(sessionId, name) {
   return request("/workflows/load", {
     method: "POST",
-    body: JSON.stringify({ sessionId, name })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), name })
   });
 }
 function saveWorkflowFile(sessionId, name, workflow) {
   return request("/workflows/save", {
     method: "POST",
-    body: JSON.stringify({ sessionId, name, workflow })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), name, workflow })
   });
 }
 function runWorkflow(sessionId, payload = {}) {
   return request("/run", {
     method: "POST",
-    body: JSON.stringify({ sessionId, ...payload })
+    body: JSON.stringify({ sessionId: requireSession(sessionId), ...payload })
   });
 }
 function interruptRun(sessionId, runId) {
   return request(`/run/${encodeURIComponent(runId)}/interrupt`, {
     method: "POST",
-    body: JSON.stringify({ sessionId })
+    body: JSON.stringify({ sessionId: requireSession(sessionId) })
   });
 }
 function listModels(folder) {
@@ -152,7 +162,7 @@ function objectInfo(classes) {
   return request(`/object_info?classes=${encodeURIComponent((classes ?? []).join(","))}`);
 }
 async function uploadAsset(sessionId, name, blob) {
-  const response = await fetch(`${BASE}/asset?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(name)}`, {
+  const response = await fetch(`${BASE}/asset?${sessionQuery(sessionId)}&name=${encodeURIComponent(name)}`, {
     method: "PUT",
     credentials: "same-origin",
     headers: { "content-type": blob.type || "image/png" },
@@ -163,18 +173,20 @@ async function uploadAsset(sessionId, name, blob) {
   return text === "" ? null : JSON.parse(text);
 }
 async function deleteAsset(sessionId, name) {
-  await fetch(`${BASE}/asset?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(name)}`, {
+  await fetch(`${BASE}/asset?${sessionQuery(sessionId)}&name=${encodeURIComponent(name)}`, {
     method: "DELETE",
     credentials: "same-origin"
   });
 }
 function assetUrl(sessionId, name, version = "") {
+  if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) return "";
   const params = new URLSearchParams({ session: sessionId, name });
   if (version) params.set("v", String(version));
   return `${BASE}/asset?${params.toString()}`;
 }
 function eventUrl(sessionId) {
-  return `${BASE}/events?session=${encodeURIComponent(sessionId)}`;
+  if (typeof sessionId !== "string" || !SESSION_ID.test(sessionId)) return "";
+  return `${BASE}/events?${sessionQuery(sessionId)}`;
 }
 
 // src/client/CanvasStage.jsx
@@ -1630,6 +1642,8 @@ function useDoc(sessionId, setError) {
   const [status, setStatus] = (0, import_react2.useState)("connecting");
   (0, import_react2.useEffect)(() => {
     if (!sessionId) return void 0;
+    const streamUrl = eventUrl(sessionId);
+    if (streamUrl === "") return void 0;
     let alive = true;
     getDoc(sessionId).then((value) => {
       if (alive) setDoc(value.doc);
@@ -1639,7 +1653,7 @@ function useDoc(sessionId, setError) {
         setStatus("offline");
       }
     });
-    const source = new EventSource(eventUrl(sessionId));
+    const source = new EventSource(streamUrl);
     source.addEventListener("open", () => setStatus("live"));
     source.addEventListener("hello", (event) => {
       try {
@@ -2002,6 +2016,7 @@ function CanvasTab(props) {
     }
   }
   async function clearImage() {
+    if (!sessionId) return;
     try {
       await deleteAsset(sessionId, "mask.png");
       await deleteAsset(sessionId, "canvas_rgba.png");
@@ -2013,6 +2028,7 @@ function CanvasTab(props) {
   }
   async function setMode(mode) {
     setTool(mode === "layout" ? "box" : "brush");
+    if (!sessionId) return;
     try {
       const result = await saveCanvas(sessionId, { mode });
       setDoc(result.doc);
@@ -2021,6 +2037,7 @@ function CanvasTab(props) {
     }
   }
   async function setCanvasSize(nextWidth, nextHeight) {
+    if (!sessionId) return;
     if (!Number.isInteger(nextWidth) || !Number.isInteger(nextHeight)) return;
     if (nextWidth < 16 || nextHeight < 16 || nextWidth > 16384 || nextHeight > 16384) return;
     try {
@@ -2594,7 +2611,9 @@ function OpenCanvasButton(props) {
   const lastOpen = React4.useRef(null);
   React4.useEffect(() => {
     if (!props.sessionId) return void 0;
-    const source = new EventSource(eventUrl(props.sessionId));
+    const streamUrl = eventUrl(props.sessionId);
+    if (streamUrl === "") return void 0;
+    const source = new EventSource(streamUrl);
     const onDoc = (event) => {
       try {
         const doc = JSON.parse(event.data).doc;

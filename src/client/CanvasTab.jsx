@@ -22,6 +22,8 @@ function useDoc(sessionId, setError) {
 
   useEffect(() => {
     if (!sessionId) return undefined
+    const streamUrl = eventUrl(sessionId)
+    if (streamUrl === '') return undefined
     let alive = true
     getDoc(sessionId)
       .then((value) => {
@@ -33,7 +35,7 @@ function useDoc(sessionId, setError) {
           setStatus('offline')
         }
       })
-    const source = new EventSource(eventUrl(sessionId))
+    const source = new EventSource(streamUrl)
     source.addEventListener('open', () => setStatus('live'))
     source.addEventListener('hello', (event) => {
       try {
@@ -371,6 +373,7 @@ export function CanvasTab(props) {
   }
 
   async function clearImage() {
+    if (!sessionId) return
     try {
       await deleteAsset(sessionId, 'mask.png')
       await deleteAsset(sessionId, 'canvas_rgba.png')
@@ -383,6 +386,7 @@ export function CanvasTab(props) {
 
   async function setMode(mode) {
     setTool(mode === 'layout' ? 'box' : 'brush')
+    if (!sessionId) return
     try {
       const result = await saveCanvas(sessionId, { mode })
       setDoc(result.doc)
@@ -392,6 +396,7 @@ export function CanvasTab(props) {
   }
 
   async function setCanvasSize(nextWidth, nextHeight) {
+    if (!sessionId) return
     if (!Number.isInteger(nextWidth) || !Number.isInteger(nextHeight)) return
     if (nextWidth < 16 || nextHeight < 16 || nextWidth > 16384 || nextHeight > 16384) return
     try {

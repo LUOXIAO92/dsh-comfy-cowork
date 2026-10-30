@@ -53,7 +53,9 @@ function OpenCanvasButton(props) {
   const lastOpen = React.useRef(null)
   React.useEffect(() => {
     if (!props.sessionId) return undefined
-    const source = new EventSource(eventUrl(props.sessionId))
+    const streamUrl = eventUrl(props.sessionId)
+    if (streamUrl === '') return undefined
+    const source = new EventSource(streamUrl)
     const onDoc = (event) => {
       try {
         const doc = JSON.parse(event.data).doc
