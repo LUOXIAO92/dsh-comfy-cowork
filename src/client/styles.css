@@ -446,11 +446,16 @@
 }
 
 .ccw-btn-danger-ghost {
-  width: 100%;
-  justify-content: flex-start;
   border-color: transparent;
   background: transparent;
   color: var(--ccw-danger);
+}
+
+/* The danger zone stacks its actions full width; a comment's Delete sits in a
+   row beside its hint and must stay compact. */
+.ccw-danger-zone .ccw-btn-danger-ghost {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .ccw-btn-danger-ghost:hover:not(:disabled) {

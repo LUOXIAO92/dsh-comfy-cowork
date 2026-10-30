@@ -2,10 +2,15 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { CanvasTab } from '../../src/client/CanvasTab.jsx'
 import { WorkflowView } from '../../src/client/WorkflowView.jsx'
-import { zh } from '../../src/client/locales.js'
+import { en, ja, zh } from '../../src/client/locales.js'
+import { compileMossLayout } from '../../lib/moss.js'
 
+const requestedLang = new URLSearchParams(location.search).get('lang')
+const lang = requestedLang === 'en' ? 'en' : requestedLang === 'ja' ? 'ja' : 'zh'
+if (typeof document !== 'undefined') document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang
+const dict = lang === 'en' ? en : lang === 'ja' ? ja : zh
 const t = (key, vars) => {
-  const text = zh[key] ?? key
+  const text = dict[key] ?? key
   if (vars === undefined) return text
   return text.replace(/\{(\w+)\}/g, (match, name) => (vars[name] === undefined ? match : String(vars[name])))
 }
@@ -42,6 +47,7 @@ const doc = {
   version: 1,
   sessionId: 'session-test',
   rev: 7,
+  enabled: true,
   mode: 'layout',
   canvas: {
     width: 1024,
@@ -73,6 +79,24 @@ if (new URLSearchParams(location.search).get('noimage') === '1') {
 // Mask-shape previews are an image-mode tool, so that mode starts in image mode.
 if (new URLSearchParams(location.search).get('shape')) doc.mode = 'image'
 
+// ?demo=<flow> starts each recorded demo from a clean, enabled canvas: no
+// sample comments or boxes, an empty prompt, and the mode that flow needs.
+const demo = new URLSearchParams(location.search).get('demo')
+if (demo !== null) {
+  doc.enabled = true
+  doc.comments = []
+  doc.layout.items = []
+  doc.layout.summary = demo === 'layout' ? 'A clean still life on pale linen, soft window light.' : ''
+  doc.selected = null
+  doc.prompt = ''
+  // The layout flow demonstrates the compiler: box edits own the prompt box.
+  doc.promptManual = demo !== 'layout'
+  doc.promptSource = doc.promptManual ? 'user' : 'layout'
+  doc.mask = { ...doc.mask, hasMask: false, shapes: [] }
+  doc.mode = demo === 'layout' ? 'layout' : 'image'
+  if (demo === 'layout') doc.canvas.image = null
+}
+
 const infos = {
   CheckpointLoaderSimple: { input: { required: { ckpt_name: [['Illustrious/miaomiaoHarem_v20.safetensors'], {}] } }, input_order: { required: ['ckpt_name'] } },
   LoadImage: { input: { required: { image: [['canvas.png'], {}] } }, input_order: { required: ['image'] } },
@@ -99,6 +123,27 @@ const nativeFetch = window.fetch.bind(window)
 // The mock keeps a mutable document so interactions (select / delete / write)
 // behave like the host instead of echoing the initial state forever.
 let current = JSON.parse(JSON.stringify(doc))
+// Mirror the host: any layout edit that leaves the prompt unmanaged recompiles it.
+const compileCurrentLayout = () => {
+  if (current.promptManual === true) return
+  if (current.layout.items.length === 0) {
+    current.promptError = null
+    current.promptSource = 'layout'
+    return
+  }
+  try {
+    current.prompt = compileMossLayout({
+      width: current.canvas.width,
+      height: current.canvas.height,
+      summary: current.layout.summary,
+      items: current.layout.items,
+    })
+    current.promptError = null
+  } catch (error) {
+    current.promptError = String(error?.message ?? error)
+  }
+  current.promptSource = 'layout'
+}
 const json = (value) => new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } })
 const bodyOf = (options) => {
   try {
@@ -124,6 +169,7 @@ window.fetch = async (url, options = {}) => {
     const id = decodeURIComponent(text.split('/doc/box/')[1].split('?')[0])
     current.layout.items = current.layout.items.filter((item) => item.id !== id)
     if (current.selected?.id === id) current.selected = null
+    compileCurrentLayout()
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/box')) {
@@ -132,6 +178,7 @@ window.fetch = async (url, options = {}) => {
     if (index === -1) current.layout.items = [...current.layout.items, { ...box, id: box.id ?? `box-${current.layout.items.length + 1}` }]
     else current.layout.items[index] = { ...current.layout.items[index], ...box }
     current.selected = { kind: 'box', id: box.id }
+    compileCurrentLayout()
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/comment')) {
@@ -165,6 +212,10 @@ window.fetch = async (url, options = {}) => {
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/layout')) {
+    const body = bodyOf(options)
+    if (typeof body.summary === 'string') current.layout.summary = body.summary
+    if (Array.isArray(body.items)) current.layout.items = body.items
+    compileCurrentLayout()
     return json({ doc: current })
   }
   if (method === 'GET' && text.includes('/doc') && !text.includes('/doc/')) return json({ doc: current })

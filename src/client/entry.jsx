@@ -1,7 +1,7 @@
 import * as React from 'react'
 import css from './styles.css'
 import { CanvasTab } from './CanvasTab.jsx'
-import { en, zh } from './locales.js'
+import { en, ja, zh } from './locales.js'
 import { BUILD, eventUrl } from './api.js'
 
 const PACKAGE_ID = 'dsh-comfy-cowork'
@@ -134,6 +134,19 @@ function CanvasTitle(props) {
 export function apply(ctx) {
   ctx.effect(() => ctx.locale.register(NS, 'en', en), 'comfy-cowork: en locale')
   ctx.effect(() => ctx.locale.register(NS, 'zh', zh), 'comfy-cowork: zh locale')
+  ctx.effect(() => ctx.locale.register(NS, 'ja', ja), 'comfy-cowork: ja locale')
+
+  // DSH ships Chinese and English only, and its fallback chain stops at a
+  // language the catalog knows. Register Japanese for the plugin's own copy so
+  // a Japanese reader gets it; every shell string we do not own stays English.
+  try {
+    const known = ctx.locale.getSnapshot?.().locales ?? []
+    if (typeof ctx.locale.addLanguage === 'function' && !known.some((entry) => entry.id === 'ja')) {
+      ctx.effect(() => ctx.locale.addLanguage({ id: 'ja', label: '日本語', fallback: 'en' }), 'comfy-cowork: ja language')
+    }
+  } catch (error) {
+    console.warn('[comfy-cowork] could not register the Japanese language', error)
+  }
 
   ctx.effect(() => {
     const style = document.createElement('style')

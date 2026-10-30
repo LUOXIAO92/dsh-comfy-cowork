@@ -59,7 +59,11 @@ pipeline that writes every prompt into the plugin prompt box.
 - Harness: serve the repo root (`python3 -m http.server 8766`) and open
   `http://127.0.0.1:8766/tests/harness/index.html`; rebuild the harness bundle with
   `npx esbuild tests/harness/entry.jsx --bundle --format=iife --outfile=tests/harness/harness.js --loader:.jsx=jsx`.
-  Query flags: `?view=workflow`, `?noimage=1`, `?smoke=1`, `?sizetest=1`, …
+  Query flags: `?view=workflow`, `?noimage=1`, `?smoke=1`, `?sizetest=1`, `?lang=en`, `?demo=mask|layout|comment|agent`, …
+- README demos (`docs/media/*.gif`) are recorded from the harness with a CDP driver at a
+  fixed 10 fps, then encoded with an ffmpeg palette. `?demo=` starts a clean enabled canvas
+  per flow, so no session or workspace data can leak into a recording. Regenerate the GIFs
+  whenever the canvas UI changes enough to make them misleading.
 - Real-page verification: mint a browser cookie from `~/.dsh/.credentials.yaml`, drive
   headless Chrome over CDP, evaluate JS and screenshot. Host changes need the plugin toggled
   off→on (`plugin_manager set_plugin`, entry `include:comfy-cowork`); client changes need
@@ -74,7 +78,9 @@ pipeline that writes every prompt into the plugin prompt box.
 - Colours come from DSH alias tokens (`--dsw-alias-*`); the action accent is
   `--dsw-alias-state-business-primary`. Never hard-code chrome colours.
 - The host theme rounds corners as squircles; force `corner-shape: round` for true circles.
-- Text lives in `src/client/locales.js` — add both `en` and `zh` keys.
+- Text lives in `src/client/locales.js` — keep `en`, `zh`, and `ja` at identical key sets. The
+  plugin registers Japanese with DSH's language catalog; any language it does not translate
+  falls back to English.
 - The workflow JSON is the single source of truth; never add plugin-private fields to nodes.
 
 ## Feature map (agent-relevant)
