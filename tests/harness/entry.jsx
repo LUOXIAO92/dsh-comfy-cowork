@@ -47,7 +47,7 @@ const doc = {
     height: 1024,
     image: { asset: 'canvas.png', name: 'linen-still-life.png', width: 1024, height: 1024, rev: 1 },
   },
-  mask: { feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false, rev: 0 },
+  mask: { feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: true, rev: 1, shapes: [{ id: 'ms-1', kind: 'rect', bbox: [620, 520, 900, 760], opacity: 1 }] },
   prompt,
   promptSource: 'layout',
   promptManual: false,
@@ -93,6 +93,7 @@ class MockEventSource {
   close() {}
 }
 
+const realSession = new URLSearchParams(location.search).get('realdoc')
 const nativeFetch = window.fetch.bind(window)
 // The mock keeps a mutable document so interactions (select / delete / write)
 // behave like the host instead of echoing the initial state forever.
@@ -110,6 +111,10 @@ window.EventSource = MockEventSource
 window.fetch = async (url, options = {}) => {
   const text = String(url)
   const method = (options.method ?? 'GET').toUpperCase()
+  if (realSession !== null && method === 'GET' && text.includes('/api/comfy-coworking/asset')) {
+    const name = new URL(text, location.href).searchParams.get('name')
+    return nativeFetch(`/.comfy-coworking/${realSession}/assets/${encodeURIComponent(name)}`)
+  }
   if (method === 'PUT' && text.includes('/doc/selection')) {
     current.selected = bodyOf(options).selection ?? null
     return json({ doc: current })
@@ -448,6 +453,20 @@ if (new URLSearchParams(location.search).get('errortest') === '1') {
     document.body.appendChild(pre)
   }
   run()
+}
+
+// ?realdoc=<session> loads a stored document (plus its assets) for debugging.
+if (realSession !== null) {
+  const boot = async () => {
+    try {
+      const stored = await nativeFetch(`/.comfy-coworking/${realSession}/document.json`).then((r) => (r.ok ? r.json() : null))
+      if (stored !== null) {
+        Object.assign(current, stored)
+        window.dispatchEvent(new CustomEvent('ccw-realdoc', { detail: stored }))
+      }
+    } catch {}
+  }
+  boot()
 }
 
 // ?sizetest=1 picks the 3:4 ratio and reports the canvas size the host saw.

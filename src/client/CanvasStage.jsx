@@ -536,6 +536,23 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     drawOverlay()
   }, [boxes, selectedId, draftBox, overlayTick, view.scale, shapeList, selectedShape, comments, selectedComment])
 
+  // Shapes live in the composite mask, so a new list needs a new raster.
+  useEffect(() => {
+    refreshProcessed()
+  }, [shapeList])
+
+  // Keep the display canvas matched to the artboard (it can mount before the
+  // size effect has resized it).
+  useEffect(() => {
+    const display = maskDisplayRef.current
+    const overlay = overlayRef.current
+    for (const canvas of [display, overlay]) {
+      if (!canvas || canvas.width === limit.width) continue
+      canvas.width = limit.width
+      canvas.height = limit.height
+    }
+  }, [limit.width, limit.height])
+
   useEffect(() => {
     paintRef.current = createCanvas(limit.width, limit.height)
     eraseRef.current = createCanvas(limit.width, limit.height)

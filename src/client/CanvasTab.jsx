@@ -427,7 +427,7 @@ export function CanvasTab(props) {
       const nextTool = toolKeys[key]
       if (nextTool === undefined) return
       const allowed = docRef.current?.mode === 'layout'
-        ? ['box', 'select', 'pan']
+        ? ['box', 'brush', 'eraser', 'rect', 'ellipse', 'select', 'pan']
         : ['brush', 'eraser', 'rect', 'ellipse', 'select', 'pan']
       if (!allowed.includes(nextTool)) return
       event.preventDefault()
@@ -436,6 +436,16 @@ export function CanvasTab(props) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
+
+  const shapesKey = JSON.stringify(doc?.mask?.shapes ?? [])
+  useEffect(() => {
+    if (!doc) return
+    const nextShapes = doc.mask?.shapes ?? []
+    setMask((current) => {
+      if (JSON.stringify(current.shapes ?? []) === JSON.stringify(nextShapes)) return current
+      return { ...current, shapes: nextShapes }
+    })
+  }, [shapesKey])
 
   const commentsKey = comments.map((comment) => `${comment.id}:${comment.bbox.join(',')}:${comment.text}`).join('|')
   const commentsLoaded = useRef(false)
@@ -1057,16 +1067,15 @@ export function CanvasTab(props) {
   const compiled = hasBoxes && doc?.promptSource === 'layout'
   const tools = tool === 'comment'
     ? [{ id: 'comment', label: t('tool.comment') }, { id: 'pan', label: t('tool.pan') }]
-    : doc?.mode === 'layout'
-      ? [{ id: 'box', label: t('tool.box') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
-      : [
-          { id: 'brush', label: t('tool.brush') },
-          { id: 'eraser', label: t('tool.eraser') },
-          { id: 'rect', label: t('tool.rect') },
-          { id: 'ellipse', label: t('tool.ellipse') },
-          { id: 'select', label: t('tool.select') },
-          { id: 'pan', label: t('tool.pan') },
-        ]
+    : [
+        ...(doc?.mode === 'layout' ? [{ id: 'box', label: t('tool.box') }] : []),
+        { id: 'brush', label: t('tool.brush') },
+        { id: 'eraser', label: t('tool.eraser') },
+        { id: 'rect', label: t('tool.rect') },
+        { id: 'ellipse', label: t('tool.ellipse') },
+        { id: 'select', label: t('tool.select') },
+        { id: 'pan', label: t('tool.pan') },
+      ]
   const activeTool = tools.find((item) => item.id === tool) ?? null
 
   if (!sessionId) {
