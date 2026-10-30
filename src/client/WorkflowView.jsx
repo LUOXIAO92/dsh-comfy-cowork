@@ -292,6 +292,14 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     if (commitTimer.current !== null) clearTimeout(commitTimer.current)
   }, [])
 
+  function setNodeField(nodeId, patch) {
+    const next = JSON.parse(JSON.stringify(workflow))
+    const node = (next.nodes ?? []).find((entry) => String(entry.id) === String(nodeId))
+    if (node === undefined) return
+    Object.assign(node, patch)
+    commitLocal(next)
+  }
+
   function commitLocal(next) {
     setWorkflow(next)
     setDirty(true)
@@ -439,6 +447,24 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                     type: 'button', className: 'ccw-btn ccw-btn-ghost',
                     onClick: () => setSelectedNode(null),
                   }, '×')),
+                React.createElement('div', { className: 'ccw-row ccw-node-title-row' },
+                  React.createElement('input', {
+                    className: 'ccw-node-title-input',
+                    value: selected.title ?? '',
+                    placeholder: nodeTitle(selected),
+                    title: t('workflow.title'),
+                    onChange: (event) => setNodeField(selected.id, { title: event.target.value }),
+                  }),
+                  React.createElement('button', {
+                    type: 'button',
+                    className: `ccw-btn ccw-btn-ghost ${selected.mode === 4 ? 'is-active' : ''}`,
+                    onClick: () => setNodeField(selected.id, { mode: selected.mode === 4 ? 0 : 4 }),
+                  }, t('workflow.bypass')),
+                  React.createElement('button', {
+                    type: 'button',
+                    className: `ccw-btn ccw-btn-ghost ${selected.mode === 2 ? 'is-active' : ''}`,
+                    onClick: () => setNodeField(selected.id, { mode: selected.mode === 2 ? 0 : 2 }),
+                  }, t('workflow.mute'))),
                 React.createElement(WidgetEditor, {
                   node: selected,
                   info: infos[selected.type],

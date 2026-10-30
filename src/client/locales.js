@@ -84,6 +84,9 @@ export const en = {
   'run.use': "Use as canvas",
   'workflow.apiOnly': "API-format workflow: the graph is read-only, but it can still be run and saved.",
   'workflow.name': "name.json",
+  'workflow.title': "Node title",
+  'workflow.bypass': "Bypass",
+  'workflow.mute': "Mute",
 }
 
 export const zh = {
@@ -172,4 +175,7 @@ export const zh = {
   'run.use': "回填画布",
   'workflow.apiOnly': "API 格式工作流：图视图只读，但仍可运行和保存。",
   'workflow.name': "文件名.json",
+  'workflow.title': "节点标题",
+  'workflow.bypass': "绕过",
+  'workflow.mute': "静音",
 }

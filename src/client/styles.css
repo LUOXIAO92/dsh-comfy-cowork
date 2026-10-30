@@ -861,3 +861,17 @@
   font-size: 11px;
   padding: 4px 5px;
 }
+
+.ccw-node-title-row { align-items: center; }
+.ccw-node-title-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 5px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 4px 5px;
+}
+.ccw-btn.is-active { color: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); }
