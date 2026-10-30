@@ -237,3 +237,20 @@ test('clears a stale prompt error when a manual prompt needs no compilation', as
     await cleanup()
   }
 })
+
+test('keeps the session enable switch in the document', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-enable'
+    const initial = await store.snapshot(session)
+    assert.equal(initial.enabled, false)
+    const on = await store.setEnabled(session, true)
+    assert.equal(on.enabled, true)
+    const reloaded = await store.snapshot(session)
+    assert.equal(reloaded.enabled, true)
+    const off = await store.setEnabled(session, false)
+    assert.equal(off.enabled, false)
+  } finally {
+    await cleanup()
+  }
+})

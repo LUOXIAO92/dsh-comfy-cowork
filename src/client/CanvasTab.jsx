@@ -9,6 +9,7 @@ import {
   saveCanvas,
   patchWorkflow,
   saveComment,
+  saveEnabled,
   saveLayout,
   saveNegative,
   savePrompt,
@@ -307,8 +308,14 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
 export function CanvasTab(props) {
   const { sessionId } = props
   const t = typeof props.t === 'function' ? props.t : (key) => key
+  // The sidebar's own tab actions; `close()` removes the tab and runs the tab
+  // type's close handler, which is what turns this chat's tools off.
+  const tabInfoHook = typeof props.useTabInfo === 'function' ? props.useTabInfo : null
+  const tabInfo = tabInfoHook === null ? null : tabInfoHook()
+  const closeTabAction = tabInfo?.tab?.actions?.close ?? null
   const [error, setError] = useState('')
   const { doc, setDoc, status } = useDoc(sessionId, setError)
+  const enabled = doc?.enabled === true
   const comments = doc?.comments ?? []
   const [draft, setDraft] = useState('')
   const [focused, setFocused] = useState(false)
@@ -843,6 +850,29 @@ export function CanvasTab(props) {
     setTimeout(() => setCopied(false), 1200)
   }
 
+  /** The banner's fallback path: a restored tab whose chat lost its tools. */
+  async function enableTools() {
+    try {
+      const result = await saveEnabled(sessionId, true)
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  /** The appbar's ✕: closing the canvas takes the tools away from this chat. */
+  function closeCanvas() {
+    if (closeTabAction !== null) {
+      try {
+        closeTabAction()
+        return
+      } catch (caught) {
+        setError(caught.message)
+      }
+    }
+    saveEnabled(sessionId, false).then((result) => setDoc(result.doc)).catch((caught) => setError(caught.message))
+  }
+
   async function createComment(bbox) {
     try {
       const result = await saveComment(sessionId, { bbox, text: '' })
@@ -1164,8 +1194,21 @@ export function CanvasTab(props) {
             <span className="ccw-health-label">{comfyLabel}</span>
           </span>
           <IconButton icon="refresh" label={t('probe')} onClick={probe} className="ccw-appbar-probe" />
+          <IconButton icon="x" label={t('tab.close')} onClick={closeCanvas} className="ccw-appbar-close" />
         </div>
       </header>
+
+      {enabled ? null : (
+        <div className="ccw-notices">
+          <div className="ccw-banner ccw-banner-enable" role="status">
+            <Icon name="info" size={15} />
+            <span>{t('enable.hint')}</span>
+            <button type="button" className="ccw-btn ccw-btn-primary ccw-btn-small" onClick={enableTools}>
+              {t('enable.cta')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {(error !== '' || probeError !== '' || incoming !== '') ? (
         <div className="ccw-notices">

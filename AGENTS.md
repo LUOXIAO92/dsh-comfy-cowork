@@ -17,7 +17,7 @@ pipeline that writes every prompt into the plugin prompt box.
 ## Shape of the code
 
 - `index.js` + `lib/plugin.js` — Host half. Injects `tools`, `webServer`, `sessions`,
-  `workingDirectory`, `systemPrompt`, `connection`.
+  `workingDirectory`, `systemPrompt`, `connection`, `agents`, `commands`.
 - `lib/routes.js` — `/api/comfy-coworking/*` HTTP routes (auth through `ctx.connection.admit`),
   the SSE stream, and the ComfyUI proxy.
 - `lib/store.js` — per-session document store at `<workspace>/.comfy-coworking/<sessionId>/`
@@ -32,6 +32,18 @@ pipeline that writes every prompt into the plugin prompt box.
   - `WorkflowView.jsx` — graph view + node parameter editor + run panel.
   - `styles.css`, `locales.js` (en/zh parity is enforced), `api.js`, `ui.jsx`.
 
+## Activation (per session, never global)
+
+- The plugin mounts dormant: no tool and no prompt section exists until one chat opens
+  the canvas. Enabling is strictly per session — the host attaches `comfy_coworking_*`
+  through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see them.
+- Ways in: the composer icon (icon only — the plugin has no "canvas" name) and the
+  `/dsh-comfy-coworks` slash command. Both enable the session and open the sidebar tab.
+- Ways out: the appbar ✕ (and any tab close) run the tab type's close handler, which
+  disables the session again; the tools leave that agent.
+- `doc.enabled` is the durable switch; `GET /api/comfy-coworking/health` reports the live
+  attach list as `scoped`.
+
 ## Commands
 
 - `npm run build` — rebuild `client.js` (must run after every `src/client` change).
@@ -44,6 +56,10 @@ pipeline that writes every prompt into the plugin prompt box.
   headless Chrome over CDP, evaluate JS and screenshot. Host changes need the plugin toggled
   off→on (`plugin_manager set_plugin`, entry `include:comfy-coworking`); client changes need
   `npm run build` + a page refresh.
+- **Never type into the composer of a live session as a test.** A stray Enter submits a real
+  user message and starts a model turn. Prefer clicking the plugin's own controls, or assert on
+  `doc.enabled` / `doc.ui.openSeq`; if a command must be exercised through the menu, use a
+  throwaway session and confirm its draft is empty first.
 
 ## UI conventions
 

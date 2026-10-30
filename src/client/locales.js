@@ -48,6 +48,10 @@ export const en = {
   'tool.select': "Select",
   'tool.box': "Box",
   'mode.comment': "Comment",
+  'enable.hint': "This chat's agent cannot see the canvas tools yet. Turn them on for this chat only.",
+  'enable.cta': "Enable",
+  'tab.close': "Close the canvas and turn its tools off for this chat",
+
   'tool.comment': "Comment box",
   'comment.title': "Comments",
   'comment.hint': "Draw a box on the image and write what is wrong and how it should look. The agent reads the box crop plus your text.",
@@ -219,6 +223,10 @@ export const zh = {
   'tool.select': "选择",
   'tool.box': "拉框",
   'mode.comment': "评论",
+  'enable.hint': "这个会话的 agent 现在看不到画布工具。开启后只对本会话生效。",
+  'enable.cta': "开启",
+  'tab.close': "关闭画布，并把这个会话的工具关掉",
+
   'tool.comment': "评论框",
   'comment.title': "评论",
   'comment.hint': "在图上拉一个框，写下哪里不对、要改成什么样；agent 会看这块的截图和你的说明。",

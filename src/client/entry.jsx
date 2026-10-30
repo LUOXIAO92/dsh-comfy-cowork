@@ -11,6 +11,25 @@ const TAB_KIND = 'comfy-coworking'
 
 export const inject = ['slots', 'locale', 'sidebarRightTabs', 'sidebarRight', 'layout']
 
+/**
+ * Opening the canvas from a chat is what turns the plugin on for that session;
+ * closing its tab turns it off again. Nothing here is global: every call names
+ * one session, and the host only attaches its tools to that agent.
+ */
+function setEnabled(sessionId, enabled) {
+  if (typeof sessionId !== 'string' || sessionId === '') return
+  fetch('/api/comfy-coworking/doc/enabled', {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sessionId, enabled, source: 'user' }),
+  }).catch(() => {})
+}
+
+function enableSession(sessionId) {
+  setEnabled(sessionId, true)
+}
+
 function openCanvas(ctx, sessionId) {
   try {
     ctx.layout?.openRightbar?.(true, false)
@@ -73,11 +92,11 @@ function OpenCanvasButton(props) {
   }, [props.sessionId])
   return React.createElement('button', {
     type: 'button',
-    className: 'ccw-icon-btn',
+    className: 'ccw-icon-btn ccw-icon-btn-square',
     title: t('composer.title'),
     onClick: () => props.onOpen?.(),
-    'aria-label': t('composer.open'),
-  }, React.createElement(CanvasIcon, { size: 17 }), React.createElement('span', { className: 'ccw-icon-btn-label' }, t('composer.open')))
+    'aria-label': t('composer.title'),
+  }, React.createElement(CanvasIcon, { size: 17 }))
 }
 
 function CanvasTitle(props) {
@@ -100,6 +119,20 @@ export function apply(ctx) {
   }, 'comfy-coworking: styles')
 
   const t = ctx.locale.bind(NS)
+
+  // Closing the canvas tab is the off switch. The sidebar calls a tab type's
+  // close handler on the way out (the chip's ✕, the tab menu, or our own close
+  // button), so the tools leave that chat's agent at the same moment.
+  try {
+    const registerCloseHandler = ctx.sidebarRight?.registerCloseHandler
+    if (typeof registerCloseHandler === 'function') {
+      ctx.effect(() => registerCloseHandler.call(ctx.sidebarRight, TAB_KIND, (sessionId) => {
+        setEnabled(sessionId, false)
+      }), 'comfy-coworking: tab close handler')
+    }
+  } catch (error) {
+    console.warn('[comfy-coworking] tab close handler unavailable', error)
+  }
 
   const postHello = (extra = {}) => {
     fetch('/api/comfy-coworking/client-hello', {
@@ -149,7 +182,10 @@ export function apply(ctx) {
       inject: (sessionId) => ({
         sessionId,
         t: ctx.locale.bind(NS),
-        onOpen: () => openCanvas(ctx, sessionId),
+        onOpen: () => {
+          enableSession(sessionId)
+          openCanvas(ctx, sessionId)
+        },
       }),
     }, OpenCanvasButton)
   }), 'comfy-coworking: composer button')

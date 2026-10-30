@@ -2684,8 +2684,10 @@
 .ccw-icon-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   height: 28px;
+  min-width: 28px;
   padding: 0 7px;
   border: 1px solid transparent;
   border-radius: var(--ccw-radius-sm);
@@ -2697,6 +2699,13 @@
   cursor: pointer;
 }
 
+/* The composer entry is an icon with no caption: the plugin has no short name
+   of its own, and "canvas" is not what it is called. */
+.ccw-icon-btn-square {
+  width: 28px;
+  padding: 0;
+}
+
 .ccw-icon-btn:hover:not(:disabled) {
   background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
@@ -2705,10 +2714,6 @@
 .ccw-icon-btn:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 1px;
-}
-
-.ccw-icon-btn-label {
-  font-size: 12px;
 }
 
 /* ------------------------------------------------------------ responsive */
@@ -3295,4 +3300,15 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* ------------------------------------------------------- session enablement */
+
+.ccw-appbar-close:hover:not(:disabled) {
+  color: var(--ccw-danger, #d9534f);
+}
+
+.ccw-banner-enable {
+  border-color: color-mix(in srgb, var(--ccw-warning) 45%, var(--ccw-border));
+  background: color-mix(in srgb, var(--ccw-warning) 10%, var(--ccw-surface-raised));
 }

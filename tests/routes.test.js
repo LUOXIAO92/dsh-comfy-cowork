@@ -302,3 +302,18 @@ test('rejects a canvas comment write the connection does not admit', async () =>
     await cleanup()
   }
 })
+
+test('stores the session enable switch', async () => {
+  const { routes, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-enable-route'
+    const on = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/enabled', { sessionId: session, enabled: true }))
+    assert.equal(on.status, 200)
+    assert.equal(JSON.parse(on.body).doc.enabled, true)
+    const off = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/enabled?session=' + session, { enabled: false }))
+    assert.equal(off.status, 200)
+    assert.equal(JSON.parse(off.body).doc.enabled, false)
+  } finally {
+    await cleanup()
+  }
+})

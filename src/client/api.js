@@ -70,6 +70,13 @@ export function saveLayout(sessionId, summary, items) {
   })
 }
 
+export function saveEnabled(sessionId, enabled) {
+  return request('/doc/enabled', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), enabled, source: 'user' }),
+  })
+}
+
 export function saveComment(sessionId, comment) {
   return request('/doc/comment', {
     method: 'PUT',
