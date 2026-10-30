@@ -1625,20 +1625,28 @@
   background: var(--ccw-surface-base);
 }
 
-.ccw-swatch input[type="color"] {
+.ccw-swatch-dot {
   width: 20px;
   height: 20px;
-  padding: 0;
-  border: none;
   border-radius: 3px;
-  background: none;
-  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--ccw-text) 22%, transparent);
+  corner-shape: round;
 }
 
-.ccw-swatch code {
+.ccw-swatch-hex {
+  width: 74px;
+  height: 20px;
+  padding: 0 4px;
+  border: none;
+  background: none;
   color: var(--ccw-text-secondary);
   font-family: var(--ccw-font-mono);
   font-size: 11px;
+  outline: none;
+}
+
+.ccw-swatch-hex:focus {
+  color: var(--ccw-text);
 }
 
 .ccw-swatch-remove {

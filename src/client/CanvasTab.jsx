@@ -225,6 +225,38 @@ function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
   )
 }
 
+function PaletteSwatch({ color, index, onChange, onRemove, label, t }) {
+  const [draft, setDraft] = useState(null)
+  const normalized = /^#?[0-9a-fA-F]{6}$/.test(String(draft ?? '').trim())
+    ? `#${String(draft ?? '').trim().replace('#', '').toLowerCase()}`
+    : null
+  const commit = (raw) => {
+    setDraft(null)
+    const value = String(raw ?? '').trim()
+    if (!/^#?[0-9a-fA-F]{6}$/.test(value)) return
+    onChange(`#${value.replace('#', '').toLowerCase()}`)
+  }
+  return (
+    <span className="ccw-swatch">
+      <span className="ccw-swatch-dot" style={{ background: normalized ?? color }} aria-hidden="true" />
+      <input
+        className="ccw-swatch-hex"
+        type="text"
+        spellCheck={false}
+        value={draft ?? color}
+        aria-label={`${label} ${index + 1}`}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={(event) => commit(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit(event.target.value)
+          if (event.key === 'Escape') setDraft(null)
+        }}
+      />
+      <button type="button" className="ccw-swatch-remove" aria-label={t('layout.delete')} onClick={onRemove}>×</button>
+    </span>
+  )
+}
+
 function BoxEditor({ selected, updateSelected, removeSelected, t }) {
   const palette = Array.isArray(selected.palette) ? selected.palette : []
   return (
@@ -268,27 +300,19 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
         <span>{t('box.palette')}</span>
         <div className="ccw-palette">
           {palette.map((color, index) => (
-            <span className="ccw-swatch" key={`${color}-${index}`}>
-              <input
-                type="color"
-                value={color}
-                aria-label={`${t('box.palette')} ${index + 1}`}
-                onChange={(event) => {
-                  const next = palette.slice()
-                  next[index] = event.target.value
-                  updateSelected({ palette: next })
-                }}
-              />
-              <code>{color}</code>
-              <button
-                type="button"
-                className="ccw-swatch-remove"
-                aria-label={t('layout.delete')}
-                onClick={() => updateSelected({ palette: palette.filter((_, at) => at !== index) })}
-              >
-                ×
-              </button>
-            </span>
+            <PaletteSwatch
+              key={`${index}-${color}`}
+              color={color}
+              index={index}
+              label={t('box.palette')}
+              t={t}
+              onChange={(nextColor) => {
+                const next = palette.slice()
+                next[index] = nextColor
+                updateSelected({ palette: next })
+              }}
+              onRemove={() => updateSelected({ palette: palette.filter((_, at) => at !== index) })}
+            />
           ))}
           {palette.length < 5 ? (
             <button
