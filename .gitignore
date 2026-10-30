@@ -15,3 +15,6 @@ tests/harness/*.png
 tests/harness/harness.js
 tests/harness/canvas.js
 tests/harness/react-globals.bundle.js
+
+__pycache__/
+*.pyc

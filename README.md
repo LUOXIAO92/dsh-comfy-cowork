@@ -108,6 +108,13 @@ npm test             # node:test，16 项
 - Client：`src/client/`，由 esbuild 打成 `client.js`；入口 `entry.jsx`，画布 `CanvasStage.jsx`，工作流 `WorkflowView.jsx`。
 - 浏览器测试夹具：`tests/harness/`（headless Chromium 截图/画笔冒烟测试，不属于运行时包）。
 
+## 排查
+
+- 画布标签页出现红字：先跑 `comfy_coworking_health`。返回里的 `client` 是浏览器端心跳（`tabType/body/title/composer/slots` 都应存在），`errors` 是最近失败的浏览器请求（方法、URL、状态、错误），可直接定位是哪个接口出错。
+- 改了 Host 代码（`lib/`、`index.js`）后需要重载插件：`plugin_manager` 里把 `include:comfy-coworking` 先 `set_plugin` 关掉再打开。改了 Client（`src/client/`）需要 `npm run build` 并刷新页面。
+- 接口要求同源浏览器 cookie：`/health` 无 cookie 返回 401、伪造 `Origin` 返回 403 属于正常防护，不是故障。
+- 画布标签页提示未绑定会话：右栏标签页需要从某个聊天里打开；从无会话的面板打开时不会发请求。
+
 ## 已知限制
 
 - 子图工作流（subgraph）暂不支持，会明确报错。
