@@ -3106,3 +3106,53 @@
   color: var(--ccw-text-secondary);
   font-size: 11px;
 }
+
+/* --------------------------------------------------- workflow save as pop */
+
+.ccw-saveas {
+  position: relative;
+  display: inline-flex;
+}
+
+.ccw-saveas-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(300px, 70vw);
+  padding: 10px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-md);
+  background: var(--ccw-surface-overlay);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+}
+
+.ccw-saveas-title {
+  color: var(--ccw-text-secondary);
+  font-size: var(--ccw-text-ui);
+}
+
+.ccw-saveas-input {
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text);
+  font-family: var(--ccw-font-mono);
+  font-size: var(--ccw-text-ui);
+  outline: none;
+}
+
+.ccw-saveas-input:focus {
+  border-color: var(--ccw-accent);
+}
+
+.ccw-saveas-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}

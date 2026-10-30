@@ -1066,7 +1066,7 @@ export function CanvasTab(props) {
   const hasBoxes = items.length > 0
   const compiled = hasBoxes && doc?.promptSource === 'layout'
   const tools = tool === 'comment'
-    ? [{ id: 'comment', label: t('tool.comment') }, { id: 'pan', label: t('tool.pan') }]
+    ? [{ id: 'comment', label: t('tool.comment') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
     : [
         ...(doc?.mode === 'layout' ? [{ id: 'box', label: t('tool.box') }] : []),
         { id: 'brush', label: t('tool.brush') },
@@ -1090,7 +1090,9 @@ export function CanvasTab(props) {
   const comfyLabel = comfy?.comfy?.connected
     ? t('status.comfyOk').replace('{version}', String(comfy.comfy.version ?? '')).trim()
     : t('status.comfy')
-  const canvasLabel = doc?.mode === 'layout' ? t('mode.layout') : t('mode.edit')
+  const canvasLabel = tool === 'comment'
+    ? t('mode.comment')
+    : doc?.mode === 'layout' ? t('mode.layout') : t('mode.edit')
 
   return (
     <div className="ccw-root">

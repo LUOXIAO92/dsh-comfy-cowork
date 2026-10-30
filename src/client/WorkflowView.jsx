@@ -380,6 +380,7 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const [workflows, setWorkflows] = useState([])
   const [selectedName, setSelectedName] = useState('')
   const [saveName, setSaveName] = useState('')
+  const [saveAsOpen, setSaveAsOpen] = useState(false)
   const [workflow, setWorkflow] = useState(doc?.workflow?.json ?? null)
   const [infos, setInfos] = useState({})
   const [selectedNode, setSelectedNode] = useState(null)
@@ -489,15 +490,17 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }
   }
 
-  /** Save the graph under a new name, typed in a small dialog. */
-  async function saveAs() {
+  /** Save the graph under a new name through an inline popover (no window.prompt). */
+  function openSaveAs() {
     if (workflow === null) return
-    const suggested = saveName || selectedName || 'workflow.json'
-    const name = window.prompt(t('workflow.saveAsPrompt'), suggested)
-    if (name === null) return
-    const trimmed = name.trim()
+    setSaveName(saveName || selectedName || 'workflow.json')
+    setSaveAsOpen(true)
+  }
+
+  async function submitSaveAs() {
+    const trimmed = String(saveName ?? '').trim()
     if (trimmed === '') return
-    setSaveName(trimmed)
+    setSaveAsOpen(false)
     await save(trimmed)
   }
 
@@ -614,15 +617,49 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
             <Icon name="save" size={14} />
             <span>{t('workflow.save')}</span>
           </button>
-          <button
-            type="button"
-            className="ccw-btn ccw-btn-ghost ccw-btn-small"
-            disabled={busy || workflow === null}
-            onClick={saveAs}
-          >
-            <Icon name="copy" size={14} />
-            <span>{t('workflow.saveAs')}</span>
-          </button>
+          <div className="ccw-saveas">
+            <button
+              type="button"
+              className="ccw-btn ccw-btn-ghost ccw-btn-small"
+              disabled={busy || workflow === null}
+              aria-expanded={saveAsOpen}
+              onClick={() => (saveAsOpen ? setSaveAsOpen(false) : openSaveAs())}
+            >
+              <Icon name="copy" size={14} />
+              <span>{t('workflow.saveAs')}</span>
+            </button>
+            {saveAsOpen ? (
+              <div className="ccw-saveas-pop" role="dialog" aria-label={t('workflow.saveAs')}>
+                <span className="ccw-saveas-title">{t('workflow.saveAsPrompt')}</span>
+                <input
+                  type="text"
+                  className="ccw-saveas-input"
+                  autoFocus
+                  value={saveName}
+                  spellCheck={false}
+                  aria-label={t('workflow.saveAsPrompt')}
+                  onChange={(event) => setSaveName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      submitSaveAs()
+                    } else if (event.key === 'Escape') {
+                      event.preventDefault()
+                      setSaveAsOpen(false)
+                    }
+                  }}
+                />
+                <div className="ccw-saveas-actions">
+                  <button type="button" className="ccw-btn ccw-btn-ghost ccw-btn-small" onClick={() => setSaveAsOpen(false)}>
+                    {t('workflow.cancel')}
+                  </button>
+                  <button type="button" className="ccw-btn ccw-btn-primary ccw-btn-small" disabled={busy} onClick={submitSaveAs}>
+                    {t('workflow.saveAsConfirm')}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
