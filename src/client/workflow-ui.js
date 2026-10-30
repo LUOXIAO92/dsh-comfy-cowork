@@ -59,17 +59,11 @@ export function nodeWidgets(node, info) {
     if (!isWidget(spec)) continue
     const hasNamed = named !== null && Object.prototype.hasOwnProperty.call(named, spec.name)
     const index = widgetIndex(node, spec.name)
-    if (!hasNamed && (index < 0 || index >= values.length)) continue
-    result.push({
-      ...spec,
-      value: hasNamed ? named[spec.name] : values[index],
-    })
-  }
-  if (result.length === 0) {
-    for (const spec of specs) {
-      if (!isWidget(spec)) continue
-      result.push({ ...spec, value: spec.options?.default })
-    }
+    const stored = hasNamed ? named[spec.name] : (index >= 0 && index < values.length ? values[index] : undefined)
+    // Every widget the node type declares is listed; a widget the workflow never
+    // stored keeps its default and is flagged, so "empty means default" stays visible.
+    const fallback = spec.options?.default ?? comboOptions(spec)[0] ?? (typeof spec.type === 'string' && spec.type === 'BOOLEAN' ? false : '')
+    result.push({ ...spec, value: stored === undefined ? fallback : stored, missing: stored === undefined })
   }
   return result
 }

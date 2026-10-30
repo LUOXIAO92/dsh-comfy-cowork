@@ -503,8 +503,8 @@ export function CanvasTab(props) {
     setWidthInput(null)
     setHeightInput(null)
     if (!Number.isFinite(width) || !Number.isFinite(height)) return
-    const nextWidth = Math.min(16384, Math.max(16, Math.round(width / 16) * 16))
-    const nextHeight = Math.min(16384, Math.max(16, Math.round(height / 16) * 16))
+    const nextWidth = Math.min(16384, Math.max(16, Math.round(width / 8) * 8))
+    const nextHeight = Math.min(16384, Math.max(16, Math.round(height / 8) * 8))
     if (nextWidth === docRef.current?.canvas?.width && nextHeight === docRef.current?.canvas?.height) return
     setCanvasSize(nextWidth, nextHeight)
   }
@@ -806,7 +806,7 @@ export function CanvasTab(props) {
             </div>
           </div>
 
-          <div className="ccw-canvas-wrap" style={stageHeight === null ? undefined : { height: `${stageHeight}px` }}>
+          <div className="ccw-canvas-wrap" style={stageHeight === null ? undefined : { '--ccw-stage-height': `${stageHeight}px` }}>
             <CanvasStage
               ref={stageRef}
               sessionId={sessionId}
@@ -869,7 +869,7 @@ export function CanvasTab(props) {
                       type="number"
                       min={16}
                       max={16384}
-                      step={16}
+                      step={8}
                       value={widthInput ?? doc?.canvas?.width ?? 1024}
                       onChange={(event) => setWidthInput(event.target.value)}
                       onBlur={applyCanvasSize}
@@ -884,7 +884,7 @@ export function CanvasTab(props) {
                       type="number"
                       min={16}
                       max={16384}
-                      step={16}
+                      step={8}
                       value={heightInput ?? doc?.canvas?.height ?? 1024}
                       onChange={(event) => setHeightInput(event.target.value)}
                       onBlur={applyCanvasSize}

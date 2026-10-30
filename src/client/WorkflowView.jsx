@@ -242,6 +242,14 @@ function Graph({ workflow, title, infos, selectedId, onSelect, t }) {
 }
 
 function WidgetEditor({ node, info, onChange, t }) {
+  if (info === undefined) {
+    return (
+      <p className="ccw-hint ccw-widgets-nodinfo">
+        <Icon name="alert" size={13} />
+        <span>{t('workflow.noNodeInfo').replace('{type}', String(node.type ?? ''))}</span>
+      </p>
+    )
+  }
   const widgets = nodeWidgets(node, info)
   if (widgets.length === 0) {
     return <p className="ccw-hint">{t('workflow.noWidgets')}</p>
@@ -250,6 +258,9 @@ function WidgetEditor({ node, info, onChange, t }) {
     <div className="ccw-widgets">
       {widgets.map((widget) => {
         const options = comboOptions(widget)
+        // A widget the workflow never stored keeps ComfyUI's default and stays
+        // read-only: writing it needs positional padding we cannot guarantee.
+        const locked = widget.missing === true
         let control
         if (options.length > 0) {
           control = (
@@ -300,13 +311,17 @@ function WidgetEditor({ node, info, onChange, t }) {
             />
           )
         }
+        const lockedControl = locked && control !== null
+          ? React.cloneElement(control, { disabled: true, title: t('workflow.defaultValue') })
+          : control
         return (
-          <label key={widget.name} className="ccw-field ccw-widget-field">
+          <label key={widget.name} className={`ccw-field ccw-widget-field ${locked ? 'is-default' : ''}`}>
             <span className="ccw-widget-label">
               <span>{widget.name}</span>
+              {locked ? <span className="ccw-widget-chip">{t('workflow.defaultValue')}</span> : null}
               <em>{formatWidgetType(widget.type)}</em>
             </span>
-            {control}
+            {lockedControl}
           </label>
         )
       })}

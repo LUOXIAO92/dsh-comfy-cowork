@@ -526,8 +526,9 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 300px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
   background: var(--ccw-surface-base);
 }
 
@@ -551,15 +552,17 @@
 
 .ccw-toolrail {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  flex: none;
+  flex-wrap: wrap;
+  width: 100%;
+  overflow: visible;
   gap: var(--ccw-space-1);
   min-width: 0;
-  min-height: 0;
-  padding: var(--ccw-space-2) 5px;
-  overflow-y: auto;
+  padding: var(--ccw-space-2) 6px;
   background: var(--ccw-surface-panel);
-  border-right: 1px solid var(--ccw-border);
+  border-bottom: 1px solid var(--ccw-border);
   scrollbar-width: none;
 }
 
@@ -569,8 +572,9 @@
 
 .ccw-toolgroup {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  flex: none;
   gap: var(--ccw-space-1);
 }
 
@@ -585,10 +589,10 @@
 }
 
 .ccw-rail-divider {
-  width: 20px;
-  height: 1px;
+  width: 1px;
+  height: 22px;
   flex: none;
-  margin: var(--ccw-space-1) 0;
+  margin: 0 var(--ccw-space-1);
   background: var(--ccw-border);
 }
 
@@ -612,8 +616,8 @@
 .ccw-stagecol {
   display: flex;
   flex-direction: column;
+  flex: none;
   min-width: 0;
-  min-height: 0;
   background: var(--ccw-surface-base);
 }
 
@@ -700,7 +704,8 @@
 
 .ccw-canvas-wrap {
   position: relative;
-  flex: 1 1 auto;
+  flex: none;
+  height: var(--ccw-stage-height, min(46vh, 520px));
   min-width: 0;
   min-height: 0;
   margin: 10px 12px;
@@ -849,12 +854,11 @@
 /* --------------------------------------------------------------- inspector */
 
 .ccw-inspector {
+  flex: none;
   min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
   background: var(--ccw-surface-panel);
-  border-left: 1px solid var(--ccw-border);
+  border-top: 1px solid var(--ccw-border);
 }
 
 .ccw-section {
@@ -1254,7 +1258,7 @@
 
 .ccw-size-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ccw-space-2);
 }
 
@@ -1581,6 +1585,34 @@
   flex: none;
   margin-top: 2px;
   color: var(--ccw-text-tertiary);
+}
+
+.ccw-widget-chip {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ccw-surface-raised);
+  color: var(--ccw-text-tertiary);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.ccw-widget-field.is-default input,
+.ccw-widget-field.is-default select,
+.ccw-widget-field.is-default textarea {
+  color: var(--ccw-text-secondary);
+}
+
+.ccw-widgets-nodinfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.ccw-widgets-nodinfo svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ccw-warning);
 }
 
 .ccw-bindings-hint {
@@ -2442,10 +2474,7 @@
 /* ------------------------------------------------------------ responsive */
 
 @container ccw-canvas (min-width: 1100px) {
-  .ccw-editor {
-    grid-template-columns: 48px minmax(0, 1fr) 332px;
-  }
-
+  
   .ccw-toolrail {
     padding-left: 7px;
     padding-right: 7px;
@@ -2464,10 +2493,7 @@
 }
 
 @container ccw-canvas (min-width: 761px) and (max-width: 980px) {
-  .ccw-editor {
-    grid-template-columns: 42px minmax(0, 1fr) 280px;
-  }
-
+  
   .ccw-toolrail .ccw-iconbtn {
     width: 30px;
     height: 30px;
@@ -2482,9 +2508,6 @@
 
 @container ccw-canvas (max-width: 760px) {
   .ccw-editor {
-    display: flex;
-    flex-direction: column;
-    flex: none;
     min-height: 0;
   }
 
@@ -2521,12 +2544,6 @@
   .ccw-toolrail .ccw-iconbtn {
     width: 32px;
     height: 32px;
-  }
-
-  .ccw-stagecol {
-    flex: none;
-    height: clamp(320px, 38vh, 400px);
-    min-height: 0;
   }
 
   .ccw-canvas-wrap {

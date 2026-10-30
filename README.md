@@ -46,7 +46,7 @@ plugin_manager(action: "install_bundle", target: "/home/luoxiao/comfy/dsh-comfy-
 
 - 「工作流」页顶部选择 ComfyUI `userdata/workflows` 下的文件 → 加载。
 - 节点图：点击节点，在下方改 widget 参数；可改标题、bypass/mute（在 ComfyUI 里改后重新加载）。
-- 「注入绑定」默认自动推断，可在选中节点后用「画布注入」改；设置以 `ccw` 字段写进工作流 JSON，随文件一起回存 ComfyUI。
+- 注入映射不出现在界面上：运行时按节点类型和连线自动推断（不要自定义字段，工作流 JSON 保持纯 ComfyUI 结构）。
 - 「保存」写回 ComfyUI；文件名输入框可另存。
 - 「模型」列出 `/models` 目录与文件，点击复制名称到剪贴板。
 
