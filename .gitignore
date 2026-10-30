@@ -5,3 +5,13 @@ tmp/
 dist/
 build/
 .DS_Store
+
+.npm-cache/
+.npm-logs/
+tests/.tmp-*/
+tests/fixtures/
+tests/harness/.chrome/
+tests/harness/*.png
+tests/harness/harness.js
+tests/harness/canvas.js
+tests/harness/react-globals.bundle.js

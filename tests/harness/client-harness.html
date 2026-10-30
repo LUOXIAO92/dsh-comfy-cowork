@@ -1,0 +1,35 @@
+<!doctype html><html><body><pre id="out">loading…</pre>
+<script src="react-globals.bundle.js"></script>
+<script>
+window.fetch = async () => new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } })
+const log = (s) => { document.getElementById('out').textContent += s + '\n' }
+const noop = () => () => {}
+window.__ModuleLoader__ = {
+  load({ id, factory }) {
+    try {
+      const exports = factory((name) => {
+        if (name === 'react') return window.React
+        throw new Error('unexpected require ' + name)
+      })
+      const registrations = []
+      const ctx = {
+        locale: { register: () => () => {}, bind: () => (key) => key },
+        slots: {
+          inject: (key, cb) => { registrations.push(key); cb(); return () => {} },
+          register: (options, component) => { registrations.push(options.name + ':' + (options.id || options.key)); return () => {} },
+        },
+        sidebarRightTabs: { register: (definition) => { registrations.push('tab:' + definition.id); return () => {} } },
+        sidebarRight: { openTabIn: () => {}, openTab: () => {} },
+        layout: { openRightbar: () => {} },
+        effect: (cb) => { const dispose = cb(); return typeof dispose === 'function' ? dispose : () => {} },
+      }
+      exports.apply(ctx)
+      log('OK ' + id + ' ' + registrations.join(', '))
+    } catch (error) {
+      log('ERROR ' + (error && error.stack || error))
+    }
+  }
+}
+</script>
+<script src="../../client.js"></script>
+</body></html>

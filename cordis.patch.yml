@@ -1,0 +1,7 @@
+# Comfy Coworking bundle patch.
+# Installed by plugin_manager install_bundle with this directory as the target.
+- insert:
+    - id: comfy-coworking
+      name: 'dsh-comfy-coworking'
+      config:
+        baseUrl: 'http://127.0.0.1:8188'

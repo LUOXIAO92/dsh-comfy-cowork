@@ -1,8 +1,8 @@
 # DSH Comfy Coworking 需求确认稿
 
-- 版本：v0.1（待确认）
+- 版本：v1.0（已确认）
 - 日期：2026-10-30
-- 状态：已核对 DSH / ComfyUI / MOSS-Image 实际接口，等待用户确认开放问题后进入实现。
+- 状态：需求已确认；第一版按本稿实现。接口事实均已在本机 DSH / ComfyUI 0.41.0 上核对。
 
 ## 1. 产品定位
 
@@ -254,41 +254,42 @@ DSH Host
 | M6 | 工作流参数编辑/保存、错误处理、i18n、主题、测试 | 全流程可用 |
 | M7 | README/安装说明/示例工作流、打包检查 | 可复制安装 |
 
-## 12. 开放问题
+## 12. 已确认决策
 
-见对话中的 Q1–Q7；确认后把结论回填到本文档并升为 v1.0。
+| 问题 | 结论 |
+|---|---|
+| Q1 工作流编辑深度 | **A. 看图 + 改参数/标题/bypass + 保存**；v1 不做任意增删节点和重新连线。 |
+| Q2 面板位置 | **A. 右侧栏标签页，聊天并排，可全屏**。 |
+| Q3 默认工作流 | **A. 不内置模板，从 ComfyUI 服务器加载**；用 `moss_template.json`、`coworking_smoke.json`、`coworking_inpaint.json`、`coworking_moss_layout.json` 做兼容性验证。 |
+| Q4 局部编辑工作流 | 通用工作流 + 绑定；已验证 SDXL `VAEEncodeForInpaint` 链路。 |
+| Q5 Agent 能力 | **A. 读写画布 + 写提示词/bbox + 跑工作流 + 看结果**；运行仍可见、可取消。 |
+| Q6 MOSS 提示词形态 | **A. 文本框始终放最终编译后的单行 layout JSON**；旁边编辑 summary / 逐框 caption。 |
+| Q7 视频 | **A. 不做视频 UI；已有视频工作流可加载、运行、预览输出**。 |
 
-### Q1 工作流编辑深度
-- A. 看图 + 改参数/标题/bypass + 保存（推荐，v1）
-- B. 完整图编辑：增删节点、连线、复制子图
-- C. 不做图，只做节点参数表单
+## 13. 实现状态（截至 2026-10-30）
 
-### Q2 面板位置
-- A. 右侧栏标签页，聊天并排，可全屏（推荐）
-- B. 主页面（占据聊天区）
-- C. 两者都做
+已验证：
 
-### Q3 默认工作流/模型
-- A. 不内置，用户从服务器加载（推荐，最通用）
-- B. 内置 MOSS-Image 模板
-- C. 内置 Qwen-Image-Edit 模板
-- D. 内置两套模板 + 首次向导
+- DSH bundle 安装、Host 工具注册、右栏 tab 注册、客户端 bundle 加载（mock loader）。
+- 文档持久化、SSE 同步、Agent 工具写提示词/布局。
+- UI workflow → API prompt 转换：`moss_template.json`、`coworking_smoke.json`、`coworking_inpaint.json`、`coworking_moss_layout.json`。
+- 真实 ComfyUI 运行：MOSS-Image 文生图、MOSS layout（bbox 注入）、SDXL inpaint（蒙版注入）均出图。
+- 浏览器内画笔 → 蒙版导出（headless Chromium 验证 `hasMask=true`，生成 PNG）。
+- MOSS 编译与 ComfyUI 节点逐字节一致（单测 16 项）。
+- 蒙版 alpha 兼容：`LoadImage` 的 MASK = 1 - alpha，插件导出的 RGBA 已按此反转；独立 `mask.png` 保持白色=编辑区。
 
-### Q4 局部编辑用哪套工作流
-- 需要用户指定：`moss_template.json` / `image_qwen_image_2_1_image_edit.json` / 另一个。
-- 这决定绑定默认值和测试用例。
+待人工确认：
 
-### Q5 Agent 能力边界
-- A. 读画布 + 写提示词/bbox + 跑工作流 + 看结果（推荐）
-- B. 只写提示词/bbox，不主动跑
-- C. 更主动：可自己规划多轮、自动选模型/参数
+- 刷新 DSH 页面后，输入框左侧「画布」按钮是否出现、右栏 tab 是否可打开。
+- 真实浏览器中的画笔/矩形/椭圆交互、羽化滑杆、撤销重做。
+- 工作流图在窄栏中的可读性；可滚轮缩放/拖动。
+- Agent 调用 `comfy_coworking_open_canvas` 目前只设置打开请求，不强制切换 UI；用户需点「画布」按钮。
 
-### Q6 MOSS 提示词文本框形态
-- A. 文本框始终是最终编译后的单行 JSON；旁边有 summary/逐框 caption 编辑区（推荐）
-- B. 文本框放自然语言 summary；运行时才编译
-- C. 两种模式可切换
+## 14. 已知限制
 
-### Q7 视频
-- A. v1 不做视频 UI；已有视频工作流可运行/预览（推荐）
-- B. v1 完全排除视频
-- C. v1 就要视频时间轴/首尾帧（显著扩大范围）
+- 子图（subgraph）工作流暂不支持，会给出明确报错。
+- API 格式工作流可以运行/保存，但图视图只读。
+- 单 ComfyUI 服务器；多 profile 留到 v1.1。
+- `comfy_coworking_open_canvas` 不会从 Host 强制打开浏览器 tab。
+- 视频只做通用工作流运行与 `<video>` 预览，不做时间轴。
+- 大图蒙版在浏览器内以全分辨率处理；4K 以上建议先缩放。
