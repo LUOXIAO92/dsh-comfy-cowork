@@ -138,3 +138,41 @@ test('refuses the literal undefined session instead of creating one', async () =
     await cleanup()
   }
 })
+
+test('accepts a document write whose session id is only in the body', async () => {
+  const { routes, store, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-body-only'
+    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/canvas', {
+      sessionId: session,
+      mode: 'image',
+      mask: { feather: 12, grow: 2, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, rev: 1, hasMask: true },
+      source: 'user',
+    }))
+    assert.equal(res.status, 200)
+    const body = JSON.parse(res.body)
+    assert.equal(body.doc.mode, 'image')
+    assert.equal(body.doc.mask.feather, 12)
+    const stored = await store.snapshot(session)
+    assert.equal(stored.mask.feather, 12)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('accepts a prompt write whose session id is only in the body', async () => {
+  const { routes, store, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-prompt-body'
+    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/prompt', {
+      sessionId: session,
+      prompt: 'a red apple on linen',
+      manual: true,
+      source: 'user',
+    }))
+    assert.equal(res.status, 200)
+    assert.equal((await store.snapshot(session)).prompt, 'a red apple on linen')
+  } finally {
+    await cleanup()
+  }
+})
