@@ -450,10 +450,21 @@ export function CanvasTab(props) {
       }
       const nextTool = toolKeys[key]
       if (nextTool === undefined) return
-      const allowed = docRef.current?.mode === 'layout'
-        ? ['box', 'brush', 'eraser', 'rect', 'ellipse', 'select', 'pan']
-        : ['brush', 'eraser', 'rect', 'ellipse', 'select', 'pan']
-      if (!allowed.includes(nextTool)) return
+      const maskTools = ['brush', 'eraser', 'rect', 'ellipse']
+      if (docRef.current?.mode === 'layout') {
+        if (nextTool === 'box' || nextTool === 'select' || nextTool === 'pan') {
+          event.preventDefault()
+          setTool(nextTool)
+          return
+        }
+        // Mask shortcuts flip back to edit mode rather than disappearing.
+        if (maskTools.includes(nextTool)) {
+          event.preventDefault()
+          setMode('image')
+          setTool(nextTool)
+        }
+        return
+      }
       event.preventDefault()
       setTool(nextTool)
     }
@@ -1091,15 +1102,16 @@ export function CanvasTab(props) {
   const compiled = hasBoxes && doc?.promptSource === 'layout'
   const tools = tool === 'comment'
     ? [{ id: 'comment', label: t('tool.comment') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
-    : [
-        ...(doc?.mode === 'layout' ? [{ id: 'box', label: t('tool.box') }] : []),
-        { id: 'brush', label: t('tool.brush') },
-        { id: 'eraser', label: t('tool.eraser') },
-        { id: 'rect', label: t('tool.rect') },
-        { id: 'ellipse', label: t('tool.ellipse') },
-        { id: 'select', label: t('tool.select') },
-        { id: 'pan', label: t('tool.pan') },
-      ]
+    : doc?.mode === 'layout'
+      ? [{ id: 'box', label: t('tool.box') }, { id: 'select', label: t('tool.select') }, { id: 'pan', label: t('tool.pan') }]
+      : [
+          { id: 'brush', label: t('tool.brush') },
+          { id: 'eraser', label: t('tool.eraser') },
+          { id: 'rect', label: t('tool.rect') },
+          { id: 'ellipse', label: t('tool.ellipse') },
+          { id: 'select', label: t('tool.select') },
+          { id: 'pan', label: t('tool.pan') },
+        ]
   const activeTool = tools.find((item) => item.id === tool) ?? null
 
   if (!sessionId) {
