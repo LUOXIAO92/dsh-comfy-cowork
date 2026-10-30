@@ -273,7 +273,7 @@ DSH Host
 - **右栏 tab**：输入框「画布」按钮打开右侧标签页（实测宽 691–709px），新版编辑器版面：左侧工具轨、中间画板 + 状态栏、右侧可折叠检查器。
 - **画布数据**：本会话 agent 写入的 MOSS layout prompt（675 字符）出现在提示词文本框；画布图与 3 个 bbox 正确显示，无报错。
 - **蒙版链路**：真实页面里画笔描边 → `PUT /asset?name=mask.png` 200 → `PUT /doc/canvas` 200 → 文档 `mask.hasMask=true`、`assets/mask.png` 落盘，状态栏显示「蒙版就绪」。
-- **工作流浏览**：真实 ComfyUI 的 workflow 列表 → 加载 `coworking_smoke.json`，渲染 13 个节点 / 15 条连线；注入绑定自动识别 `#104 moss-image Positive`、`#106 EmptyFlux2LatentImage`、`#116 KSampler`。
+- **工作流浏览**：真实 ComfyUI 的 workflow 列表 → 加载 `coworking_smoke.json`，渲染 13 个节点 / 15 条连线；注入绑定按节点类型与连线自动推断（`#104 moss-image Positive`、`#106 EmptyFlux2LatentImage`、`#116 KSampler`）。手动映射改成节点上的 `ccw` 字段，写在工作流 JSON 里，不再有外挂映射表。
 - **模型列表**：`/models` 返回 checkpoints / configs / loras / vae / text_encoders，选 checkpoints 后列出真实文件名。
 - **真实出图**：MOSS-Image 文生图、MOSS layout（bbox 注入）、SDXL inpaint（蒙版注入）均出图。
 - **单测 25 项**：MOSS 编译、工作流转换、文档存储、HTTP 路由（鉴权、body-only session、错误记录）。
