@@ -8,6 +8,7 @@ import {
   health,
   saveCanvas,
   saveLayout,
+  saveNegative,
   savePrompt,
   saveSelection,
   upsertBox,
@@ -247,6 +248,19 @@ export function CanvasTab(props) {
   const [probeError, setProbeError] = useState('')
   const [view, setView] = useState('canvas')
   const [widthInput, setWidthInput] = useState(null)
+  const [negative, setNegative] = useState('')
+  const [negativeFocused, setNegativeFocused] = useState(false)
+  const [stageHeight, setStageHeight] = useState(() => {
+    try {
+      const stored = Number(window.localStorage.getItem('ccw.stageHeight'))
+      return Number.isFinite(stored) && stored >= 200 ? stored : null
+    } catch {
+      return null
+    }
+  })
+  const negativeRef = useRef('')
+  const negativeFocusedRef = useRef(false)
+  const negativeTimer = useRef(null)
   const [heightInput, setHeightInput] = useState(null)
   const [tool, setTool] = useState('brush')
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
@@ -264,6 +278,8 @@ export function CanvasTab(props) {
   docRef.current = doc
   focusedRef.current = focused
   draftRef.current = draft
+  negativeRef.current = negative
+  negativeFocusedRef.current = negativeFocused
 
   useEffect(() => {
     if (!doc) return
@@ -271,6 +287,7 @@ export function CanvasTab(props) {
       maskInit.current = true
       setMask((current) => ({ ...current, ...doc.mask }))
       setSummary(doc.layout.summary ?? '')
+      if (!negativeFocusedRef.current) setNegative(doc.negative ?? '')
       setTool(doc.mode === 'layout' ? 'box' : 'brush')
     }
     if (!focusedRef.current) {
@@ -350,6 +367,49 @@ export function CanvasTab(props) {
     setFocused(false)
     if (saveTimer.current !== null) clearTimeout(saveTimer.current)
     persistPrompt(draftRef.current)
+  }
+
+  async function persistNegative(value) {
+    if (!sessionId || value === docRef.current?.negative) return
+    try {
+      const result = await saveNegative(sessionId, value)
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  function onNegativeChange(value) {
+    setNegative(value)
+    if (negativeTimer.current !== null) clearTimeout(negativeTimer.current)
+    negativeTimer.current = setTimeout(() => persistNegative(value), 500)
+  }
+
+  function onNegativeBlur() {
+    setNegativeFocused(false)
+    if (negativeTimer.current !== null) clearTimeout(negativeTimer.current)
+    persistNegative(negativeRef.current)
+  }
+
+  /** Drag the canvas viewport height; remembered per browser. */
+  function startResize(event) {
+    event.preventDefault()
+    const startY = event.clientY
+    const wrap = event.currentTarget.parentElement?.querySelector('.ccw-canvas-wrap')
+    const startHeight = stageHeight ?? Math.round(wrap?.getBoundingClientRect().height ?? 420)
+    let last = startHeight
+    const move = (moveEvent) => {
+      last = Math.max(200, Math.min(1200, Math.round(startHeight + (moveEvent.clientY - startY))))
+      setStageHeight(last)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      try {
+        window.localStorage.setItem('ccw.stageHeight', String(last))
+      } catch {}
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up, { once: true })
   }
 
   async function probe() {
@@ -575,6 +635,10 @@ export function CanvasTab(props) {
   const workflowNodeTypes = (doc?.workflow?.json?.nodes ?? []).map((node) => String(node?.type ?? ''))
   const hasWorkflowNodes = workflowNodeTypes.length > 0
   const hasMossNodes = workflowNodeTypes.some((type) => /MOSS|CreateBoundingBoxes/i.test(type))
+  // Layout boxes compile to the MOSS-Image layout schema, so the mode only
+  // exists while a workflow that consumes it is loaded.
+  const workflowNodes = doc?.workflow?.json?.nodes ?? []
+  const mossWorkflow = workflowNodes.some((node) => node?.type === 'MOSSImageLayoutPrompt' || node?.type === 'CreateBoundingBoxes')
   const items = doc?.layout?.items ?? []
   const selected = items.find((item) => item.id === doc?.selected?.id) ?? null
   const image = doc?.canvas?.image ?? null
@@ -688,9 +752,12 @@ export function CanvasTab(props) {
             />
             <IconButton
               icon="layout"
-              label={t('mode.layout')}
+              label={mossWorkflow ? t('mode.layout') : t('mode.layoutMossOnly')}
               active={doc?.mode === 'layout'}
-              onClick={() => setMode('layout')}
+              disabled={!mossWorkflow}
+              onClick={() => {
+                if (mossWorkflow) setMode('layout')
+              }}
             />
           </div>
           <div className="ccw-rail-divider" aria-hidden="true" />
@@ -739,7 +806,7 @@ export function CanvasTab(props) {
             </div>
           </div>
 
-          <div className="ccw-canvas-wrap">
+          <div className="ccw-canvas-wrap" style={stageHeight === null ? undefined : { height: `${stageHeight}px` }}>
             <CanvasStage
               ref={stageRef}
               sessionId={sessionId}
@@ -759,6 +826,15 @@ export function CanvasTab(props) {
               onDeleteKey={removeSelected}
             />
           </div>
+
+          <div
+            className="ccw-resize-handle"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={t('canvas.resize')}
+            title={t('canvas.resize')}
+            onPointerDown={startResize}
+          />
 
           <footer className="ccw-statusbar" aria-label={t('canvas.status')}>
             <span className="ccw-status-item ccw-status-strong">
@@ -866,6 +942,20 @@ export function CanvasTab(props) {
               onFocus={() => setFocused(true)}
               onBlur={onPromptBlur}
             />
+            <label className="ccw-subfield">
+              <span>{t('prompt.negative')}</span>
+              <textarea
+                className="ccw-negative"
+                value={negative}
+                placeholder={t('prompt.negativePlaceholder')}
+                spellCheck={false}
+                aria-label={t('prompt.negative')}
+                onChange={(event) => onNegativeChange(event.target.value)}
+                onFocus={() => setNegativeFocused(true)}
+                onBlur={onNegativeBlur}
+              />
+            </label>
+            <p className="ccw-hint">{t('prompt.negativeHint')}</p>
             {doc?.promptError ? (
               <div className="ccw-inline-error" role="alert">{doc.promptError}</div>
             ) : null}
@@ -902,6 +992,7 @@ export function CanvasTab(props) {
             </div>
           </Section>
 
+          {mossWorkflow ? (
           <Section
             title={t('layout.title')}
             icon="layout"
@@ -976,6 +1067,14 @@ export function CanvasTab(props) {
               </ul>
             )}
           </Section>
+          ) : (
+            <Section title={t('layout.title')} icon="layout" className="ccw-section-layout">
+              <p className="ccw-hint ccw-moss-gate">
+                <Icon name="info" size={13} />
+                <span>{t('layout.gated')}</span>
+              </p>
+            </Section>
+          )}
         </aside>
       </div>
 

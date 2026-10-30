@@ -56,6 +56,13 @@ export function savePrompt(sessionId, prompt, manual = true) {
   })
 }
 
+export function saveNegative(sessionId, negative) {
+  return request('/doc/negative', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), negative, source: 'user' }),
+  })
+}
+
 export function saveLayout(sessionId, summary, items) {
   return request('/doc/layout', {
     method: 'PUT',
@@ -88,13 +95,6 @@ export function patchWorkflow(sessionId, patch) {
   return request('/doc/workflow/patch', {
     method: 'PUT',
     body: JSON.stringify({ sessionId: requireSession(sessionId), patch, source: 'user' }),
-  })
-}
-
-export function setNodeRole(sessionId, nodeId, role) {
-  return request('/doc/workflow/node-role', {
-    method: 'PUT',
-    body: JSON.stringify({ sessionId: requireSession(sessionId), nodeId: String(nodeId), role }),
   })
 }
 

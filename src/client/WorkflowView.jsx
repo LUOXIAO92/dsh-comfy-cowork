@@ -10,7 +10,6 @@ import {
   patchWorkflow,
   runWorkflow,
   saveCanvas,
-  setNodeRole,
   saveWorkflowFile,
   uploadAsset,
 } from './api.js'
@@ -534,27 +533,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }
   }
 
-  async function changeNodeRole(nodeId, role) {
-    try {
-      const result = await setNodeRole(sessionId, nodeId, role)
-      if (result.doc) setDoc(result.doc)
-      setError('')
-    } catch (error) {
-      setError(error.message)
-    }
-  }
-
-  async function updateBinding(key, value) {
-    try {
-      const result = await patchWorkflow(sessionId, {
-        bindings: { ...(doc?.workflow?.bindings ?? {}), [key]: value },
-      })
-      setDoc(result.doc)
-    } catch (error) {
-      setError(error.message)
-    }
-  }
-
   async function run() {
     setBusy(true)
     try {
@@ -601,8 +579,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const latestRun = doc?.runs?.[0] ?? null
   const outputs = (latestRun?.outputs ?? []).filter((output) => output.asset)
   const selected = workflow?.nodes?.find((node) => String(node.id) === String(selectedNode)) ?? null
-  const bindings = doc?.workflow?.bindings ?? {}
-  const nodeById = new Map((workflow?.nodes ?? []).map((node) => [String(node.id), node]))
 
   return (
     <section className="ccw-workflow" aria-label={t('view.workflow')}>
@@ -703,24 +679,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                     onToggleMode={(mode) => setNodeField(selected.id, { mode: selected.mode === mode ? 0 : mode })}
                     onChange={(name, value) => commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))}
                   />
-                  <label className="ccw-field ccw-role-field">
-                    <span>{t('bind.role')}</span>
-                    <select
-                      value={selected.ccw ?? ''}
-                      aria-label={t('bind.role')}
-                      onChange={(event) => changeNodeRole(selected.id, event.target.value)}
-                    >
-                      <option value="">{t('bind.roleAuto')}</option>
-                      <option value="prompt">{t('bind.prompt')}</option>
-                      <option value="image">{t('bind.image')}</option>
-                      <option value="mask">{t('bind.mask')}</option>
-                      <option value="size">{t('bind.size')}</option>
-                      <option value="seed">{t('bind.seed')}</option>
-                      <option value="bboxes">{t('bind.bboxes')}</option>
-                      <option value="none">{t('bind.roleNone')}</option>
-                    </select>
-                  </label>
-                  <p className="ccw-hint">{t('bind.roleHint')}</p>
                 </>
               ) : (
                 <div className="ccw-rail-empty">
@@ -728,27 +686,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                   <p>{t('workflow.noSelection')}</p>
                 </div>
               )}
-            </Section>
-
-            <Section title={t('workflow.bindings')} icon="link" className="ccw-section-bindings">
-              <p className="ccw-hint ccw-bindings-hint">
-                <Icon name="info" size={13} />
-                <span>{t('bindings.hint')}</span>
-              </p>
-              <ul className="ccw-bind-summary">
-                {['prompt', 'image', 'mask', 'width', 'height', 'seed', 'bboxes'].map((key) => {
-                  const node = bindings[key] === '' ? null : nodeById.get(String(bindings[key]))
-                  return (
-                    <li key={key}>
-                      <span className="ccw-bind-key">{t(`bind.${key}`)}</span>
-                      <span className={node === null ? 'ccw-bind-node is-empty' : 'ccw-bind-node'}>
-                        {node === null ? t('bind.none') : `#${node.id} ${nodeTitle(node)}`}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-              <p className="ccw-hint">{t('bindings.whereHint')}</p>
             </Section>
 
             <Section title={t('run.section')} icon="play" defaultOpen className="ccw-section-run">

@@ -5,7 +5,8 @@
 - **图片编辑**：画笔 / 橡皮 / 矩形 / 椭圆蒙版，羽化、扩展、反转，导出 ComfyUI 可直接使用的 PNG。
 - **布局生图**：空白画布拉 bbox、逐框写提示词，按 MOSS-Image schema 编译成单行 layout JSON。
 - **工作流**：浏览 ComfyUI 服务器上的工作流、看节点图、改参数、绑定注入、排队运行、回填结果。
-- **协作**：所有提示词（包括 agent 写的）都落在插件的提示词文本框里。
+- **协作**：所有提示词（包括 agent 写的）都落在插件的提示词文本框里；正向、负面各一个框。
+- **布局框仅 MOSS-Image**：只有当前工作流含 `MOSSImageLayoutPrompt` / `CreateBoundingBoxes` 时才会出现布局模式。
 
 > 需求确认稿：[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)（v1.0，已确认）。
 
@@ -38,7 +39,7 @@ plugin_manager(action: "install_bundle", target: "/home/luoxiao/comfy/dsh-comfy-
 
 1. 切到「布局」模式，设画布宽高（16 的倍数）。
 2. 用「拉框」画 bbox；每个框选 `object` / `character` / `text`，写 caption，`text` 类再写可见文字。
-3. 提示词文本框会自动变成编译后的单行 layout JSON；也可直接手改。
+3. 提示词文本框会自动变成编译后的单行 layout JSON；也可直接手改。负面提示词写在独立的「负面提示词」框里，运行时会写进连到采样器 `negative` 的文本节点。
 4. 载入 MOSS layout 工作流（含 `CreateBoundingBoxes` + `MOSSImageLayoutPrompt`）后运行，插件会把 summary、bboxes、宽高注入对应节点；如果工作流只有 `CLIPTextEncode`，则直接注入编译后的 JSON。
 
 ### 3. 工作流浏览

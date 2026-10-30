@@ -219,32 +219,20 @@ test('queues a run whose session id is only in the body', async () => {
   }
 })
 
-test('stores a node canvas role inside the workflow JSON', async () => {
+test('stores the negative prompt separately from the canvas prompt', async () => {
   const { routes, store, cleanup } = await makeRoutes()
   try {
-    const session = 'session-node-role'
-    await store.setWorkflow(session, {
-      name: 'role.json',
-      json: {
-        nodes: [
-          { id: 1, type: 'CLIPTextEncode', title: 'negative', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
-          { id: 2, type: 'CLIPTextEncode', title: 'positive', inputs: [], outputs: [{ type: 'CONDITIONING' }] },
-        ],
-        links: [],
-      },
-      bindings: { prompt: '2' },
-      dirty: false,
-    }, { source: 'agent' })
-    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/workflow/node-role', {
+    const session = 'session-negative'
+    await store.setPrompt(session, 'a red apple on linen', { source: 'agent' })
+    const res = await call(routes, makeReq('PUT', '/api/comfy-coworking/doc/negative', {
       sessionId: session,
-      nodeId: '1',
-      role: 'prompt',
+      negative: 'blurry, watermark',
     }))
     assert.equal(res.status, 200)
     const doc = JSON.parse(res.body).doc
-    assert.equal(doc.workflow.bindings.prompt, '1')
-    assert.equal(doc.workflow.json.nodes[0].ccw, 'prompt')
-    assert.equal(doc.workflow.dirty, true)
+    assert.equal(doc.negative, 'blurry, watermark')
+    assert.equal(doc.prompt, 'a red apple on linen')
+    assert.equal((await store.snapshot(session)).negative, 'blurry, watermark')
   } finally {
     await cleanup()
   }
