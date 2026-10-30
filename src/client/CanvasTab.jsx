@@ -819,6 +819,30 @@ export function CanvasTab(props) {
     }
   }
 
+  /** Clipboard can be unavailable in a sandboxed desktop shell; fall back. */
+  async function copyPrompt() {
+    const text = draft
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      try {
+        const area = document.createElement('textarea')
+        area.value = text
+        area.style.position = 'fixed'
+        area.style.opacity = '0'
+        document.body.appendChild(area)
+        area.select()
+        document.execCommand('copy')
+        document.body.removeChild(area)
+      } catch {
+        setError('could not copy to the clipboard')
+        return
+      }
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
+
   async function createComment(bbox) {
     try {
       const result = await saveComment(sessionId, { bbox, text: '' })
@@ -1442,11 +1466,7 @@ export function CanvasTab(props) {
               <button
                 type="button"
                 className="ccw-btn ccw-btn-ghost ccw-btn-small"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(draft)
-                  setCopied(true)
-                  setTimeout(() => setCopied(false), 1200)
-                }}
+                onClick={copyPrompt}
               >
                 <Icon name={copied ? 'check' : 'copy'} size={14} />
                 <span>{copied ? t('prompt.copied') : t('prompt.copy')}</span>
