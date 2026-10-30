@@ -238,6 +238,30 @@ function drawComments(ctx, comments, selectedId, scale, draft) {
   })
 }
 
+function drawPaintSelection(ctx, bbox, scale, color) {
+  if (bbox === null || bbox === undefined) return
+  const [x1, y1, x2, y2] = bbox
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = 1.4 / scale
+  ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
+  const r = 4 / scale
+  for (const [hx, hy] of [
+    [x1, y1], [(x1 + x2) / 2, y1], [x2, y1],
+    [x2, (y1 + y2) / 2], [x2, y2], [(x1 + x2) / 2, y2],
+    [x1, y2], [x1, (y1 + y2) / 2],
+  ]) {
+    ctx.fillStyle = '#ffffff'
+    ctx.strokeStyle = color
+    ctx.lineWidth = 1 / scale
+    ctx.beginPath()
+    ctx.rect(hx - r, hy - r, r * 2, r * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
 function hitTestComments(comments, point, scale, selectedId) {
   const threshold = 9 / scale
   const selected = comments.find((comment) => comment.id === selectedId)
@@ -349,6 +373,10 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   const [cursor, setCursor] = useState('crosshair')
   const [shapeList, setShapeList] = useState(() => (Array.isArray(shapes) ? shapes : []))
   const [selectedShape, setSelectedShape] = useState(null)
+  const [paintSelection, setPaintSelection] = useState(null)
+  const paintSelectionRef = useRef(null)
+  paintSelectionRef.current = paintSelection
+  const paintDraftRef = useRef(null)
   const shapesRef = useRef(shapeList)
   shapesRef.current = shapeList
 
@@ -494,7 +522,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       }
     }
     regionCtx.putImageData(regionImage, 0, 0)
-    return { base, region, bbox: [minX, minY, maxX, maxY] }
+    return { base, region, bbox: [minX, minY, maxX, maxY], mask: seen }
   }
 
   /**
@@ -588,6 +616,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
     drawShapeObjects(ctx, shapeListRef.current, selectedShapeRef.current, viewRef.current.scale, maskSettings.color ?? '#ff3b30', shapeDraft)
     drawComments(ctx, commentListRef.current, selectedCommentRef.current, viewRef.current.scale, draftCommentRef.current)
+    drawPaintSelection(ctx, paintDraftRef.current ?? paintSelectionRef.current?.bbox ?? null, viewRef.current.scale, maskSettings.color ?? '#ff3b30')
   }
 
   useEffect(() => {
@@ -820,6 +849,32 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     restore(next)
   }
 
+  /** Delete the selected brush island (the painted region picked with the arrow). */
+  function removeSelectedPaint() {
+    const selection = paintSelectionRef.current
+    const paint = paintRef.current
+    if (selection === null || !paint) return false
+    pushUndo()
+    const [bx1, by1, bx2, by2] = selection.bbox.map((value) => Math.round(value))
+    const width = Math.max(1, bx2 - bx1 + 1)
+    const height = Math.max(1, by2 - by1 + 1)
+    const ctx = paint.getContext('2d')
+    const image = ctx.getImageData(bx1, by1, width, height)
+    const mask = selection.mask
+    const fullWidth = paint.width
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const globalIndex = (by1 + y) * fullWidth + (bx1 + x)
+        if (mask[globalIndex] === 1) image.data[(y * width + x) * 4 + 3] = 0
+      }
+    }
+    ctx.putImageData(image, bx1, by1)
+    setPaintSelection(null)
+    refreshProcessed()
+    scheduleMaskExport()
+    return true
+  }
+
   function removeSelectedShape() {
     const id = selectedShapeRef.current
     if (id === null) return false
@@ -888,10 +943,12 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     clearMask,
     deleteSelection: () => {
       if (removeSelectedShape()) return
+      if (removeSelectedPaint()) return
       onDeleteKey?.()
     },
     clearSelection: () => {
       setSelectedShape(null)
+      setPaintSelection(null)
       onBoxSelect?.(null)
     },
     exportNow: async () => {
@@ -987,6 +1044,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       const shapeHit = hitTestShapes(shapeListRef.current, point, viewRef.current.scale, selectedShapeRef.current)
       if (shapeHit !== null) {
         setSelectedShape(shapeHit.shape.id)
+        setPaintSelection(null)
         onBoxSelect?.(null)
         gestureRef.current = {
           kind: 'shape-edit',
@@ -1000,12 +1058,14 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         return
       }
       setSelectedShape(null)
+      setPaintSelection(null)
     }
 
     if (tool === 'box' || tool === 'select') {
       const hit = hitTest(boxes, point, viewRef.current.scale, selectedId)
       if (hit !== null) {
         setSelectedShape(null)
+        setPaintSelection(null)
         onBoxSelect?.(hit.box.id)
         gestureRef.current = {
           kind: 'box',
@@ -1022,12 +1082,17 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         setOverlayTick((value) => value + 1)
       } else {
         onBoxSelect?.(null)
-        // Grabbing painted mask (brush/eraser result) lets the whole mask move.
+        // Clicking painted mask selects that connected stroke: it gets a frame,
+        // can be dragged, and Delete/Backspace removes it.
         const region = extractPaintRegion(point)
         if (region !== null) {
           pushUndo()
+          setPaintSelection({ bbox: region.bbox, mask: region.mask })
           gestureRef.current = { kind: 'paint-move', start: point, ...region }
+        } else {
+          setPaintSelection(null)
         }
+        setOverlayTick((value) => value + 1)
       }
     }
   }
@@ -1134,6 +1199,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       const dy = clamp(Math.round(point.y - gesture.start.y), -by1, Math.max(-by1, limit.height - 1 - by2))
       ctx.putImageData(gesture.base, 0, 0)
       ctx.drawImage(gesture.region, gesture.bbox[0] + dx, gesture.bbox[1] + dy)
+      paintDraftRef.current = [bx1 + dx, by1 + dy, bx2 + dx, by2 + dy]
+      setOverlayTick((value) => value + 1)
       buildComposite()
       drawMaskPreview(true)
       return
@@ -1210,6 +1277,10 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     if (gesture.kind === 'paint-move') {
+      const draft = paintDraftRef.current
+      paintDraftRef.current = null
+      if (draft !== null) setPaintSelection({ bbox: draft, mask: gesture.mask })
+      setOverlayTick((value) => value + 1)
       refreshProcessed()
       scheduleMaskExport()
       return
@@ -1327,6 +1398,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       if (event.key !== 'Delete' && event.key !== 'Backspace') return
       event.preventDefault()
       if (removeSelectedShape()) return
+      if (removeSelectedPaint()) return
       onDeleteKey?.()
     },
     onPointerMove,
