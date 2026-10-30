@@ -70,6 +70,30 @@ export function drawStrokeSegment(ctx, from, to, { size, hardness, opacity, eras
   }
 }
 
+/**
+ * Paint one vector mask shape (a rect or ellipse object with a pixel bbox) onto
+ * a mask canvas. Shapes stay editable objects; the eraser layer cuts them at
+ * composite time instead of destroying them.
+ */
+export function fillMaskShape(ctx, shape, opacity = 1) {
+  const bbox = Array.isArray(shape?.bbox) ? shape.bbox.map(Number) : []
+  if (bbox.length !== 4 || !bbox.every(Number.isFinite)) return
+  const x = Math.min(bbox[0], bbox[2])
+  const y = Math.min(bbox[1], bbox[3])
+  const w = Math.abs(bbox[2] - bbox[0])
+  const h = Math.abs(bbox[3] - bbox[1])
+  if (w < 0.5 || h < 0.5) return
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = Math.max(0, Math.min(1, Number(opacity) || 0))
+  ctx.fillStyle = '#ffffff'
+  ctx.beginPath()
+  if (shape.kind === 'ellipse') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
+  else ctx.rect(x, y, w, h)
+  ctx.fill()
+  ctx.restore()
+}
+
 export function drawShape(ctx, shape, { opacity, erase }) {
   const x = Math.min(shape.start.x, shape.end.x)
   const y = Math.min(shape.start.y, shape.end.y)

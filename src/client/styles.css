@@ -732,6 +732,73 @@
   cursor: crosshair;
 }
 
+.ccw-brush-ring {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  /* The host theme rounds corners as squircles; a brush outline must stay a
+     true circle. */
+  corner-shape: round;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.ccw-brush-ring.is-eraser {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+.ccw-caption-editor {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--ccw-accent);
+  border-radius: var(--ccw-radius-md);
+  background: var(--ccw-surface-overlay);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.32),
+    0 0 0 1px color-mix(in srgb, var(--ccw-accent) 30%, transparent);
+}
+
+.ccw-caption-editor-title {
+  color: var(--ccw-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ccw-caption-editor textarea {
+  width: 100%;
+  min-height: 54px;
+  padding: 5px 6px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text);
+  font: inherit;
+  font-size: var(--ccw-text-ui);
+  line-height: 1.4;
+  resize: vertical;
+  outline: none;
+}
+
+.ccw-caption-editor textarea:focus {
+  border-color: var(--ccw-accent);
+}
+
+.ccw-caption-editor-hint {
+  color: var(--ccw-text-tertiary);
+  font-size: 11px;
+}
+
 .ccw-stage-wrap.ccw-tool-pan { cursor: grab; }
 .ccw-stage-wrap.ccw-tool-select { cursor: default; }
 .ccw-stage-wrap.ccw-tool-pan:active { cursor: grabbing; }
@@ -1013,6 +1080,44 @@
   flex-direction: column;
   gap: 5px;
   min-width: 0;
+}
+
+.ccw-range-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ccw-range-number {
+  width: 46px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text);
+  font-family: var(--ccw-font-mono);
+  font-size: var(--ccw-text-ui);
+  text-align: right;
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.ccw-range-number::-webkit-outer-spin-button,
+.ccw-range-number::-webkit-inner-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ccw-range-number:focus {
+  border-color: var(--ccw-accent);
+}
+
+.ccw-range-suffix {
+  color: var(--ccw-text-tertiary);
+  font-size: 11px;
 }
 
 .ccw-range-head {
@@ -1460,41 +1565,30 @@
   color: var(--ccw-accent);
 }
 
-.ccw-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: var(--ccw-space-2);
+.ccw-size-field input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
-.ccw-size-bar .ccw-presets {
-  margin-top: 0;
+.ccw-size-field input[type="number"]::-webkit-outer-spin-button,
+.ccw-size-field input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ccw-ratio-field {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
 }
 
-.ccw-preset {
-  padding: 3px 8px;
-  border: 1px solid var(--ccw-border-strong);
-  border-radius: 999px;
-  background: var(--ccw-surface-panel);
-  color: var(--ccw-text-secondary);
-  font-family: var(--ccw-font-mono);
-  font-size: 11px;
-  line-height: 1.4;
-  white-space: nowrap;
+.ccw-ratio-field select {
+  width: auto;
+  min-width: 74px;
   cursor: pointer;
-}
-
-.ccw-preset:hover {
-  border-color: color-mix(in srgb, var(--ccw-accent) 55%, var(--ccw-border-strong));
-  background: var(--ccw-surface-raised);
-  color: var(--ccw-text);
-}
-
-.ccw-preset.is-active {
-  border-color: color-mix(in srgb, var(--ccw-accent) 62%, var(--ccw-border-strong));
-  background: color-mix(in srgb, var(--ccw-accent) 12%, var(--ccw-surface-panel));
-  color: var(--ccw-accent);
 }
 
 .ccw-section-canvas .ccw-hint {
@@ -1514,6 +1608,60 @@
 
 /* The editor sits inside the selected list row, so it must not read as a
    separate panel pushed further down the inspector. */
+.ccw-palette {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ccw-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 2px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+}
+
+.ccw-swatch input[type="color"] {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+}
+
+.ccw-swatch code {
+  color: var(--ccw-text-secondary);
+  font-family: var(--ccw-font-mono);
+  font-size: 11px;
+}
+
+.ccw-swatch-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--ccw-text-tertiary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ccw-swatch-remove:hover {
+  background: var(--ccw-surface-raised);
+  color: var(--ccw-danger);
+}
+
 .ccw-box-editor {
   display: flex;
   flex-direction: column;

@@ -23,6 +23,8 @@ import { Icon, IconButton, Section } from './ui.jsx'
 /** Canvas presets in 16-pixel steps, the grid MOSS-Image requires. */
 const CANVAS_PRESETS = [
   { key: '1:1', label: '1:1', width: 1024, height: 1024 },
+  { key: '5:4', label: '5:4', width: 1280, height: 1024 },
+  { key: '4:5', label: '4:5', width: 1024, height: 1280 },
   { key: '4:3', label: '4:3', width: 1152, height: 864 },
   { key: '3:4', label: '3:4', width: 864, height: 1152 },
   { key: '16:9', label: '16:9', width: 1280, height: 720 },
@@ -87,14 +89,41 @@ const TOOL_ICONS = {
   pan: 'hand',
 }
 
+/**
+ * A slider that also accepts a typed number: the value box is an input, so a
+ * brush size or feather radius can be entered directly instead of dragged.
+ */
 function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
+  const [draft, setDraft] = useState(null)
   const span = max - min
   const ratio = span > 0 ? Math.min(1, Math.max(0, (value - min) / span)) : 0
+  const commit = (raw) => {
+    setDraft(null)
+    const next = Number(raw)
+    if (!Number.isFinite(next) || raw === '') return
+    onChange(Math.min(max, Math.max(min, Math.round(next / step) * step)))
+  }
   return (
     <label className="ccw-range">
       <span className="ccw-range-head">
         <span className="ccw-range-label">{label}</span>
-        <span className="ccw-range-value">{value}{suffix}</span>
+        <span className="ccw-range-edit">
+          <input
+            className="ccw-range-number"
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={draft ?? value}
+            aria-label={label}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={(event) => commit(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') commit(event.target.value)
+            }}
+          />
+          {suffix !== '' ? <span className="ccw-range-suffix">{suffix}</span> : null}
+        </span>
       </span>
       <input
         className="ccw-range-input"
@@ -194,6 +223,7 @@ function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
 }
 
 function BoxEditor({ selected, updateSelected, removeSelected, t }) {
+  const palette = Array.isArray(selected.palette) ? selected.palette : []
   return (
     <div className="ccw-box-editor">
       <div className="ccw-box-editor-top">
@@ -231,6 +261,44 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
           />
         </label>
       ) : null}
+      <div className="ccw-field">
+        <span>{t('box.palette')}</span>
+        <div className="ccw-palette">
+          {palette.map((color, index) => (
+            <span className="ccw-swatch" key={`${color}-${index}`}>
+              <input
+                type="color"
+                value={color}
+                aria-label={`${t('box.palette')} ${index + 1}`}
+                onChange={(event) => {
+                  const next = palette.slice()
+                  next[index] = event.target.value
+                  updateSelected({ palette: next })
+                }}
+              />
+              <code>{color}</code>
+              <button
+                type="button"
+                className="ccw-swatch-remove"
+                aria-label={t('layout.delete')}
+                onClick={() => updateSelected({ palette: palette.filter((_, at) => at !== index) })}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {palette.length < 5 ? (
+            <button
+              type="button"
+              className="ccw-btn ccw-btn-ghost ccw-btn-small"
+              onClick={() => updateSelected({ palette: [...palette, '#cccccc'] })}
+            >
+              <Icon name="plus" size={13} />
+              <span>{t('box.paletteAdd')}</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
       <div className="ccw-danger-zone">
         <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={removeSelected}>
           <Icon name="trash" size={14} />
@@ -265,6 +333,9 @@ export function CanvasTab(props) {
       return null
     }
   })
+  const sizeTimer = useRef(null)
+  const widthInputRef = useRef(null)
+  const heightInputRef = useRef(null)
   const negativeRef = useRef('')
   const negativeFocusedRef = useRef(false)
   const negativeTimer = useRef(null)
@@ -291,10 +362,70 @@ export function CanvasTab(props) {
   const stageRef = useRef(null)
 
   docRef.current = doc
+  widthInputRef.current = widthInput
+  heightInputRef.current = heightInput
   focusedRef.current = focused
   draftRef.current = draft
   negativeRef.current = negative
   negativeFocusedRef.current = negativeFocused
+
+  // Keyboard: undo/redo, tool letters, brush size and Delete on the selection.
+  useEffect(() => {
+    const toolKeys = { b: 'brush', e: 'eraser', r: 'rect', o: 'ellipse', v: 'select', h: 'pan', m: 'box' }
+    const onKeyDown = (event) => {
+      const target = event.target
+      const tag = target?.tagName
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable === true
+      const inCanvas = typeof target?.closest === 'function' && target.closest('.ccw-root') !== null
+      const meta = event.ctrlKey || event.metaKey
+      if (typing) return
+      if (meta && !event.altKey) {
+        const key = String(event.key).toLowerCase()
+        if (key === 'z') {
+          event.preventDefault()
+          if (event.shiftKey) stageRef.current?.redo()
+          else stageRef.current?.undo()
+          return
+        }
+        if (key === 'y') {
+          event.preventDefault()
+          stageRef.current?.redo()
+        }
+        return
+      }
+      if (!inCanvas || event.altKey || event.defaultPrevented) return
+      const key = String(event.key).toLowerCase()
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        stageRef.current?.deleteSelection()
+        return
+      }
+      if (event.key === 'Escape') {
+        stageRef.current?.clearSelection()
+        return
+      }
+      if (event.key === '[' || event.key === ']') {
+        event.preventDefault()
+        const delta = event.key === ']' ? 8 : -8
+        setBrush((current) => ({ ...current, size: Math.min(400, Math.max(1, current.size + delta)) }))
+        return
+      }
+      const nextTool = toolKeys[key]
+      if (nextTool === undefined) return
+      const allowed = docRef.current?.mode === 'layout'
+        ? ['box', 'select', 'pan']
+        : ['brush', 'eraser', 'rect', 'ellipse', 'select', 'pan']
+      if (!allowed.includes(nextTool)) return
+      event.preventDefault()
+      setTool(nextTool)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  useEffect(() => () => {
+    if (sizeTimer.current !== null) clearTimeout(sizeTimer.current)
+  }, [])
 
   useEffect(() => {
     if (!doc) return
@@ -525,17 +656,40 @@ export function CanvasTab(props) {
     }
   }
 
-  /** Commit the width/height fields (Enter or blur), rounding to the 16px grid. */
-  function applyCanvasSize() {
-    const width = Number(widthInput ?? docRef.current?.canvas?.width ?? 1024)
-    const height = Number(heightInput ?? docRef.current?.canvas?.height ?? 1024)
-    setWidthInput(null)
-    setHeightInput(null)
+  /**
+   * Commit the width/height fields, rounding to the 8-pixel grid. `live`
+   * commits keep the typed text in the inputs, so debounced updates while the
+   * user is still typing never rewrite the field under their cursor.
+   */
+  function applyCanvasSize(options = {}) {
+    const live = options.live === true
+    if (sizeTimer.current !== null) {
+      clearTimeout(sizeTimer.current)
+      sizeTimer.current = null
+    }
+    const rawWidth = widthInputRef.current
+    const rawHeight = heightInputRef.current
+    const width = Number(rawWidth ?? docRef.current?.canvas?.width ?? 1024)
+    const height = Number(rawHeight ?? docRef.current?.canvas?.height ?? 1024)
+    if (!live) {
+      setWidthInput(null)
+      setHeightInput(null)
+    }
     if (!Number.isFinite(width) || !Number.isFinite(height)) return
+    if (live && (width < 16 || height < 16)) return
     const nextWidth = Math.min(16384, Math.max(16, Math.round(width / 8) * 8))
     const nextHeight = Math.min(16384, Math.max(16, Math.round(height / 8) * 8))
     if (nextWidth === docRef.current?.canvas?.width && nextHeight === docRef.current?.canvas?.height) return
     setCanvasSize(nextWidth, nextHeight)
+  }
+
+  /** Debounced live commit, so the canvas resizes while the number is typed. */
+  function scheduleCanvasSize() {
+    if (sizeTimer.current !== null) clearTimeout(sizeTimer.current)
+    sizeTimer.current = setTimeout(() => {
+      sizeTimer.current = null
+      applyCanvasSize({ live: true })
+    }, 300)
   }
 
   /** Current canvas aspect ratio, used the moment the ratio lock is enabled. */
@@ -551,20 +705,26 @@ export function CanvasTab(props) {
    */
   function changeWidth(raw) {
     setWidthInput(raw)
-    if (!lockRatio) return
-    const width = Number(raw)
-    if (!Number.isFinite(width) || width < 16) return
-    const ratio = ratioRef.current ?? canvasRatio()
-    setHeightInput(String(snapSize(width / ratio)))
+    if (lockRatio) {
+      const width = Number(raw)
+      if (Number.isFinite(width) && width >= 16) {
+        const ratio = ratioRef.current ?? canvasRatio()
+        setHeightInput(String(snapSize(width / ratio)))
+      }
+    }
+    scheduleCanvasSize()
   }
 
   function changeHeight(raw) {
     setHeightInput(raw)
-    if (!lockRatio) return
-    const height = Number(raw)
-    if (!Number.isFinite(height) || height < 16) return
-    const ratio = ratioRef.current ?? canvasRatio()
-    setWidthInput(String(snapSize(height * ratio)))
+    if (lockRatio) {
+      const height = Number(raw)
+      if (Number.isFinite(height) && height >= 16) {
+        const ratio = ratioRef.current ?? canvasRatio()
+        setWidthInput(String(snapSize(height * ratio)))
+      }
+    }
+    scheduleCanvasSize()
   }
 
   function toggleLockRatio() {
@@ -581,6 +741,10 @@ export function CanvasTab(props) {
   }
 
   function applyPreset(preset) {
+    if (sizeTimer.current !== null) {
+      clearTimeout(sizeTimer.current)
+      sizeTimer.current = null
+    }
     setWidthInput(null)
     setHeightInput(null)
     ratioRef.current = preset.width / preset.height
@@ -691,14 +855,16 @@ export function CanvasTab(props) {
     }
   }
 
-  async function handleMaskReady({ maskBlob, rgbaBlob, hasMask }) {
+  async function handleMaskReady({ maskBlob, rgbaBlob, hasMask, shapes }) {
     if (!sessionId) return
     try {
       await uploadAsset(sessionId, 'mask.png', maskBlob)
       if (rgbaBlob !== null) await uploadAsset(sessionId, 'canvas_rgba.png', rgbaBlob)
-      const result = await saveCanvas(sessionId, { mask: { rev: Date.now(), hasMask } })
+      const patch = { rev: Date.now(), hasMask }
+      if (Array.isArray(shapes)) patch.shapes = shapes
+      const result = await saveCanvas(sessionId, { mask: patch })
       setDoc(result.doc)
-      setMask((current) => ({ ...current, hasMask }))
+      setMask((current) => ({ ...current, hasMask, shapes: patch.shapes ?? current.shapes }))
     } catch (caught) {
       setError(caught.message)
     }
@@ -900,9 +1066,12 @@ export function CanvasTab(props) {
               maskSettings={mask}
               boxes={items}
               selectedId={doc?.selected?.id ?? null}
+              shapes={mask.shapes ?? []}
               onBoxCreate={createBox}
               onBoxCommit={commitBox}
+              onBoxCaption={(box, caption) => commitBox({ ...box, caption })}
               onBoxSelect={selectBox}
+              t={t}
               onMaskReady={handleMaskReady}
               onMessage={setError}
               onDeleteKey={removeSelected}
@@ -955,7 +1124,7 @@ export function CanvasTab(props) {
                         step={8}
                         value={widthInput ?? doc?.canvas?.width ?? 1024}
                         onChange={(event) => changeWidth(event.target.value)}
-                        onBlur={applyCanvasSize}
+                        onBlur={() => applyCanvasSize()}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') applyCanvasSize()
                         }}
@@ -970,7 +1139,7 @@ export function CanvasTab(props) {
                         step={8}
                         value={heightInput ?? doc?.canvas?.height ?? 1024}
                         onChange={(event) => changeHeight(event.target.value)}
-                        onBlur={applyCanvasSize}
+                        onBlur={() => applyCanvasSize()}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') applyCanvasSize()
                         }}
@@ -986,20 +1155,24 @@ export function CanvasTab(props) {
                     >
                       <Icon name="lock" size={14} />
                     </button>
-                  </div>
-                  <div className="ccw-presets" role="group" aria-label={t('canvasSize.presets')}>
-                    {CANVAS_PRESETS.map((preset) => (
-                      <button
-                        key={preset.key}
-                        type="button"
-                        className={`ccw-preset ${activePresetKey === preset.key ? 'is-active' : ''}`}
-                        aria-pressed={activePresetKey === preset.key}
-                        title={`${preset.label} · ${preset.width} × ${preset.height}`}
-                        onClick={() => applyPreset(preset)}
+                    <label className="ccw-field ccw-ratio-field">
+                      <span>{t('canvasSize.presets')}</span>
+                      <select
+                        value={activePresetKey ?? 'custom'}
+                        aria-label={t('canvasSize.presets')}
+                        onChange={(event) => {
+                          const preset = CANVAS_PRESETS.find((item) => item.key === event.target.value)
+                          if (preset !== undefined) applyPreset(preset)
+                        }}
                       >
-                        {preset.label}
-                      </button>
-                    ))}
+                        <option value="custom">{t('canvasSize.custom')}</option>
+                        {CANVAS_PRESETS.map((preset) => (
+                          <option key={preset.key} value={preset.key}>
+                            {preset.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 </div>
                 <p className="ccw-hint">{t('canvasSize.hint')}</p>
@@ -1009,6 +1182,7 @@ export function CanvasTab(props) {
 
           {showMaskTools ? (
             <Section title={t('mask.title')} icon="sliders" className="ccw-section-mask">
+              <p className="ccw-hint">{t('mask.tools')}</p>
               <MaskSliders
                 brush={brush}
                 setBrush={setBrush}
@@ -1062,6 +1236,7 @@ export function CanvasTab(props) {
                 </span>
               </div>
             ) : null}
+            {hasBoxes ? <p className="ccw-hint">{t('prompt.compileHint')}</p> : null}
             <div className="ccw-action-row">
               <button
                 type="button"
@@ -1101,6 +1276,7 @@ export function CanvasTab(props) {
               <Icon name="info" size={13} />
               <span>{t('layout.mossOnly')}</span>
             </p>
+            <p className="ccw-hint">{t('layout.captionEdit')}</p>
             {hasWorkflowNodes && !hasMossNodes ? (
               <p className="ccw-hint ccw-warn-hint" role="status">
                 <Icon name="alert" size={13} />
