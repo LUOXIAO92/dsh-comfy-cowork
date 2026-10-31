@@ -460,3 +460,57 @@ test('a ComfyUI failure keeps the previous workflow entries and marks them stale
     await cleanup()
   }
 })
+
+test('a model snapshot from another ComfyUI address is rebuilt, not reused', async () => {
+  const { root, cleanup } = await makeRoot()
+  try {
+    const config = normalizeConfig({})
+    const catalog = new ModelCatalog(config)
+    let reads = 0
+    const comfy = fakeComfy({
+      async models() {
+        reads += 1
+        return ['checkpoints']
+      },
+    })
+    await catalog.ensure(root, comfy)
+    assert.equal(reads, 1)
+
+    config.baseUrl = 'http://127.0.0.1:9999'
+    // A fresh process sees the address stored in the file and refuses it.
+    const fresh = new ModelCatalog(config)
+    assert.equal(await fresh.read(root), null)
+    // And a warm one drops the in-memory snapshot built for the old address.
+    const next = await catalog.ensure(root, comfy)
+    assert.equal(next.refreshed, true)
+    assert.equal(reads, 2)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('a node tree from another ComfyUI address is rebuilt, not reused', async () => {
+  const { root, cleanup } = await makeRoot()
+  try {
+    const config = normalizeConfig({})
+    const catalog = new NodeCatalog(config)
+    let refreshes = 0
+    const comfy = fakeComfy({
+      async objectInfo() {
+        refreshes += 1
+        return OBJECT_INFO
+      },
+    })
+    await catalog.ensure(root, comfy)
+    assert.equal(refreshes, 1)
+
+    config.baseUrl = 'http://127.0.0.1:9999'
+    const fresh = new NodeCatalog(config)
+    assert.equal(await fresh.read(root), null)
+    const next = await catalog.ensure(root, comfy)
+    assert.equal(next.refreshed, true)
+    assert.equal(refreshes, 2)
+  } finally {
+    await cleanup()
+  }
+})
