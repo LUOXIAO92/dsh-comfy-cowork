@@ -129,6 +129,10 @@ npm test        # node:test、38 件
 - 動画は汎用ワークフローの実行とプレビューのみで、タイムラインはありません。
 - 大きな画像のマスクはフル解像度で処理します。4K 以上は先にキャンバスを縮小することをおすすめします。
 
+## クレジット
+
+UI デザインには [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) スキルを使用しました。ドキュメントの執筆には [Agent Toolkit](https://github.com/softaworks/agent-toolkit) の `writing-clearly-and-concisely` スキルを使用しました。
+
 ## ライセンス
 
 MIT。[LICENSE](LICENSE) を参照。

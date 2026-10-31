@@ -129,6 +129,10 @@ npm test        # node:test，38 项
 - 视频只做通用工作流运行与预览，不做时间轴。
 - 大图蒙版按全分辨率处理；4K 以上建议先缩小画布。
 
+## 致谢
+
+界面设计使用了 [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) 技能；文档写作使用了 [Agent Toolkit](https://github.com/softaworks/agent-toolkit) 的 `writing-clearly-and-concisely` 技能。
+
 ## 许可
 
 MIT。见 [LICENSE](LICENSE)。

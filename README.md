@@ -129,6 +129,10 @@ Requirements: [docs/REQUIREMENTS.en.md](docs/REQUIREMENTS.en.md).
 - Video uses generic workflow runs and preview only; there is no timeline.
 - Large images keep masks at full resolution; shrink the canvas first above 4K.
 
+## Credits
+
+The UI was designed with the [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) skill. The documentation was written with the `writing-clearly-and-concisely` skill from [Agent Toolkit](https://github.com/softaworks/agent-toolkit).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
