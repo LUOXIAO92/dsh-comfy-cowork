@@ -23,3 +23,6 @@ __pycache__/
 *.pyc
 
 .npmrc
+
+.verify-home/
+.verify-npm/
