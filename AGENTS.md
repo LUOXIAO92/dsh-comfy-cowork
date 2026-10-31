@@ -34,38 +34,48 @@ pipeline that writes every prompt into the plugin prompt box.
   with a model extension are kept, and a folder that holds none is dropped. `custom_nodes`,
   `configs`, `datasets` and `vae_approx` are skipped by name: a node package can ship weights,
   and a preview folder can mirror every model. File strings stay exactly as ComfyUI reports
-  them (folder-relative, no prefix), because that is what a loader widget takes. TTL is
-  `modelCacheTtlMs` (10 min); a failed refresh keeps the last snapshot and reports it stale.
-- `lib/node-catalog.js` — the node directory at `<workspace>/.comfy-cowork/nodes.json`: one
-  entry per node type with its display name, category, and description. It deliberately never
-  stores input schemas: a widget's option list is read from ComfyUI when that widget is edited,
-  so the cache stays small and cannot drift. Same TTL and failure behavior as the model
-  catalog; `setBaseUrl` clears both.
+  them (folder-relative, no prefix), because that is what a loader widget takes. There is no
+  TTL: a written snapshot is reused until it is missing, the ComfyUI address changed, or the
+  `refresh` feature (or the canvas Refresh directories button) rebuilds it; a failed refresh
+  keeps the last snapshot.
+- `lib/node-catalog.js` — the node directory at `<workspace>/.comfy-cowork/nodes.json` (version
+  2): ComfyUI's category tree, nested by the path it ships (`KJNodes/masking`,
+  `🆎 AusBoss/Video`, …), each branch `{ count, nodes: [{ type, display, description }],
+  children }`. It stores no input schemas: `node_info` reads one class live from
+  `/object_info/<class>` (a 404 falls back to the full dump) and pages each dropdown at 100
+  values (`option_offset`). No TTL — reused until missing, rebuilt by `refresh`, or after the
+  address changes; a failed refresh keeps the previous tree.
 - `lib/workflow-index.js` — one list over three sources: ComfyUI `userdata/workflows`
   (`comfyui:<userdata path>`), the comfy project convention (`fragments/*.json`,
   `blueprints/*.compiled.json`, absolute workspace paths), and this plugin's own saves
   (`<workspace>/.comfy-cowork/workflows/*.json`). Written to
   `<workspace>/.comfy-cowork/workflows/index.json` with explicit paths. Saving defaults to the
   workspace; `target: 'comfyui'` writes back to userdata.
-- `lib/tools.js` — the agent-facing `comfy_coworking_*` tools.
+- `lib/tools.js` — the one agent tool, `comfy_coworking`: `discover` (groups, or search names and
+  aliases), `describe` (input schemas), `execute` (run one feature). Features are stored in a
+  table filed under canvas, workflow, runs, catalog, and misc; `discover` lists their flat ids
+  (`state`, `set_prompt`, `list_models`, `node_info`, `refresh`, `run`, `run_status`, …) and
+  `describe` returns their schemas, so the request's tool list stays one fixed schema.
+  Registered in-process through `scope.tools.register` — progressive disclosure, not an MCP
+  server.
 - `src/client/` — browser half, bundled into `client.js` by `node scripts/build-client.mjs`:
   - `CanvasTab.jsx` — app shell: tool rail, canvas, inspector (size, mask, prompt, layout…).
   - `CanvasStage.jsx` — the artboard: zoom/pan, brush + eraser, vector mask shapes,
     layout boxes, inline caption editor.
   - `WorkflowView.jsx` — graph view + node parameter editor + run panel.
-  - `styles.css`, `locales.js` (en/zh parity is enforced), `api.js`, `ui.jsx`.
+  - `styles.css`, `locales.js` (en/zh/ja key-set parity), `api.js`, `ui.jsx`.
 
 ## Activation (per session, never global)
 
 - The plugin mounts dormant: no tool and no prompt section exists until one chat opens
-  the canvas. Enabling is strictly per session — the host attaches `comfy_coworking_*`
-  through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see them.
+  the canvas. Enabling is strictly per session — the host attaches `comfy_coworking`
+  through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see it.
 - The only way in is the `/dsh-comfy-cowork` slash-menu row (label `DSH Comfy协同` /
   `DSH Comfy cowork`). It is a client command contribution (`ctx.commandUi.register`), not a
   host command — that is the only way a menu row gets a localized label and an icon, and its
   whole effect (enable the session + open the tab) is client-side. There is no composer button.
-- The agent's `comfy_coworking_open_canvas` tool bumps `doc.ui.openSeq`; the plugin follows the
-  on-screen session's SSE stream and opens the tab when the sequence moves.
+- The `open_canvas` feature (run through `comfy_coworking`) bumps `doc.ui.openSeq`; the plugin
+  follows the on-screen session's SSE stream and opens the tab when the sequence moves.
 - Ways out, and why there are two. Closing the canvas (appbar ✕ or any tab close) runs the
   tab type's close handler, which clears `doc.enabled` but leaves `doc.toolsPinned` set, so the
   tools stay with that chat. Removing tools rewrites the request's tool array, which sits in
@@ -152,17 +162,26 @@ batch, so a fix is never split across two releases.
 
 ## Feature map (agent-relevant)
 
+- The only agent entry is `comfy_coworking`: `discover` walks groups → features, `describe`
+  returns input schemas, `execute` runs one. Feature ids are flat; discover matches names,
+  groups, descriptions, and English + Chinese aliases, so 「跑图」, 「刷新」, or 「批注」 finds the
+  right feature without knowing its id.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
-  files, paged (default 200). Never dump every model into a tool result, and never tell the
-  agent to `ls` a ComfyUI directory outside the workspace — the catalog exists to avoid that.
+  files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
+  directories button) or when the ComfyUI address changes — never on a timer. Never dump every
+  model into a tool result, and never tell the agent to `ls` a ComfyUI directory outside the
+  workspace — the catalog exists to avoid that.
 - The model catalog and the node directory answer different questions. A model list is about
   models (folders of loadable files); the node directory is about node types (name and
   description). Never build one from the other: a widget's accepted values are read from
   ComfyUI on demand, not cached.
 - The node directory mirrors the tree ComfyUI's own node palette shows: every node carries a
   category path (`KJNodes/masking`), so browse top-level counts → subcategories → the nodes
-  filed there. Exact-type lookup and text search cover the rest. Never page the whole
-  directory at an agent: an install has over a thousand types and a workflow uses a handful.
+  filed there. `list_nodes` with no arguments opens the top level, `category` opens one level,
+  and `query` searches type, display name, category, and description. `node_info` returns one
+  node's inputs and outputs live from ComfyUI (defaults, ranges, tooltips, dropdown values paged
+  at 100 with `option_offset`); input schemas are never cached. Never page the whole directory
+  at an agent: an install has over a thousand types and a workflow uses a handful.
 - Workflow ids are `<source>:<path>`; `find()` still accepts a bare ComfyUI file name.
 
 - Layout boxes are **MOSS-Image only**; other models ignore them and use the prompt box.

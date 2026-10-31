@@ -42,7 +42,7 @@
 
 安装包带着构建好的客户端文件：装插件的机器不需要 Node，不需要构建，也不需要放行安装脚本。
 
-刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_coworking_*` 工具接到该会话的 agent 上。其它会话看不到这些工具。
+刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_coworking` 工具接到该会话的 agent 上。其它会话看不到这个工具。
 
 关闭画布不会带走工具：模型看到的工具列表保持不变，前缀缓存继续命中。appbar 上的卸载按钮才会移除工具，点之前会先警告——工具列表一变，整段对话要重新处理一次且不命中缓存。对话较长时，先压缩再卸载。
 
@@ -71,23 +71,38 @@
 
 ### 模型与工作流
 
-agent 浏览模型和浏览文件一样：`comfy_coworking_list_models` 先返回文件夹（`checkpoints`、`loras`、`vae`……）和文件数量，再按文件夹返回文件。这些文件名就是节点里该填的值——`Illustrious/model.safetensors`，不带文件夹前缀，也不是绝对路径。清单缓存在 `.comfy-cowork/models.json`，启动时刷新、过期后刷新，也可以让 agent 调 `comfy_coworking_refresh_models` 强制刷新。
+agent 浏览模型和浏览文件一样：`list_models` 功能先返回文件夹（`checkpoints`、`loras`、`vae`……）和文件数量，再按文件夹返回文件。这些文件名就是节点里该填的值——`Illustrious/model.safetensors`，不带文件夹前缀，也不是绝对路径。清单缓存在 `.comfy-cowork/models.json`，只在缺失时、ComfyUI 地址变化后、或 `refresh` 功能（以及画布里的「刷新目录」按钮）要求时重建，不再按计时器过期。
 
-工作流有三个来源，`comfy_coworking_list_workflows` 会一起列出：ComfyUI 自己的 `userdata/workflows`、comfy 技能的项目约定（`fragments/*.json`、`blueprints/*.compiled.json`），以及本插件保存在 `.comfy-cowork/workflows` 的。保存默认写工作区，另存为可以选择写回 ComfyUI。
+节点目录 `.comfy-cowork/nodes.json` 按 ComfyUI 自己的节点面板组织成分类树：先看顶层分类和数量，再进子分类，最后是归在该分类下的节点；也可以按类型、显示名、分类、描述搜索。它只存名字和描述，不存输入 schema。这棵树同样由 `refresh` 功能（或「刷新目录」按钮）重建，ComfyUI 地址变化时也会重新读取，不按计时器过期。`node_info` 功能实时从 ComfyUI 读取某个节点类型的定义——输入、默认值、范围、提示，以及每页 100 个的下拉选项——所以 schema 不会过期。
+
+工作流有三个来源，`list_workflows` 会一起列出：ComfyUI 自己的 `userdata/workflows`、comfy 技能的项目约定（`fragments/*.json`、`blueprints/*.compiled.json`），以及本插件保存在 `.comfy-cowork/workflows` 的。保存默认写工作区，另存为可以选择写回 ComfyUI。
 
 ### Agent 协作
 
-| 工具 | 作用 |
-|---|---|
-| `comfy_coworking_state` / `health` | 读画布、提示词、布局、绑定、运行记录；检查连接 |
-| `comfy_coworking_set_prompt` | 写提示词或负面提示词 |
-| `comfy_coworking_set_layout` / `upsert_box` / `remove_box` | 替换布局、增改删框 |
-| `comfy_coworking_set_canvas` / `load_image` | 设尺寸与模式；把工作区图片载入画布 |
-| `comfy_coworking_list_workflows` / `load_workflow` / `bind_workflow` | 浏览、载入、改绑定 |
-| `comfy_coworking_list_models` | 列模型目录与文件 |
-| `comfy_coworking_run` / `run_status` / `interrupt` | 运行、查状态、取消 |
-| `comfy_coworking_open_canvas` | 请求 UI 打开画布 |
-| `comfy_coworking_comments` | 读评论批注和对应截图 |
+插件只注册一个工具 `comfy_coworking`，用三个动作取代过去每个能力一个工具：
+
+- `discover`——不带其它参数时列出五个功能组；`group` 展开一组，`query` 搜索名称、别名（中英文）和描述。
+- `describe`——返回一个或多个功能的输入 schema。
+- `execute`——用一个 `arguments` 对象运行某个功能。
+
+功能的 schema 只出现在 `describe` 的结果里，不会进入请求的工具列表。第一次调用大致是这样：
+
+```text
+comfy_coworking {"action": "discover"}
+comfy_coworking {"action": "discover", "group": "canvas"}
+comfy_coworking {"action": "describe", "features": ["set_prompt"]}
+comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+```
+
+知道功能名之后，单用 `execute` 就够了。五个功能组：
+
+| 组 | 功能 | 负责 |
+|---|---|---|
+| `canvas` | `state`、`open_canvas`、`set_canvas`、`set_prompt`、`set_layout`、`upsert_box`、`remove_box`、`comments`、`load_image` | 读画布、改画布 |
+| `workflow` | `bind_workflow`、`list_workflows`、`load_workflow`、`save_workflow` | 浏览、载入、绑定、保存工作流 |
+| `runs` | `run`、`run_status`、`interrupt` | 排队、跟踪、取消运行 |
+| `catalog` | `list_models`、`list_nodes`、`node_info`、`refresh` | 浏览模型与节点类型、重建缓存 |
+| `misc` | `health` | 连接、版本、最近的错误 |
 
 所有提示词写入都落在 `document.prompt`，也就是用户看到的那个输入框。
 
@@ -118,7 +133,7 @@ agent 浏览模型和浏览文件一样：`comfy_coworking_list_models` 先返�
 ```bash
 npm install     # esbuild + React，仅开发与测试
 npm run build   # 生成 client.js（已 gitignore，构建产物）
-npm test        # node:test，38 项
+npm test        # node:test，73 项
 ```
 
 - Host：`index.js` → `lib/plugin.js`；工具在 `lib/tools.js`，路由在 `lib/routes.js`，工作流转换在 `lib/workflow.js`，MOSS 编译在 `lib/moss.js`。

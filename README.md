@@ -42,7 +42,7 @@ Open the Plugins page in DSH, choose **Add plugin**, enter the package name `dsh
 
 The package ships its built client bundle: the installing machine needs no Node, no build step, and no build-script approval.
 
-Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking_*` tools to that chat's agent. Other chats never see these tools.
+Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking` tool to that chat's agent. Other chats never see this tool.
 
 Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The appbar's unload button removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
 
@@ -71,23 +71,38 @@ Layout boxes only matter to MOSS-Image; models such as anima and SDXL use the pr
 
 ### Models and workflows
 
-The agent browses models the way it browses files: `comfy_coworking_list_models` first returns the folders (`checkpoints`, `loras`, `vae`, …) with file counts, then one folder returns its files. Those file names are exactly what a loader widget takes — `Illustrious/model.safetensors`, no folder prefix, never an absolute path. The list is a snapshot cached in `.comfy-cowork/models.json`, refreshed on start, when it goes stale, and on demand with `comfy_coworking_refresh_models`.
+The agent browses models the way it browses files: the `list_models` feature first returns the folders (`checkpoints`, `loras`, `vae`, …) with file counts, then one folder returns its files. Those file names are exactly what a loader widget takes — `Illustrious/model.safetensors`, no folder prefix, never an absolute path. The list is a snapshot cached in `.comfy-cowork/models.json`; it is rebuilt only when it is missing, after the ComfyUI address changes, or when the `refresh` feature (or the canvas's **Refresh directories** button) asks for it. Nothing expires on a timer.
 
-Workflows come from three places and are listed together by `comfy_coworking_list_workflows`: ComfyUI's own `userdata/workflows`, the comfy skill's project convention (`fragments/*.json`, `blueprints/*.compiled.json`), and whatever this plugin saved in `.comfy-cowork/workflows`. Saving writes to the workspace by default; **Save as** can also write back into ComfyUI.
+The node directory at `.comfy-cowork/nodes.json` mirrors ComfyUI's own node palette as a category tree: browse top-level categories with counts, then subcategories, then the nodes filed there, or search type, display name, category, and description. It keeps names and descriptions only, no input schemas. The same `refresh` feature or **Refresh directories** button rebuilds this tree — and a ComfyUI address change discards it — never a timer. The `node_info` feature reads one node type's definition live from ComfyUI — inputs, defaults, ranges, tooltips, and dropdown values paged 100 at a time — so a schema is never stale.
+
+Workflows come from three places and are listed together by the `list_workflows` feature: ComfyUI's own `userdata/workflows`, the comfy skill's project convention (`fragments/*.json`, `blueprints/*.compiled.json`), and whatever this plugin saved in `.comfy-cowork/workflows`. Saving writes to the workspace by default; **Save as** can also write back into ComfyUI.
 
 ### Working with the agent
 
-| Tool | What it does |
-|---|---|
-| `comfy_coworking_state` / `health` | Read the canvas, prompt, layout, bindings, and run history; check the connection |
-| `comfy_coworking_set_prompt` | Write the prompt or negative prompt |
-| `comfy_coworking_set_layout` / `upsert_box` / `remove_box` | Replace the layout; add, update, or delete boxes |
-| `comfy_coworking_set_canvas` / `load_image` | Set size and mode; load a workspace image into the canvas |
-| `comfy_coworking_list_workflows` / `load_workflow` / `bind_workflow` | Browse, load, and rebind workflows |
-| `comfy_coworking_list_models` | List model folders and files |
-| `comfy_coworking_run` / `run_status` / `interrupt` | Run, check status, cancel |
-| `comfy_coworking_open_canvas` | Ask the UI to open the canvas |
-| `comfy_coworking_comments` | Read comment annotations and their screenshots |
+The plugin registers one tool, `comfy_coworking`, with three actions instead of one tool per capability:
+
+- `discover` — with no other argument, lists the five feature groups; `group` expands one, and `query` searches names, aliases (English and Chinese), and descriptions.
+- `describe` — returns the input schema of one or more features.
+- `execute` — runs one feature with an `arguments` object.
+
+Feature schemas exist only in `describe` results, never in the request's tool list. A first turn looks like this:
+
+```text
+comfy_coworking {"action": "discover"}
+comfy_coworking {"action": "discover", "group": "canvas"}
+comfy_coworking {"action": "describe", "features": ["set_prompt"]}
+comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+```
+
+Once the feature ids are known, `execute` alone is enough. The five groups:
+
+| Group | Features | What it covers |
+|---|---|---|
+| `canvas` | `state`, `open_canvas`, `set_canvas`, `set_prompt`, `set_layout`, `upsert_box`, `remove_box`, `comments`, `load_image` | Read and edit the shared canvas |
+| `workflow` | `bind_workflow`, `list_workflows`, `load_workflow`, `save_workflow` | Browse, load, bind, and save workflows |
+| `runs` | `run`, `run_status`, `interrupt` | Queue a run, follow it, cancel it |
+| `catalog` | `list_models`, `list_nodes`, `node_info`, `refresh` | Browse models and node types, refresh the caches |
+| `misc` | `health` | Connection, version, and recent errors |
 
 Every prompt write lands in `document.prompt`, the text box the user sees.
 
@@ -118,7 +133,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 ```bash
 npm install     # esbuild + React, development and tests only
 npm run build   # writes client.js (gitignored build output)
-npm test        # node:test, 38 tests
+npm test        # node:test, 73 tests
 ```
 
 - Host: `index.js` → `lib/plugin.js`; tools in `lib/tools.js`, routes in `lib/routes.js`, workflow conversion in `lib/workflow.js`, MOSS compilation in `lib/moss.js`.

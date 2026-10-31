@@ -42,7 +42,7 @@ DSH の「プラグイン」ページで「プラグインを追加」を選び�
 
 パッケージにはビルド済みのクライアントファイルが含まれるため、インストールする側に Node もビルドもインストールスクリプトの許可も不要です。
 
-DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力します。右サイドバーにキャンバスが開き、同時にこのセッションの agent に `comfy_coworking_*` ツールが接続されます。他のセッションからはこれらのツールは見えません。
+DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力します。右サイドバーにキャンバスが開き、同時にこのセッションの agent に `comfy_coworking` ツールが接続されます。他のセッションからはこのツールは見えません。
 
 キャンバスを閉じてもツールは外れません。モデルが見るツール一覧が変わらないため、プロンプトキャッシュがそのまま効きます。ツールを外せるのはアプリバーの専用ボタンだけで、押す前に警告が出ます。ツール一覧が変わると、会話全体が一度キャッシュなしで処理し直されるためです。会話が長い場合は、外す前に圧縮してください。
 
@@ -71,23 +71,38 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 
 ### モデルとワークフロー
 
-エージェントはファイルを辿るのと同じようにモデルを探します。`comfy_coworking_list_models` はまずフォルダー（`checkpoints`、`loras`、`vae` など）とファイル数を返し、次にフォルダーを指定するとその中のファイルを返します。そのファイル名がローダーのウィジェットにそのまま入る値です（`Illustrious/model.safetensors`、フォルダー名の前置きも絶対パスも不要）。一覧は `.comfy-cowork/models.json` にキャッシュされ、起動時・期限切れ・`comfy_coworking_refresh_models` で更新されます。
+エージェントはファイルを辿るのと同じようにモデルを探します。`list_models` 機能はまずフォルダー（`checkpoints`、`loras`、`vae` など）とファイル数を返し、次にフォルダーを指定するとその中のファイルを返します。そのファイル名がローダーのウィジェットにそのまま入る値です（`Illustrious/model.safetensors`、フォルダー名の前置きも絶対パスも不要）。一覧は `.comfy-cowork/models.json` にキャッシュされ、ファイルが無いとき、ComfyUI のアドレスが変わったとき、または `refresh` 機能（キャンバスの「ディレクトリを更新」ボタン）が要求したときだけ再構築されます。タイマーで期限切れになることはありません。
 
-ワークフローは 3 か所から集めて `comfy_coworking_list_workflows` が一覧します。ComfyUI の `userdata/workflows`、comfy スキルのプロジェクト規約（`fragments/*.json`、`blueprints/*.compiled.json`）、そしてこのプラグインが `.comfy-cowork/workflows` に保存したものです。保存は既定でワークスペースへ、別名保存では ComfyUI へも書き込めます。
+ノードディレクトリ `.comfy-cowork/nodes.json` は ComfyUI 自身のノードパレットと同じ分類ツリーです。トップレベルの分類と件数 → サブ分類 → そこに置かれたノード、と辿るか、種類・表示名・分類・説明で検索します。保存するのは名前と説明だけで、入力スキーマは持ちません。このツリーも `refresh` 機能（「ディレクトリを更新」ボタン）で再構築され、アドレスが変われば読み直され、タイマーでは期限切れになりません。`node_info` 機能がノード 1 種類の定義を ComfyUI から直接読みます（入力、既定値、範囲、ツールチップ、100 件ずつページングされるドロップダウンの値）。スキーマが古くなることはありません。
+
+ワークフローは 3 か所から集めて `list_workflows` 機能が一覧します。ComfyUI の `userdata/workflows`、comfy スキルのプロジェクト規約（`fragments/*.json`、`blueprints/*.compiled.json`）、そしてこのプラグインが `.comfy-cowork/workflows` に保存したものです。保存は既定でワークスペースへ、別名保存では ComfyUI へも書き込めます。
 
 ### Agent との協働
 
-| ツール | 役割 |
-|---|---|
-| `comfy_coworking_state` / `health` | キャンバス、プロンプト、レイアウト、バインディング、実行履歴の読み取り。接続の確認 |
-| `comfy_coworking_set_prompt` | プロンプトまたはネガティブプロンプトを書く |
-| `comfy_coworking_set_layout` / `upsert_box` / `remove_box` | レイアウトの置換、枠の追加・変更・削除 |
-| `comfy_coworking_set_canvas` / `load_image` | サイズとモードの設定。ワークスペースの画像をキャンバスに読み込む |
-| `comfy_coworking_list_workflows` / `load_workflow` / `bind_workflow` | 閲覧、読み込み、バインディングの変更 |
-| `comfy_coworking_list_models` | モデルカタログとファイルの一覧 |
-| `comfy_coworking_run` / `run_status` / `interrupt` | 実行、状態確認、キャンセル |
-| `comfy_coworking_open_canvas` | UI にキャンバスを開くよう要求 |
-| `comfy_coworking_comments` | コメント注釈と対応するスクリーンショットの読み取り |
+プラグインが登録するツールは `comfy_coworking` の 1 つだけで、能力ごとに 1 つずつ並べる代わりに 3 つのアクションを使います。
+
+- `discover` — 他の引数がなければ 5 つの機能グループを一覧します。`group` は 1 グループを展開し、`query` は名前・別名（英語と中国語）・説明を検索します。
+- `describe` — 1 つ以上の機能の入力スキーマを返します。
+- `execute` — `arguments` オブジェクトで 1 つの機能を実行します。
+
+機能のスキーマは `describe` の結果にだけ現れ、リクエストのツール一覧には入りません。最初のターンはおおよそ次のようになります。
+
+```text
+comfy_coworking {"action": "discover"}
+comfy_coworking {"action": "discover", "group": "canvas"}
+comfy_coworking {"action": "describe", "features": ["set_prompt"]}
+comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+```
+
+機能名がわかった後は `execute` だけで足ります。5 つのグループ：
+
+| グループ | 機能 | 役割 |
+|---|---|---|
+| `canvas` | `state`、`open_canvas`、`set_canvas`、`set_prompt`、`set_layout`、`upsert_box`、`remove_box`、`comments`、`load_image` | キャンバスの読み取りと編集 |
+| `workflow` | `bind_workflow`、`list_workflows`、`load_workflow`、`save_workflow` | ワークフローの閲覧・読み込み・バインド・保存 |
+| `runs` | `run`、`run_status`、`interrupt` | 実行のキュー投入、追跡、キャンセル |
+| `catalog` | `list_models`、`list_nodes`、`node_info`、`refresh` | モデルとノード種別の閲覧、キャッシュの再構築 |
+| `misc` | `health` | 接続、バージョン、最近のエラー |
 
 すべてのプロンプト書き込みは `document.prompt`、つまりユーザーが目にする入力欄に反映されます。
 
@@ -118,7 +133,7 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 ```bash
 npm install     # esbuild + React（開発とテスト専用）
 npm run build   # client.js を生成（gitignore 済みのビルド成果物）
-npm test        # node:test、38 件
+npm test        # node:test、73 件
 ```
 
 - Host：`index.js` → `lib/plugin.js`。ツールは `lib/tools.js`、ルートは `lib/routes.js`、ワークフロー変換は `lib/workflow.js`、MOSS コンパイルは `lib/moss.js`。
