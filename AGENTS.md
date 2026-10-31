@@ -29,6 +29,9 @@ pipeline that writes every prompt into the plugin prompt box.
   working; that legacy name is the only place the old spelling belongs.
 - `lib/workflow.js` — infers canvas→workflow injection bindings from the ComfyUI JSON itself.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
+- `lib/png.js` — host-side PNG reader for the mask assets: decodes one non-interlaced 8-bit
+  file and returns the painted region's bbox, so `state` can describe the mask without the
+  browser and without shipping an image library.
 - `lib/model-catalog.js` — the workspace model snapshot: `/models` plus one
   `/models/<folder>` per folder, written to `<workspace>/.comfy-cowork/models.json`. Only files
   with a model extension are kept, and a folder that holds none is dropped. `custom_nodes`,
@@ -166,6 +169,12 @@ batch, so a fix is never split across two releases.
   returns input schemas, `execute` runs one. Feature ids are flat; discover matches names,
   groups, descriptions, and English + Chinese aliases, so 「跑图」, 「刷新」, or 「批注」 finds the
   right feature without knowing its id.
+- `state` is the whole canvas in one call: prompt and negative prompt, size and image,
+  layout, workflow bindings, recent runs, every comment with its crop path, and the painted
+  mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted mask
+  means the next edit is a local repaint of that region (the loaded inpaint workflow uploads
+  `canvas_rgba.png`); never regenerate the whole image while a mask is painted. An empty mask
+  plus a full-image prompt is a new image.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
   files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
   directories button) or when the ComfyUI address changes — never on a timer. Never dump every

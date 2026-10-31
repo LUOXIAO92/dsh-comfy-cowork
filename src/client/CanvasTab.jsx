@@ -1078,6 +1078,7 @@ export function CanvasTab(props) {
       await uploadAsset(sessionId, 'canvas.png', file)
       await uploadAsset(sessionId, 'source.png', file)
       await deleteAsset(sessionId, 'mask.png')
+      await deleteAsset(sessionId, 'mask-brush.png')
       await deleteAsset(sessionId, 'canvas_rgba.png')
       const result = await saveCanvas(sessionId, {
         mode: 'image',
@@ -1100,6 +1101,7 @@ export function CanvasTab(props) {
     if (!sessionId) return
     try {
       await deleteAsset(sessionId, 'mask.png')
+      await deleteAsset(sessionId, 'mask-brush.png')
       await deleteAsset(sessionId, 'canvas_rgba.png')
       const result = await saveCanvas(sessionId, { mode: 'layout', image: null, mask: { rev: Date.now(), hasMask: false } })
       setDoc(result.doc)
