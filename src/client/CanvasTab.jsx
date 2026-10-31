@@ -683,14 +683,15 @@ export function CanvasTab(props) {
     }
   }
 
-  /** Re-read the model folders from ComfyUI and say how many came back. */
+  /** Re-read the cached model folders and node tree, and say what came back. */
   async function refreshModelList() {
     setModelsRefreshing(true)
     setModelsNote('')
     try {
       const result = await refreshModels(sessionId)
       const folders = Array.isArray(result.folders) ? result.folders.length : 0
-      setModelsNote(t('comfy.modelsRefreshed').replace('{count}', String(folders)))
+      const nodes = typeof result.nodes === 'number' ? result.nodes : 0
+      setModelsNote(t('comfy.catalogRefreshed').replace('{folders}', String(folders)).replace('{nodes}', String(nodes)))
       setError('')
     } catch (caught) {
       setError(caught.message)
@@ -1839,7 +1840,7 @@ export function CanvasTab(props) {
                 {t('comfy.test')}
               </button>
               <button type="button" className="ccw-btn ccw-btn-small" disabled={modelsRefreshing} onClick={refreshModelList}>
-                {modelsRefreshing ? t('comfy.modelsRefreshing') : t('comfy.refreshModels')}
+                {modelsRefreshing ? t('comfy.catalogRefreshing') : t('comfy.refreshCatalog')}
               </button>
             </div>
             <p className="ccw-hint">{t('comfy.hint')}</p>
