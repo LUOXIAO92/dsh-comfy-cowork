@@ -148,6 +148,18 @@ export function health() {
   return request('/health')
 }
 
+/** The ComfyUI address this workspace uses. */
+export function getConfig(sessionId) {
+  return request(`/config?${sessionQuery(sessionId)}`)
+}
+
+export function saveConfig(sessionId, baseUrl) {
+  return request('/config', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), baseUrl }),
+  })
+}
+
 export function listWorkflows() {
   return request('/workflows')
 }

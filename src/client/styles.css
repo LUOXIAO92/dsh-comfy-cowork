@@ -3345,3 +3345,11 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+/* The ComfyUI address field: Save and Test sit side by side under the input. */
+.ccw-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}

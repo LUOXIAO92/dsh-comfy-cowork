@@ -46,7 +46,7 @@ Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar o
 
 Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The appbar's unload button removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
 
-The default connection is `http://127.0.0.1:8188`. To change it, edit `baseUrl` in `cordis.patch.yml`, or override `config.baseUrl` on the `comfy-cowork` row in the profile's patch layer.
+The canvas connects to `http://127.0.0.1:8188` by default. Change it in the canvas: the **ComfyUI** section of the inspector takes any address, saves it to `<workspace>/.comfy-cowork/config.json`, and switches the running plugin immediately — no restart. Every chat in that workspace and the agent tools follow it.
 
 ## Usage
 

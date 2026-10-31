@@ -46,7 +46,7 @@
 
 关闭画布不会带走工具：模型看到的工具列表保持不变，前缀缓存继续命中。appbar 上的卸载按钮才会移除工具，点之前会先警告——工具列表一变，整段对话要重新处理一次且不命中缓存。对话较长时，先压缩再卸载。
 
-默认连接 `http://127.0.0.1:8188`。改地址：编辑 `cordis.patch.yml` 里的 `baseUrl`，或在 profile 的 patch 层覆盖 `comfy-cowork` 行的 `config.baseUrl`。
+默认连接 `http://127.0.0.1:8188`。改地址在画布里：侧栏「ComfyUI」一节填新地址，保存后写进 `<workspace>/.comfy-cowork/config.json`，插件立刻切换，不用重启。同一工作区的会话和 agent 工具都用这个地址。
 
 ## 用法
 

@@ -215,6 +215,8 @@ window.fetch = async (url, options = {}) => {
     if (patch.image !== undefined) current.canvas.image = patch.image
     return json({ doc: current })
   }
+  if (text.includes('/config') && method === 'GET') return json({ baseUrl: 'http://127.0.0.1:8188' })
+  if (text.includes('/config') && method === 'PUT') return json({ baseUrl: bodyOf(options).baseUrl ?? 'http://127.0.0.1:8188' })
   if (method === 'PUT' && text.includes('/doc/enabled')) {
     const body = bodyOf(options)
     if (body.enabled === true && guard && current.toolsPinned !== true && body.confirm !== true) {

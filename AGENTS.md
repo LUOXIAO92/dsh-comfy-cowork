@@ -61,6 +61,11 @@ pipeline that writes every prompt into the plugin prompt box.
   changing anything) when the chat already has messages and the tools are not pinned yet; the
   canvas then shows the same warning modal and resends with `confirm: true`. Opening the canvas
   is what enables, so the slash command only opens the tab and the tab asks on mount.
+- The ComfyUI address is per workspace: `lib/workspace-config.js` reads and writes
+  `<workspace>/.comfy-cowork/config.json`, and `hooks.activate(sessionId)` copies it into the
+  shared `config.baseUrl` before document requests, tool calls, and runs, so the client follows
+  the workspace without a restart. `PUT /config` writes it and broadcasts to every open canvas;
+  an invalid address is rejected. Never reintroduce a hard-coded port in UI copy.
 - `doc.enabled` is the open-tab switch and `doc.toolsPinned` the attach switch; the host
   attaches when either is true. `GET /api/comfy-cowork/health` reports the live attach list as
   `scoped`.

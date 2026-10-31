@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { DocStore } from '../lib/store.js'
+import { WorkspaceConfig } from '../lib/workspace-config.js'
 import { normalizeConfig } from '../lib/config.js'
 import { createRoutes } from '../lib/routes.js'
 
@@ -316,6 +317,37 @@ test('stores the session enable switch', async () => {
     assert.equal(JSON.parse(off.body).doc.toolsPinned, true, 'a normal close keeps the tools')
   } finally {
     await cleanup()
+  }
+})
+
+test('saves the ComfyUI address in the workspace and reports it back', async () => {
+  const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
+  const ctx = {
+    logger: { warn() {} },
+    sessions: { get: () => undefined },
+    workingDirectory: { defaultDirectory: root },
+    connection: { admit: () => ({ peer: { id: 'peer-1' } }) },
+  }
+  const config = normalizeConfig({})
+  const store = new DocStore(ctx, config)
+  const workspaceConfig = new WorkspaceConfig(config)
+  const hooks = { setBaseUrl: async (sessionId, raw) => { const url = await workspaceConfig.write(store.resolveRoot(sessionId), raw); config.baseUrl = url; return url } }
+  const routes = createRoutes({ ctx, config, store, hooks, workspaceConfig })
+  try {
+    const session = 'session-config-route'
+    const saved = await call(routes, makeReq('PUT', '/api/comfy-cowork/config', { sessionId: session, baseUrl: 'http://127.0.0.1:9199/' }))
+    assert.equal(saved.status, 200)
+    assert.equal(JSON.parse(saved.body).baseUrl, 'http://127.0.0.1:9199')
+    const file = JSON.parse(await fs.readFile(path.join(root, '.comfy-cowork', 'config.json'), 'utf8'))
+    assert.equal(file.baseUrl, 'http://127.0.0.1:9199')
+
+    const read = await call(routes, makeReq('GET', `/api/comfy-cowork/config?session=${session}`))
+    assert.equal(JSON.parse(read.body).baseUrl, 'http://127.0.0.1:9199')
+
+    const rejected = await call(routes, makeReq('PUT', '/api/comfy-cowork/config', { sessionId: session, baseUrl: 'not a url' }))
+    assert.equal(rejected.status, 400)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
   }
 })
 

@@ -4,8 +4,10 @@ import {
   deleteAsset,
   deleteBox,
   eventUrl,
+  getConfig,
   getDoc,
   health,
+  saveConfig,
   saveCanvas,
   patchWorkflow,
   saveComment,
@@ -330,6 +332,9 @@ export function CanvasTab(props) {
   // that already has history) or take them away (same cost).
   const [modal, setModal] = useState(null)
   const [historyCount, setHistoryCount] = useState(0)
+  const [comfyUrl, setComfyUrl] = useState('')
+  const [comfyUrlDraft, setComfyUrlDraft] = useState('')
+  const [comfyUrlSaving, setComfyUrlSaving] = useState(false)
   const autoEnableTried = useRef(false)
   const unloaded = useRef(false)
   useEffect(() => {
@@ -350,6 +355,20 @@ export function CanvasTab(props) {
     autoEnableTried.current = true
     if (doc.enabled !== true) void enableTools()
   }, [doc])
+  // The ComfyUI address belongs to the workspace, so read it with the chat.
+  useEffect(() => {
+    let cancelled = false
+    getConfig(sessionId)
+      .then((result) => {
+        if (cancelled) return
+        setComfyUrl(result.baseUrl ?? '')
+        setComfyUrlDraft(result.baseUrl ?? '')
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [sessionId])
   const [widthInput, setWidthInput] = useState(null)
   const [negative, setNegative] = useState('')
   const [negativeFocused, setNegativeFocused] = useState(false)
@@ -650,6 +669,24 @@ export function CanvasTab(props) {
     } catch (caught) {
       setProbeError(caught.message)
       setComfy(null)
+    }
+  }
+
+  /** Save the workspace's ComfyUI address and reconnect with it. */
+  async function saveComfyUrl() {
+    const value = comfyUrlDraft.trim()
+    if (value === '' || value === comfyUrl) return
+    setComfyUrlSaving(true)
+    try {
+      const result = await saveConfig(sessionId, value)
+      setComfyUrl(result.baseUrl)
+      setComfyUrlDraft(result.baseUrl)
+      setError('')
+      await probe()
+    } catch (caught) {
+      setError(caught.message)
+    } finally {
+      setComfyUrlSaving(false)
     }
   }
 
@@ -1747,6 +1784,35 @@ export function CanvasTab(props) {
                 })}
               </ul>
             )}
+          </Section>
+
+          <Section title={t('comfy.title')} icon="link" className="ccw-section-comfy">
+            <label className="ccw-field">
+              <span>{t('comfy.url')}</span>
+              <input
+                value={comfyUrlDraft}
+                placeholder={t('comfy.placeholder')}
+                spellCheck={false}
+                onChange={(event) => setComfyUrlDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') saveComfyUrl()
+                }}
+              />
+            </label>
+            <div className="ccw-inline-actions">
+              <button
+                type="button"
+                className="ccw-btn ccw-btn-primary ccw-btn-small"
+                disabled={comfyUrlSaving || comfyUrlDraft.trim() === comfyUrl}
+                onClick={saveComfyUrl}
+              >
+                {comfyUrlSaving ? t('comfy.saving') : t('comfy.save')}
+              </button>
+              <button type="button" className="ccw-btn ccw-btn-small" onClick={probe}>
+                {t('comfy.test')}
+              </button>
+            </div>
+            <p className="ccw-hint">{t('comfy.hint')}</p>
           </Section>
 
           <Section title={t('session.title')} icon="lock" className="ccw-section-session">
