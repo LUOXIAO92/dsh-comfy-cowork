@@ -15,7 +15,7 @@ pipeline that writes every prompt into the plugin prompt box.
 - **Never publish to npm without the user's explicit approval.** `npm publish` is public and
   irreversible; the package name is `dsh-comfy-cowork`, and end users install it by name from
   the DSH plugin dialog.
-- `main` is the only branch; commits use `-c user.name='dsh' -c user.email='dsh@local'`.
+- `main` is the only branch.
 
 ## Shape of the code
 
