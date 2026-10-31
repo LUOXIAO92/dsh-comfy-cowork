@@ -30,6 +30,11 @@ const OBJECT_INFO = {
     category: 'moss',
     description: 'Compiles layout boxes into a prompt.',
   },
+  KJMask: {
+    display_name: 'Mask Ops',
+    category: 'KJNodes/masking',
+    description: 'Mask helpers.',
+  },
 }
 
 function fakeComfy(overrides = {}) {
@@ -135,7 +140,7 @@ test('the node directory keeps names and descriptions, not input schemas', async
     const config = normalizeConfig({})
     const catalog = new NodeCatalog(config)
     const { snapshot } = await catalog.ensure(root, fakeComfy())
-    assert.deepEqual(snapshot.nodes.map((node) => node.type), ['CheckpointLoaderSimple', 'KSampler', 'MOSSImageLayout'])
+    assert.deepEqual(snapshot.nodes.map((node) => node.type), ['CheckpointLoaderSimple', 'KJMask', 'KSampler', 'MOSSImageLayout'])
 
     const found = catalog.list(snapshot, { query: 'checkpoint' })
     assert.equal(found.total, 1)
@@ -152,13 +157,18 @@ test('the node directory keeps names and descriptions, not input schemas', async
     const byCategory = catalog.list(snapshot, { query: 'sampling' })
     assert.deepEqual(byCategory.nodes.map((node) => node.type), ['KSampler'])
 
-    // The directory is an index, not a menu: category counts and exact lookups
-    // are the two cheap ways in.
+    // The directory is an index over the same tree ComfyUI's palette shows:
+    // category counts at the top, subcategories one level down, exact lookups.
     assert.deepEqual(catalog.categories(snapshot), [
+      { category: 'KJNodes', count: 1 },
       { category: 'loaders', count: 1 },
       { category: 'moss', count: 1 },
       { category: 'sampling', count: 1 },
     ])
+    assert.deepEqual(catalog.categories(snapshot, 'KJNodes'), [{ category: 'KJNodes/masking', count: 1 }])
+    assert.deepEqual(catalog.inCategory(snapshot, 'KJNodes/masking').map((node) => node.type), ['KJMask'])
+    assert.equal(catalog.subtreeSize(snapshot, 'KJNodes'), 1)
+    assert.deepEqual(catalog.inCategory(snapshot, 'KJNodes'), [])
     const exact = catalog.byTypes(snapshot, ['KSampler', 'NotARealNode'])
     assert.deepEqual(exact.map((node) => node.type), ['KSampler'])
     assert.deepEqual(catalog.byTypes(snapshot, []), [])
@@ -180,7 +190,7 @@ test('the node directory survives a failure and reports it', async () => {
     })
     await assert.rejects(() => catalog.ensure(root, broken, { force: true }))
     const kept = await catalog.read(root)
-    assert.equal(kept.nodes.length, 3)
+    assert.equal(kept.nodes.length, 4)
   } finally {
     await cleanup()
   }
