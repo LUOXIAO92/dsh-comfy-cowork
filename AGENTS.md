@@ -172,9 +172,14 @@ batch, so a fix is never split across two releases.
 - `state` is the whole canvas in one call: prompt and negative prompt, size and image,
   layout, workflow bindings, recent runs, every comment with its crop path, and the painted
   mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted mask
-  means the next edit is a local repaint of that region (the loaded inpaint workflow uploads
-  `canvas_rgba.png`); never regenerate the whole image while a mask is painted. An empty mask
-  plus a full-image prompt is a new image.
+  means the next edit is a local repaint of that region; never regenerate the whole image
+  while a mask is painted. An empty mask plus a full-image prompt is a new image.
+- Mask plumbing. A workflow's `mask` input is followed through GrowMask/FeatherMask/ImageToMask
+  back to a `LoadImageMask` or `LoadImage`, so a graph built from ComfyUI's mask nodes is fed
+  `mask.png` (white = editable, carried in the alpha channel) directly. Only the legacy shape —
+  `LoadImage`'s MASK output wired straight into the mask — makes the canvas hand over
+  `canvas_rgba.png` with the mask cut out of the alpha; a run derives that from `mask.png`
+  when it is missing.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
   files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
   directories button) or when the ComfyUI address changes — never on a timer. Never dump every
