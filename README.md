@@ -50,6 +50,8 @@ The default connection is `http://127.0.0.1:8188`. To change it, edit `baseUrl` 
 
 ## Usage
 
+Open the canvas at the start of a chat. Turning the tools on later in a conversation rewrites the request prefix and costs one full-context cache miss, so the canvas asks for confirmation when a chat already has messages. Compact the chat first if you must.
+
 ### Local image edits
 
 1. Load an image into the canvas: file picker, drag and drop, paste, or a ComfyUI result.

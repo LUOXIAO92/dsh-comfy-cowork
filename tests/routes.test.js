@@ -319,6 +319,57 @@ test('stores the session enable switch', async () => {
   }
 })
 
+test('enabling in a chat with history asks before attaching the tools', async () => {
+  const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
+  const ctx = {
+    logger: { warn() {} },
+    sessions: { get: () => undefined },
+    workingDirectory: { defaultDirectory: root },
+    connection: { admit: () => ({ peer: { id: 'peer-1' } }) },
+  }
+  const config = normalizeConfig({})
+  const store = new DocStore(ctx, config)
+  const hooks = { historyCount: () => 12, sync: async () => {} }
+  const routes = createRoutes({ ctx, config, store, hooks })
+  try {
+    const session = 'session-enable-guard'
+    const guarded = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true }))
+    assert.equal(guarded.status, 200)
+    const body = JSON.parse(guarded.body)
+    assert.equal(body.needsConfirmation, true)
+    assert.equal(body.messages, 12)
+    assert.equal(body.doc.enabled, false, 'nothing changes until the user confirms')
+
+    const confirmed = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true, confirm: true }))
+    assert.equal(JSON.parse(confirmed.body).doc.enabled, true)
+    assert.equal(JSON.parse(confirmed.body).doc.toolsPinned, true)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
+test('a fresh chat enables without asking', async () => {
+  const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
+  const ctx = {
+    logger: { warn() {} },
+    sessions: { get: () => undefined },
+    workingDirectory: { defaultDirectory: root },
+    connection: { admit: () => ({ peer: { id: 'peer-1' } }) },
+  }
+  const config = normalizeConfig({})
+  const store = new DocStore(ctx, config)
+  const routes = createRoutes({ ctx, config, store, hooks: { historyCount: () => 0 } })
+  try {
+    const session = 'session-enable-fresh'
+    const on = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true }))
+    const body = JSON.parse(on.body)
+    assert.equal(body.needsConfirmation, undefined)
+    assert.equal(body.doc.enabled, true)
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
 test('the unload route drops the pin and tells the host to detach', async () => {
   const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
   const ctx = {

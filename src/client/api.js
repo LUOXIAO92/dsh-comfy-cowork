@@ -70,10 +70,10 @@ export function saveLayout(sessionId, summary, items) {
   })
 }
 
-export function saveEnabled(sessionId, enabled) {
+export function saveEnabled(sessionId, enabled, { confirm = false } = {}) {
   return request('/doc/enabled', {
     method: 'PUT',
-    body: JSON.stringify({ sessionId: requireSession(sessionId), enabled, source: 'user' }),
+    body: JSON.stringify({ sessionId: requireSession(sessionId), enabled, confirm, source: 'user' }),
   })
 }
 

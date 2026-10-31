@@ -326,15 +326,30 @@ export function CanvasTab(props) {
   const [comfy, setComfy] = useState(null)
   const [probeError, setProbeError] = useState('')
   const [view, setView] = useState('canvas')
-  const [unloadOpen, setUnloadOpen] = useState(false)
+  // One modal, two decisions: turn the tools on (costs one cache miss in a chat
+  // that already has history) or take them away (same cost).
+  const [modal, setModal] = useState(null)
+  const [historyCount, setHistoryCount] = useState(0)
+  const autoEnableTried = useRef(false)
+  const unloaded = useRef(false)
   useEffect(() => {
-    if (!unloadOpen) return undefined
+    if (modal === null) return undefined
     const onKey = (event) => {
-      if (event.key === 'Escape') setUnloadOpen(false)
+      if (event.key === 'Escape') setModal(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [unloadOpen])
+  }, [modal])
+
+  // Opening the canvas is how a chat gets the tools, so try once on mount. A
+  // chat with history answers `needsConfirmation` and the modal explains the
+  // cache cost before anything changes.
+  useEffect(() => {
+    if (autoEnableTried.current || unloaded.current) return
+    if (doc === null || doc === undefined) return
+    autoEnableTried.current = true
+    if (doc.enabled !== true) void enableTools()
+  }, [doc])
   const [widthInput, setWidthInput] = useState(null)
   const [negative, setNegative] = useState('')
   const [negativeFocused, setNegativeFocused] = useState(false)
@@ -860,10 +875,30 @@ export function CanvasTab(props) {
     setTimeout(() => setCopied(false), 1200)
   }
 
-  /** The banner's fallback path: a restored tab whose chat lost its tools. */
+  /**
+   * Turn the canvas tools on for this chat. The host answers with
+   * `needsConfirmation` when the chat already has messages, because attaching
+   * tools rewrites the request prefix and costs one full-context cache miss.
+   */
   async function enableTools() {
     try {
       const result = await saveEnabled(sessionId, true)
+      if (result?.needsConfirmation === true) {
+        setHistoryCount(result.messages ?? 0)
+        setModal('enable')
+        return
+      }
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    }
+  }
+
+  /** Confirmed enable: the user accepted the cache miss. */
+  async function enableAnyway() {
+    setModal(null)
+    try {
+      const result = await saveEnabled(sessionId, true, { confirm: true })
       setDoc(result.doc)
     } catch (caught) {
       setError(caught.message)
@@ -889,7 +924,8 @@ export function CanvasTab(props) {
 
   /** The deliberate exit: confirm first, then drop the tools and close the tab. */
   async function unloadAndClose() {
-    setUnloadOpen(false)
+    setModal(null)
+    unloaded.current = true
     try {
       const result = await unloadTools(sessionId)
       setDoc(result.doc)
@@ -1225,7 +1261,7 @@ export function CanvasTab(props) {
             <span className="ccw-health-label">{comfyLabel}</span>
           </span>
           <IconButton icon="refresh" label={t('probe')} onClick={probe} className="ccw-appbar-probe" />
-          <IconButton icon="unlink" label={t('tab.unload')} onClick={() => setUnloadOpen(true)} className="ccw-appbar-unload" />
+          <IconButton icon="unlink" label={t('tab.unload')} onClick={() => setModal('unload')} className="ccw-appbar-unload" />
           <IconButton icon="x" label={t('tab.close')} onClick={closeCanvas} className="ccw-appbar-close" />
         </div>
       </header>
@@ -1719,7 +1755,7 @@ export function CanvasTab(props) {
                 <Icon name="info" size={13} />
                 <span>{t('session.keepHint')}</span>
               </p>
-              <button type="button" className="ccw-btn ccw-btn-danger-ghost ccw-btn-small" onClick={() => setUnloadOpen(true)}>
+              <button type="button" className="ccw-btn ccw-btn-danger-ghost ccw-btn-small" onClick={() => setModal('unload')}>
                 <Icon name="unlink" size={13} />
                 <span>{t('session.unload')}</span>
               </button>
@@ -1734,32 +1770,44 @@ export function CanvasTab(props) {
         </div>
       ) : null}
 
-      {unloadOpen ? (
+      {modal === null ? null : (
         <div
           className="ccw-modal-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setUnloadOpen(false)
+            if (event.target === event.currentTarget) setModal(null)
           }}
         >
-          <div className="ccw-modal" role="alertdialog" aria-modal="true" aria-labelledby="ccw-unload-title">
+          <div className="ccw-modal" role="alertdialog" aria-modal="true" aria-labelledby="ccw-modal-title">
             <div className="ccw-modal-head">
               <Icon name="alert" size={16} />
-              <h2 className="ccw-modal-title" id="ccw-unload-title">{t('unload.title')}</h2>
+              <h2 className="ccw-modal-title" id="ccw-modal-title">
+                {modal === 'enable' ? t('enableWarning.title') : t('unload.title')}
+              </h2>
             </div>
-            <p className="ccw-modal-body">{t('unload.body')}</p>
-            <p className="ccw-modal-advice">{t('unload.advice')}</p>
+            <p className="ccw-modal-body">
+              {modal === 'enable'
+                ? t('enableWarning.body').replace('{count}', String(historyCount))
+                : t('unload.body')}
+            </p>
+            <p className="ccw-modal-advice">
+              {modal === 'enable' ? t('enableWarning.advice') : t('unload.advice')}
+            </p>
             <div className="ccw-modal-actions">
-              <button type="button" className="ccw-btn" onClick={() => setUnloadOpen(false)}>
-                {t('unload.cancel')}
+              <button type="button" className="ccw-btn" onClick={() => setModal(null)}>
+                {modal === 'enable' ? t('enableWarning.cancel') : t('unload.cancel')}
               </button>
-              <button type="button" className="ccw-btn ccw-btn-danger" onClick={unloadAndClose}>
-                {t('unload.confirm')}
+              <button
+                type="button"
+                className={modal === 'enable' ? 'ccw-btn ccw-btn-primary' : 'ccw-btn ccw-btn-danger'}
+                onClick={modal === 'enable' ? enableAnyway : unloadAndClose}
+              >
+                {modal === 'enable' ? t('enableWarning.confirm') : t('unload.confirm')}
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

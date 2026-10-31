@@ -29,10 +29,6 @@ function setEnabled(sessionId, enabled) {
   }).catch(() => {})
 }
 
-function enableSession(sessionId) {
-  setEnabled(sessionId, true)
-}
-
 function openCanvas(ctx, sessionId) {
   try {
     ctx.layout?.openRightbar?.(true, false)
@@ -208,7 +204,8 @@ export function apply(ctx) {
           postHello({ command: true })
           const sessionId = session?.sessionId
           if (typeof sessionId !== 'string' || sessionId === '') return
-          enableSession(sessionId)
+          // The tab turns the tools on when it mounts, so a chat that already
+          // has history gets the cache warning before anything changes.
           openCanvas(ctx, sessionId)
         },
       },

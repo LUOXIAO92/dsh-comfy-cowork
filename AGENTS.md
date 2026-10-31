@@ -57,6 +57,10 @@ pipeline that writes every prompt into the plugin prompt box.
   close, and never make unload the default.
 - The canvas tab has its own title (`Comfy 画布`); the *command* carries the plugin's name.
   Never call the plugin "canvas" in UI copy, and never add a composer button for it.
+- Enabling is guarded the same way. `PUT /doc/enabled` answers `needsConfirmation` (without
+  changing anything) when the chat already has messages and the tools are not pinned yet; the
+  canvas then shows the same warning modal and resends with `confirm: true`. Opening the canvas
+  is what enables, so the slash command only opens the tab and the tab asks on mount.
 - `doc.enabled` is the open-tab switch and `doc.toolsPinned` the attach switch; the host
   attaches when either is true. `GET /api/comfy-cowork/health` reports the live attach list as
   `scoped`.

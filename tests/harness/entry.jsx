@@ -80,6 +80,14 @@ if (new URLSearchParams(location.search).get('noimage') === '1') {
 // Mask-shape previews are an image-mode tool, so that mode starts in image mode.
 if (new URLSearchParams(location.search).get('shape')) doc.mode = 'image'
 
+// ?guard=1 opens a chat that already has history with the tools off, so the
+// enable warning can be exercised without a real session log.
+const guard = new URLSearchParams(location.search).get('guard') === '1'
+if (guard) {
+  doc.enabled = false
+  doc.toolsPinned = false
+}
+
 // ?demo=<flow> starts each recorded demo from a clean, enabled canvas: no
 // sample comments or boxes, an empty prompt, and the mode that flow needs.
 const demo = new URLSearchParams(location.search).get('demo')
@@ -208,7 +216,11 @@ window.fetch = async (url, options = {}) => {
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/enabled')) {
-    current.enabled = bodyOf(options).enabled === true
+    const body = bodyOf(options)
+    if (body.enabled === true && guard && current.toolsPinned !== true && body.confirm !== true) {
+      return json({ doc: current, needsConfirmation: true, messages: 24 })
+    }
+    current.enabled = body.enabled === true
     if (current.enabled) current.toolsPinned = true
     return json({ doc: current })
   }
