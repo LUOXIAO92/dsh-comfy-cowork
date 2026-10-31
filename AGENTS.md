@@ -159,6 +159,9 @@ batch, so a fix is never split across two releases.
   models (folders of loadable files); the node directory is about node types (name and
   description). Never build one from the other: a widget's accepted values are read from
   ComfyUI on demand, not cached.
+- The node directory is an index, not a menu: an install has over a thousand types and a
+  workflow uses a handful. Reach it by exact type (the class names a workflow carries), by
+  search, or by category counts — never by paging the whole directory at an agent.
 - Workflow ids are `<source>:<path>`; `find()` still accepts a bare ComfyUI file name.
 
 - Layout boxes are **MOSS-Image only**; other models ignore them and use the prompt box.

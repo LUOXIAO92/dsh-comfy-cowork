@@ -151,6 +151,17 @@ test('the node directory keeps names and descriptions, not input schemas', async
 
     const byCategory = catalog.list(snapshot, { query: 'sampling' })
     assert.deepEqual(byCategory.nodes.map((node) => node.type), ['KSampler'])
+
+    // The directory is an index, not a menu: category counts and exact lookups
+    // are the two cheap ways in.
+    assert.deepEqual(catalog.categories(snapshot), [
+      { category: 'loaders', count: 1 },
+      { category: 'moss', count: 1 },
+      { category: 'sampling', count: 1 },
+    ])
+    const exact = catalog.byTypes(snapshot, ['KSampler', 'NotARealNode'])
+    assert.deepEqual(exact.map((node) => node.type), ['KSampler'])
+    assert.deepEqual(catalog.byTypes(snapshot, []), [])
   } finally {
     await cleanup()
   }
