@@ -174,12 +174,18 @@ batch, so a fix is never split across two releases.
   mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted mask
   means the next edit is a local repaint of that region; never regenerate the whole image
   while a mask is painted. An empty mask plus a full-image prompt is a new image.
-- Mask plumbing. A workflow's `mask` input is followed through GrowMask/FeatherMask/ImageToMask
-  back to a `LoadImageMask` or `LoadImage`, so a graph built from ComfyUI's mask nodes is fed
-  `mask.png` (white = editable, carried in the alpha channel) directly. Only the legacy shape —
-  `LoadImage`'s MASK output wired straight into the mask — makes the canvas hand over
-  `canvas_rgba.png` with the mask cut out of the alpha; a run derives that from `mask.png`
-  when it is missing.
+- Mask plumbing. A node counts only when a path from it reaches an output node (a node that
+  produces no value, such as SaveImage or PreviewImage); a dangling loader or a dead branch
+  never binds. The canvas image is the `LoadImage` whose IMAGE output feeds an output node.
+  The mask binds only through a real repaint consumer — `VAEEncodeForInpaint`,
+  `SetLatentNoiseMask`, `InpaintModelConditioning` — walked back through GrowMask/FeatherMask/
+  ImageToMask to a `LoadImageMask` or its `LoadImage`, so a graph built from ComfyUI's mask
+  nodes receives `mask.png` directly. Compositing nodes that merely accept a mask
+  (`ImageCompositeMasked`) do not count. The legacy shape — `LoadImage`'s MASK output wired
+  straight into the mask — still makes the canvas hand over `canvas_rgba.png` cut from the
+  alpha; a run derives it from `mask.png` when missing. When a mask is painted but the loaded
+  workflow has no inpaint node, an agent run is refused (pass `ignore_mask: true` only after
+  the user asks for a full-image render); a pure generation graph records a note instead.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
   files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
   directories button) or when the ComfyUI address changes — never on a timer. Never dump every

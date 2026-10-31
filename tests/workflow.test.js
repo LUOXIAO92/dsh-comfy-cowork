@@ -38,7 +38,7 @@ const info = {
 function baseWorkflow() {
   return {
     nodes: [
-      { id: 1, type: 'LoadImage', pos: [0, 0], size: [200, 100], mode: 0, inputs: [{ name: 'image', type: 'COMBO', widget: { name: 'image' }, link: null }], widgets_values: ['a.png'], widgets_values_named: { image: 'a.png' } },
+      { id: 1, type: 'LoadImage', pos: [0, 0], size: [200, 100], mode: 0, inputs: [{ name: 'image', type: 'COMBO', widget: { name: 'image' }, link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }, { name: 'MASK', type: 'MASK', links: [] }], widgets_values: ['a.png'], widgets_values_named: { image: 'a.png' } },
       { id: 2, type: 'CLIPTextEncode', pos: [300, 0], size: [200, 100], mode: 0, inputs: [{ name: 'clip', type: 'CLIP', link: null }, { name: 'text', type: 'STRING', widget: { name: 'text' }, link: null }], widgets_values: ['hello'], widgets_values_named: { text: 'hello' } },
       { id: 3, type: 'EmptyLatentImage', pos: [300, 200], size: [200, 100], mode: 0, inputs: [{ name: 'width', type: 'INT', widget: { name: 'width' }, link: null }, { name: 'height', type: 'INT', widget: { name: 'height' }, link: null }, { name: 'batch_size', type: 'INT', widget: { name: 'batch_size' }, link: null }], widgets_values: [512, 512, 1], widgets_values_named: { width: 512, height: 512, batch_size: 1 } },
       { id: 4, type: 'KSampler', pos: [600, 0], size: [240, 200], mode: 0, inputs: [
@@ -158,9 +158,10 @@ test('binds the mask to a LoadImage alpha output for legacy inpaint graphs', () 
   const workflow = {
     nodes: [
       { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }, { name: 'MASK', type: 'MASK', links: [2] }] },
-      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }, { name: 'grow_mask_by', type: 'INT', link: null }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [] }] },
+      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }, { name: 'grow_mask_by', type: 'INT', link: null }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [3] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 3 }], outputs: [] },
     ],
-    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 1, 1, 2, 2, 'MASK']],
+    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 1, 1, 2, 2, 'MASK'], [3, 2, 0, 10, 0, 'LATENT']],
   }
   const bindings = inferBindings(workflow, {})
   assert.equal(bindings.image, '1')
@@ -172,9 +173,10 @@ test('binds the mask to a LoadImageMask node when the graph uses native mask nod
     nodes: [
       { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }, { name: 'MASK', type: 'MASK', links: [] }] },
       { id: 9, type: 'LoadImageMask', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }, { name: 'channel', type: 'COMBO', link: null }], outputs: [{ name: 'MASK', type: 'MASK', links: [2] }] },
-      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }, { name: 'grow_mask_by', type: 'INT', link: null }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [] }] },
+      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }, { name: 'grow_mask_by', type: 'INT', link: null }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [3] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 3 }], outputs: [] },
     ],
-    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 9, 0, 2, 2, 'MASK']],
+    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 9, 0, 2, 2, 'MASK'], [3, 2, 0, 10, 0, 'LATENT']],
   }
   const bindings = inferBindings(workflow, {})
   assert.equal(bindings.image, '1')
@@ -187,11 +189,66 @@ test('traces an ImageToMask back to the image that carries the mask', () => {
       { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }] },
       { id: 5, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [3] }] },
       { id: 6, type: 'ImageToMask', mode: 0, inputs: [{ name: 'image', type: 'IMAGE', link: 3 }, { name: 'channel', type: 'COMBO', link: null }], outputs: [{ name: 'MASK', type: 'MASK', links: [2] }] },
-      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [] }] },
+      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 1 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 2 }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [4] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 4 }], outputs: [] },
     ],
-    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 6, 0, 2, 2, 'MASK'], [3, 5, 0, 6, 0, 'IMAGE']],
+    links: [[1, 1, 0, 2, 0, 'IMAGE'], [2, 6, 0, 2, 2, 'MASK'], [3, 5, 0, 6, 0, 'IMAGE'], [4, 2, 0, 10, 0, 'LATENT']],
   }
   const bindings = inferBindings(workflow, {})
   assert.equal(bindings.image, '1')
   assert.equal(bindings.mask, '5')
+})
+
+test('leaves the mask unbound when the inpaint node cannot reach an output', () => {
+  const workflow = {
+    nodes: [
+      { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1, 2] }, { name: 'MASK', type: 'MASK', links: [] }] },
+      { id: 3, type: 'LoadImageMask', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'MASK', type: 'MASK', links: [3] }] },
+      { id: 2, type: 'VAEEncodeForInpaint', mode: 0, inputs: [{ name: 'pixels', type: 'IMAGE', link: 2 }, { name: 'vae', type: 'VAE', link: null }, { name: 'mask', type: 'MASK', link: 3 }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 1 }], outputs: [] },
+    ],
+    links: [[1, 1, 0, 10, 0, 'IMAGE'], [2, 1, 0, 2, 0, 'IMAGE'], [3, 3, 0, 2, 2, 'MASK']],
+  }
+  const bindings = inferBindings(workflow, {})
+  assert.equal(bindings.image, '1')
+  assert.equal(bindings.mask, '')
+})
+
+test('does not bind an image loader that feeds no output', () => {
+  const workflow = {
+    nodes: [
+      { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }, { name: 'MASK', type: 'MASK', links: [] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [], outputs: [] },
+    ],
+    links: [],
+  }
+  assert.equal(inferBindings(workflow, {}).image, '')
+})
+
+test('ignores a mask input on a compositing node', () => {
+  const workflow = {
+    nodes: [
+      { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }] },
+      { id: 3, type: 'LoadImageMask', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'MASK', type: 'MASK', links: [2] }] },
+      { id: 5, type: 'ImageCompositeMasked', mode: 0, inputs: [{ name: 'destination', type: 'IMAGE', link: 1 }, { name: 'source', type: 'IMAGE', link: null }, { name: 'mask', type: 'MASK', link: 2 }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [3] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 3 }], outputs: [] },
+    ],
+    links: [[1, 1, 0, 5, 0, 'IMAGE'], [2, 3, 0, 5, 2, 'MASK'], [3, 5, 0, 10, 0, 'IMAGE']],
+  }
+  const bindings = inferBindings(workflow, {})
+  assert.equal(bindings.image, '1')
+  assert.equal(bindings.mask, '')
+})
+
+test('recognizes SetLatentNoiseMask as an inpaint consumer', () => {
+  const workflow = {
+    nodes: [
+      { id: 1, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: 'COMBO', link: null }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }, { name: 'MASK', type: 'MASK', links: [1] }] },
+      { id: 2, type: 'SetLatentNoiseMask', mode: 0, inputs: [{ name: 'samples', type: 'LATENT', link: null }, { name: 'mask', type: 'MASK', link: 1 }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [2] }] },
+      { id: 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 2 }], outputs: [] },
+    ],
+    links: [[1, 1, 1, 2, 1, 'MASK'], [2, 2, 0, 10, 0, 'LATENT']],
+  }
+  const bindings = inferBindings(workflow, {})
+  assert.equal(bindings.mask, '1')
 })
