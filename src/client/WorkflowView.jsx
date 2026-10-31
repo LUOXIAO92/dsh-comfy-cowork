@@ -408,7 +408,6 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     if (incoming !== null && key !== '' && key !== syncKey.current) {
       syncKey.current = key
       setWorkflow(incoming)
-      setSelectedName(doc.workflow.name ?? '')
       setSaveName(doc.workflow.name ?? '')
       setDirty(doc.workflow.dirty === true)
       setSelectedNode(null)
@@ -419,6 +418,16 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
       setDirty(false)
     }
   }, [doc])
+
+  // The picker holds workflow ids; a workflow that arrived through the agent
+  // updates the document without going through the picker, so match it by name
+  // once the list is loaded.
+  useEffect(() => {
+    const name = doc?.workflow?.name
+    if (typeof name !== 'string' || name === '') return
+    const match = workflows.find((entry) => entry.name === name)
+    if (match !== undefined) setSelectedId(match.id)
+  }, [doc?.workflow?.name, workflows])
 
   const nodeTypes = useMemo(() => {
     const set = new Set()
