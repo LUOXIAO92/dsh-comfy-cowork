@@ -1,6 +1,6 @@
-[中文](README.md) · [English](README.en.md) · 日本語
-
 # DSH Comfy Cowork
+
+[English](README.md) · [中文](README.zh.md) · 日本語
 
 DSH の右サイドバーにキャンバスを開き、人と agent が同じキャンバス状態を共有し、ComfyUI に直接つながります。
 
@@ -128,3 +128,7 @@ npm test        # node:test、38 件
 - ComfyUI サーバーは 1 台のみ。複数 profile は今後のバージョンです。
 - 動画は汎用ワークフローの実行とプレビューのみで、タイムラインはありません。
 - 大きな画像のマスクはフル解像度で処理します。4K 以上は先にキャンバスを縮小することをおすすめします。
+
+## ライセンス
+
+MIT。[LICENSE](LICENSE) を参照。

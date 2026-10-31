@@ -2,6 +2,7 @@
   "name": "dsh-comfy-cowork",
   "version": "0.1.0",
   "description": "Human + agent image/video coworking canvas for ComfyUI, inside DeepSeek Harness.",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -16,6 +17,7 @@
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
+    "LICENSE",
     "README.md"
   ],
   "keywords": [
@@ -26,6 +28,14 @@
     "image-editing",
     "canvas"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LUOXIAO92/dsh-comfy-cowork.git"
+  },
+  "homepage": "https://github.com/LUOXIAO92/dsh-comfy-cowork#readme",
+  "bugs": {
+    "url": "https://github.com/LUOXIAO92/dsh-comfy-cowork/issues"
+  },
   "publishConfig": {
     "access": "public"
   },

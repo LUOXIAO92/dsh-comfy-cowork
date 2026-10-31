@@ -1,130 +1,134 @@
 # DSH Comfy Cowork
 
-中文 · [English](README.en.md) · [日本語](README.ja.md)
+English · [中文](README.zh.md) · [日本語](README.ja.md)
 
-在 DSH 右侧栏打开一块画布，人和 agent 共用同一份画布状态，直接对接 ComfyUI。
+Open a canvas in the DSH right sidebar so a human and an agent share one canvas state, wired straight into ComfyUI.
 
-- 画布是共享状态，不是聊天附件：人画的蒙版、拉的框、写的提示词，agent 能读到；agent 写的提示词落在同一个输入框里。
-- 产物直接喂 ComfyUI：蒙版是 ComfyUI 能读的 PNG，布局是 MOSS-Image 能直接当 conditioning 的 JSON，工作流就是 ComfyUI 自己保存的那份。
-- 本地优先：图片只在浏览器、DSH 和本机 ComfyUI 之间流动。
+- The canvas is shared state, not a chat attachment: the agent reads the masks you paint, the boxes you draw, and the prompt you write; prompts the agent writes land in the same text box.
+- Outputs feed ComfyUI directly: masks are PNGs ComfyUI can read, layouts are JSON MOSS-Image can use as conditioning, and the workflow is the one ComfyUI saved itself.
+- Local first: images move only between the browser, DSH, and the ComfyUI on your machine.
 
-界面语言：中文、English、日本語。其他语言回退到英文。
+UI languages: Chinese, English, Japanese. Other languages fall back to English.
 
-## 演示
+## Demos
 
-### Agent 写提示词、搭工作流
+### The agent writes prompts and sets up the workflow
 
-![Agent 写提示词并打开工作流](docs/media/agent.gif)
+![Agent writes a prompt and opens the workflow](docs/media/agent.gif)
 
-提示词写进插件提示词框，不会只留在聊天里；工作流页能浏览节点图、选中节点改参数。
+Prompts go into the plugin's prompt box instead of staying in chat. The workflow view lets you browse the node graph and edit parameters on a selected node.
 
-### 局部修正：手绘精确蒙版
+### Local fixes: paint a precise mask
 
-![手绘画笔蒙版](docs/media/mask.gif)
+![Hand-painted brush mask](docs/media/mask.gif)
 
-画笔、橡皮、矩形、椭圆画同一张蒙版；羽化、扩展、反转之后导出 ComfyUI 可直接使用的 PNG。
+Brush, eraser, rectangle, and ellipse all paint one mask. Feather, grow, and invert it, then export a PNG ComfyUI can use as-is.
 
-### 布局编排（MOSS-Image）
+### Layout planning (MOSS-Image)
 
-![拉框并编译 MOSS 布局](docs/media/layout.gif)
+![Drawing boxes and compiling a MOSS layout](docs/media/layout.gif)
 
-空白画布拉框，逐框写 caption 和可见文字，提示词框实时变成编译后的单行 layout JSON。
+Draw boxes on a blank canvas, write a caption and visible text per box, and the prompt box becomes the compiled one-line layout JSON as you go.
 
-### 评论批注
+### Comment annotations
 
-![在图上写评论批注](docs/media/comment.gif)
+![Writing comment annotations on the image](docs/media/comment.gif)
 
-在图上圈出问题、写下改法；agent 读这一块的截图和文字，按批注改图。
+Circle the problem on the image and write how to fix it. The agent reads that region's screenshot and text and edits the image accordingly.
 
-## 安装
+## Install
 
-在 DSH 的「插件」页面点「添加插件」，输入包名 `dsh-comfy-cowork`，安装源保持默认的「npm 官方源」，点安装。
+Open the Plugins page in DSH, choose **Add plugin**, enter the package name `dsh-comfy-cowork`, keep the default npm source, and install.
 
-安装包带着构建好的客户端文件：装插件的机器不需要 Node，不需要构建，也不需要放行安装脚本。
+The package ships its built client bundle: the installing machine needs no Node, no build step, and no build-script approval.
 
-刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_coworking_*` 工具接到该会话的 agent 上；关闭画布标签页时工具随之移除。其它会话看不到这些工具。
+Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking_*` tools to that chat's agent; closing the canvas tab removes them. Other chats never see these tools.
 
-默认连接 `http://127.0.0.1:8188`。改地址：编辑 `cordis.patch.yml` 里的 `baseUrl`，或在 profile 的 patch 层覆盖 `comfy-cowork` 行的 `config.baseUrl`。
+The default connection is `http://127.0.0.1:8188`. To change it, edit `baseUrl` in `cordis.patch.yml`, or override `config.baseUrl` on the `comfy-cowork` row in the profile's patch layer.
 
-## 用法
+## Usage
 
-### 局部改图
+### Local image edits
 
-1. 在画布载入图片：文件选择、拖拽、粘贴，或从 ComfyUI 的结果回填。
-2. 用画笔、橡皮、矩形或椭圆画蒙版；调粗细、硬度、不透明度。
-3. 调羽化、扩展/收缩、反转。蒙版以红色叠加显示。
-4. 在「工作流」页载入包含 `LoadImage` / `LoadImageMask` 的工作流。注入绑定按节点类型和连线自动推断；要覆盖时在节点属性里设「画布注入」。
-5. 填种子，点「排队运行」。结果出现在下方，可以「回填画布」继续迭代。
+1. Load an image into the canvas: file picker, drag and drop, paste, or a ComfyUI result.
+2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust size, hardness, and opacity.
+3. Adjust feather, grow/shrink, and invert. The mask shows as a red overlay.
+4. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
+5. Set the seed and click "Queue run". The result appears below; use "Use as canvas" to keep iterating.
 
-### 空白布局（MOSS-Image）
+### Blank layout (MOSS-Image)
 
-1. 切到「布局」模式，设画布宽高（MOSS 要求 16 的倍数）。
-2. 用「拉框」画 bbox；每个框选 `object` / `character` / `text`，写 caption，`text` 类再写可见文字。
-3. 提示词框自动变成编译后的 layout JSON，也可以手改。负面提示词写在独立的框里，运行时注入连到采样器 `negative` 的文本节点。
-4. 载入含 `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` 的工作流后运行。只有 `CLIPTextEncode` 时，插件直接注入编译后的 JSON。
+1. Switch to Layout mode and set the canvas width and height (MOSS requires multiples of 16).
+2. Draw a bbox with the box tool; pick `object` / `character` / `text` per box, write a caption, and for `text` boxes write the visible text.
+3. The prompt box becomes the compiled layout JSON; you can also edit it by hand. The negative prompt goes in its own box and is injected into the text node wired to the sampler's `negative` input at run time.
+4. Load a workflow with `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` and run it. With only `CLIPTextEncode`, the plugin injects the compiled JSON directly.
 
-布局框只对 MOSS-Image 有意义；anima、SDXL 等模型用提示词框跑普通工作流。
+Layout boxes only matter to MOSS-Image; models such as anima and SDXL use the prompt box and a normal workflow.
 
-### Agent 协作
+### Working with the agent
 
-| 工具 | 作用 |
+| Tool | What it does |
 |---|---|
-| `comfy_coworking_state` / `health` | 读画布、提示词、布局、绑定、运行记录；检查连接 |
-| `comfy_coworking_set_prompt` | 写提示词或负面提示词 |
-| `comfy_coworking_set_layout` / `upsert_box` / `remove_box` | 替换布局、增改删框 |
-| `comfy_coworking_set_canvas` / `load_image` | 设尺寸与模式；把工作区图片载入画布 |
-| `comfy_coworking_list_workflows` / `load_workflow` / `bind_workflow` | 浏览、载入、改绑定 |
-| `comfy_coworking_list_models` | 列模型目录与文件 |
-| `comfy_coworking_run` / `run_status` / `interrupt` | 运行、查状态、取消 |
-| `comfy_coworking_open_canvas` | 请求 UI 打开画布 |
-| `comfy_coworking_comments` | 读评论批注和对应截图 |
+| `comfy_coworking_state` / `health` | Read the canvas, prompt, layout, bindings, and run history; check the connection |
+| `comfy_coworking_set_prompt` | Write the prompt or negative prompt |
+| `comfy_coworking_set_layout` / `upsert_box` / `remove_box` | Replace the layout; add, update, or delete boxes |
+| `comfy_coworking_set_canvas` / `load_image` | Set size and mode; load a workspace image into the canvas |
+| `comfy_coworking_list_workflows` / `load_workflow` / `bind_workflow` | Browse, load, and rebind workflows |
+| `comfy_coworking_list_models` | List model folders and files |
+| `comfy_coworking_run` / `run_status` / `interrupt` | Run, check status, cancel |
+| `comfy_coworking_open_canvas` | Ask the UI to open the canvas |
+| `comfy_coworking_comments` | Read comment annotations and their screenshots |
 
-所有提示词写入都落在 `document.prompt`，也就是用户看到的那个输入框。
+Every prompt write lands in `document.prompt`, the text box the user sees.
 
-## 存储
+## Storage
 
 ```text
 <workspace>/.comfy-cowork/<sessionId>/
-  document.json        # 画布、提示词、布局、工作流、运行记录
+  document.json        # canvas, prompt, layout, workflow, run history
   assets/
-    canvas.png         # 当前画布原图
-    source.png         # 原始导入图
-    mask.png           # 白 = 编辑区
-    canvas_rgba.png    # alpha = 1 - mask，供 LoadImage 的 MASK 输出
-    run-*.png/mp4      # 运行产物
+    canvas.png         # current canvas image
+    source.png         # original imported image
+    mask.png           # white = editable area
+    canvas_rgba.png    # alpha = 1 - mask, for LoadImage's MASK output
+    run-*.png/mp4      # run outputs
   runs/
 ```
 
-## 兼容性
+## Compatibility
 
-- ComfyUI `LoadImage` 的 `MASK` 输出是 **1 - alpha**。`canvas_rgba.png` 已按此反转；`mask.png` 保持白色 = 编辑区，适合 `LoadImageMask`。
-- MOSS 编译逐字节对齐 `comfy_extras/nodes_moss_image.py`：
-  `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`。
-- `CreateBoundingBoxes` 的 `editor_state` 是 list 类型但 API 校验把 list 当 link；插件发 `"[]"` 字符串，实际框走 `bboxes` JSON。
-- 浏览器不直连 ComfyUI：带 `Origin` 的请求会得到 403。所有请求由 DSH Host 代理。
+- ComfyUI's `LoadImage` `MASK` output is **1 - alpha**. `canvas_rgba.png` is already inverted this way; `mask.png` keeps white = editable area and suits `LoadImageMask`.
+- MOSS compilation matches `comfy_extras/nodes_moss_image.py` byte for byte:
+  `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`.
+- `CreateBoundingBoxes` declares `editor_state` as a list, but the API validator treats lists as links; the plugin sends the string `"[]"` and passes the actual boxes in the `bboxes` JSON.
+- The browser never talks to ComfyUI directly: requests carrying an `Origin` header get a 403. The DSH Host proxies every request.
 
-## 开发
+## Development
 
 ```bash
-npm install     # esbuild + React，仅开发与测试
-npm run build   # 生成 client.js（已 gitignore，构建产物）
-npm test        # node:test，38 项
+npm install     # esbuild + React, development and tests only
+npm run build   # writes client.js (gitignored build output)
+npm test        # node:test, 38 tests
 ```
 
-- Host：`index.js` → `lib/plugin.js`；工具在 `lib/tools.js`，路由在 `lib/routes.js`，工作流转换在 `lib/workflow.js`，MOSS 编译在 `lib/moss.js`。
-- Client：`src/client/`，由 esbuild 打成 `client.js`；入口 `entry.jsx`，画布 `CanvasStage.jsx`，工作流 `WorkflowView.jsx`。
-- 浏览器夹具在 `tests/harness/`，不属于运行时包。
-- 改了 Host 代码后，用 `plugin_manager` 把 `include:comfy-cowork` 关掉再打开。改了 Client 代码后重新构建并刷新页面。
-- 本地开发安装：`plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`。
-- `client.js` 是构建产物，不提交；clone 后 `npm install` 会通过 `prepare` 自动构建。
-- 发布：`npm publish`。`prepack` 会先构建 `client.js` 并跑测试，发布包里带的是构建产物。
+- Host: `index.js` → `lib/plugin.js`; tools in `lib/tools.js`, routes in `lib/routes.js`, workflow conversion in `lib/workflow.js`, MOSS compilation in `lib/moss.js`.
+- Client: `src/client/`, bundled into `client.js` by esbuild; entry `entry.jsx`, canvas `CanvasStage.jsx`, workflow `WorkflowView.jsx`.
+- Browser fixtures live in `tests/harness/` and are not part of the runtime package.
+- After a Host change, toggle `include:comfy-cowork` off and on with `plugin_manager`. After a Client change, rebuild and refresh the page.
+- Local install: `plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`.
+- `client.js` is a build output and is not committed; `npm install` builds it through `prepare`.
+- Publish: `npm publish`; `prepack` builds `client.js` and runs the tests first.
 
-需求文档：[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)。
+Requirements: [docs/REQUIREMENTS.en.md](docs/REQUIREMENTS.en.md).
 
-## 限制
+## Limitations
 
-- 子图工作流会明确报错，暂不支持。
-- API 格式的工作流可以运行和保存，但图视图只读。
-- 单个 ComfyUI 服务器；多 profile 留到后续版本。
-- 视频只做通用工作流运行与预览，不做时间轴。
-- 大图蒙版按全分辨率处理；4K 以上建议先缩小画布。
+- Subgraph workflows are rejected with an explicit error; they are not supported yet.
+- API-format workflows can run and save, but the graph view is read-only.
+- One ComfyUI server; multiple profiles are planned for a later version.
+- Video uses generic workflow runs and preview only; there is no timeline.
+- Large images keep masks at full resolution; shrink the canvas first above 4K.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
