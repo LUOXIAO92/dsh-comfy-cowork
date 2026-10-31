@@ -31,11 +31,11 @@ pipeline that writes every prompt into the plugin prompt box.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
 - `lib/model-catalog.js` — the workspace model snapshot: `/models` plus one
   `/models/<folder>` per folder, written to `<workspace>/.comfy-cowork/models.json`. Only files
-  with a model extension are kept, and a folder that holds none is dropped — that is what
-  keeps `custom_nodes` (python and .pyc), `configs`, `datasets` and font folders out. File
-  strings stay exactly as ComfyUI reports them (folder-relative, no prefix), because that is
-  what a loader widget takes. TTL is `modelCacheTtlMs` (10 min); a failed refresh keeps the
-  last snapshot and reports it stale.
+  with a model extension are kept, and a folder that holds none is dropped. `custom_nodes`,
+  `configs`, `datasets` and `vae_approx` are skipped by name: a node package can ship weights,
+  and a preview folder can mirror every model. File strings stay exactly as ComfyUI reports
+  them (folder-relative, no prefix), because that is what a loader widget takes. TTL is
+  `modelCacheTtlMs` (10 min); a failed refresh keeps the last snapshot and reports it stale.
 - `lib/node-catalog.js` — the node directory at `<workspace>/.comfy-cowork/nodes.json`: one
   entry per node type with its display name, category, and description. It deliberately never
   stores input schemas: a widget's option list is read from ComfyUI when that widget is edited,

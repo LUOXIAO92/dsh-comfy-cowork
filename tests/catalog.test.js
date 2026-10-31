@@ -35,15 +35,17 @@ const OBJECT_INFO = {
 function fakeComfy(overrides = {}) {
   return {
     async models() {
-      // ComfyUI also lists folders that hold no model at all.
-      return ['checkpoints', 'loras', 'custom_nodes', 'configs']
+      // ComfyUI also lists folders that hold no model, or that mirror others.
+      return ['checkpoints', 'loras', 'custom_nodes', 'configs', 'vae_approx']
     },
     async modelFiles(folder) {
       return {
         checkpoints: ['Illustrious/a.safetensors', 'Illustrious/b.ckpt'],
         loras: ['style/c.safetensors'],
-        custom_nodes: ['SomeNode.py', 'SomeNode.pyc'],
+        custom_nodes: ['SomeNode.py', 'SomeNode.pyc', '.disabled/pkg/weights.safetensors'],
         configs: ['anything_v3.yaml'],
+        // A preview folder pointed at the models root repeats every weight.
+        vae_approx: ['checkpoints/Illustrious/a.safetensors'],
       }[folder] ?? []
     },
     async objectInfo() {
@@ -79,13 +81,13 @@ test('the model catalog keeps model folders and drops the rest', async () => {
     const catalog = new ModelCatalog(config)
     const comfy = fakeComfy()
     const { snapshot } = await catalog.ensure(root, comfy)
-    // custom_nodes (python) and configs (yaml) hold nothing a loader can load.
+    // custom_nodes, configs, and the mirrored vae_approx folder never enter it.
     assert.deepEqual(catalog.folders(snapshot), [
       { folder: 'checkpoints', count: 2 },
       { folder: 'loras', count: 1 },
     ])
     const file = JSON.parse(await fs.readFile(path.join(root, '.comfy-cowork', 'models.json'), 'utf8'))
-    assert.equal(file.version, 3)
+    assert.equal(file.version, 4)
     assert.deepEqual(file.folders.checkpoints, ['Illustrious/a.safetensors', 'Illustrious/b.ckpt'])
 
     const page = catalog.files(snapshot, 'checkpoints', { limit: 1 })
