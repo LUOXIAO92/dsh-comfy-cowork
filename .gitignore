@@ -21,3 +21,5 @@ tests/harness/react-globals.bundle.js
 
 __pycache__/
 *.pyc
+
+.npmrc
