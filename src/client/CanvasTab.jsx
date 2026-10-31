@@ -683,14 +683,14 @@ export function CanvasTab(props) {
     }
   }
 
-  /** Re-read the node definitions from ComfyUI and say how many inputs came back. */
+  /** Re-read the model folders from ComfyUI and say how many came back. */
   async function refreshModelList() {
     setModelsRefreshing(true)
     setModelsNote('')
     try {
       const result = await refreshModels(sessionId)
-      const groups = Array.isArray(result.groups) ? result.groups.length : 0
-      setModelsNote(t('comfy.modelsRefreshed').replace('{count}', String(groups)))
+      const folders = Array.isArray(result.folders) ? result.folders.length : 0
+      setModelsNote(t('comfy.modelsRefreshed').replace('{count}', String(folders)))
       setError('')
     } catch (caught) {
       setError(caught.message)

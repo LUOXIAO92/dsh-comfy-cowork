@@ -29,13 +29,18 @@ pipeline that writes every prompt into the plugin prompt box.
   working; that legacy name is the only place the old spelling belongs.
 - `lib/workflow.js` — infers canvas→workflow injection bindings from the ComfyUI JSON itself.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
-- `lib/model-catalog.js` — the workspace model snapshot, derived from `/object_info`: every
-  combo input whose values are model files becomes a group named after the input
-  (`ckpt_name`, `lora_name`, `unet_name`, …), with the exact strings ComfyUI accepts and the
-  node types that declare it. Written to `<workspace>/.comfy-cowork/models.json`. Never derive
-  this from `/models` folders: that listing also carries custom_nodes (python and .pyc files),
-  configs, datasets, fonts and vae_approx previews, none of which a widget accepts. TTL is
-  `modelCacheTtlMs` (10 min); a failed refresh keeps the last snapshot and reports it stale.
+- `lib/model-catalog.js` — the workspace model snapshot: `/models` plus one
+  `/models/<folder>` per folder, written to `<workspace>/.comfy-cowork/models.json`. Only files
+  with a model extension are kept, and a folder that holds none is dropped — that is what
+  keeps `custom_nodes` (python and .pyc), `configs`, `datasets` and font folders out. File
+  strings stay exactly as ComfyUI reports them (folder-relative, no prefix), because that is
+  what a loader widget takes. TTL is `modelCacheTtlMs` (10 min); a failed refresh keeps the
+  last snapshot and reports it stale.
+- `lib/node-catalog.js` — the node directory at `<workspace>/.comfy-cowork/nodes.json`: one
+  entry per node type with its display name, category, and description. It deliberately never
+  stores input schemas: a widget's option list is read from ComfyUI when that widget is edited,
+  so the cache stays small and cannot drift. Same TTL and failure behavior as the model
+  catalog; `setBaseUrl` clears both.
 - `lib/workflow-index.js` — one list over three sources: ComfyUI `userdata/workflows`
   (`comfyui:<userdata path>`), the comfy project convention (`fragments/*.json`,
   `blueprints/*.compiled.json`, absolute workspace paths), and this plugin's own saves
@@ -147,10 +152,13 @@ batch, so a fix is never split across two releases.
 
 ## Feature map (agent-relevant)
 
-- Model browsing is two levels on purpose: model inputs first (with counts and the node types
-  that declare them), then one input's values, paged (default 200). Never dump every value into
-  a tool result, and never tell the agent to `ls` a ComfyUI directory outside the workspace —
-  the catalog exists to avoid that, and the strings it returns are what the widget takes.
+- Model browsing is two levels on purpose: model folders first (with counts), then one folder's
+  files, paged (default 200). Never dump every model into a tool result, and never tell the
+  agent to `ls` a ComfyUI directory outside the workspace — the catalog exists to avoid that.
+- The model catalog and the node directory answer different questions. A model list is about
+  models (folders of loadable files); the node directory is about node types (name and
+  description). Never build one from the other: a widget's accepted values are read from
+  ComfyUI on demand, not cached.
 - Workflow ids are `<source>:<path>`; `find()` still accepts a bare ComfyUI file name.
 
 - Layout boxes are **MOSS-Image only**; other models ignore them and use the prompt box.
