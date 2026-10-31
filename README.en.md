@@ -38,17 +38,9 @@ Circle the problem on the image and write how to fix it. The agent reads that re
 
 ## Install
 
-The plugin installs into a DSH profile as a bundle. Use `plugin_manager`:
+Open the Plugins page in DSH, choose **Add plugin**, enter the package name `dsh-comfy-cowork`, keep the default npm source, and install.
 
-```text
-plugin_manager(action: "install_bundle", target: "github:<owner>/dsh-comfy-cowork")
-```
-
-For local development you can point at the repository directory:
-
-```text
-plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")
-```
+The package ships its built client bundle: the installing machine needs no Node, no build step, and no build-script approval.
 
 Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking_*` tools to that chat's agent; closing the canvas tab removes them. Other chats never see these tools.
 
@@ -123,6 +115,8 @@ npm test        # node:test, 38 tests
 - Client: `src/client/`, bundled into `client.js` by esbuild; entry `entry.jsx`, canvas `CanvasStage.jsx`, workflow `WorkflowView.jsx`.
 - Browser fixtures live in `tests/harness/` and are not part of the runtime package.
 - After a Host change, toggle `include:comfy-cowork` off and on with `plugin_manager`. After a Client change, rebuild and refresh the page.
+- Local install: `plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`.
+- Publish: `npm publish`; `prepack` builds `client.js` and runs the tests first.
 
 Requirements: [docs/REQUIREMENTS.en.md](docs/REQUIREMENTS.en.md).
 

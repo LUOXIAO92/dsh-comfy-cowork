@@ -12,6 +12,9 @@ pipeline that writes every prompt into the plugin prompt box.
   fork (`subagent_fork`) whenever the subagent needs this conversation's context.
 - **Never add a git remote and never push.** Everything stays in local git until the user
   explicitly asks otherwise. Commit after each coherent batch.
+- **Never publish to npm without the user's explicit approval.** `npm publish` is public and
+  irreversible; the package name is `dsh-comfy-cowork`, and end users install it by name from
+  the DSH plugin dialog.
 - `main` is the only branch; commits use `-c user.name='dsh' -c user.email='dsh@local'`.
 
 ## Shape of the code
@@ -56,6 +59,15 @@ pipeline that writes every prompt into the plugin prompt box.
 
 - `npm run build` — rebuild `client.js` (must run after every `src/client` change).
 - `npm test` — node test runner (`tests/*.test.js`).
+- `npm pack` — runs `prepack` (build + tests) and writes the tarball that users install; the
+  tarball carries the prebuilt `client.js`, so installing needs no build. `npm publish` ships
+  the same tarball and must only run with the user's approval.
+- The npm tarball is the user-facing distribution: users enter the package name in the DSH
+  plugin dialog and get the prebuilt bundle. `client.js` stays committed so `link:` and
+  GitHub installs also work without a build.
+- Verify the tarball install in a scratch profile:
+  `DSH_HOME=/tmp/dsh-test <dsh> plugin --profile test add <tarball>` followed by
+  `DSH_HOME=/tmp/dsh-test <dsh> --profile test --dump-config` (the bundle layer must appear).
 - Harness: serve the repo root (`python3 -m http.server 8766`) and open
   `http://127.0.0.1:8766/tests/harness/index.html`; rebuild the harness bundle with
   `npx esbuild tests/harness/entry.jsx --bundle --format=iife --outfile=tests/harness/harness.js --loader:.jsx=jsx`.

@@ -38,17 +38,9 @@ UI の言語：中国語、英語、日本語。その他の言語は英語に�
 
 ## インストール
 
-プラグインは bundle として DSH profile にインストールします。`plugin_manager` でインストールします：
+DSH の「プラグイン」ページで「プラグインを追加」を選び、パッケージ名 `dsh-comfy-cowork` を入力します。インストール元はデフォルトの npm のままインストールします。
 
-```text
-plugin_manager(action: "install_bundle", target: "github:<owner>/dsh-comfy-cowork")
-```
-
-ローカル開発ではリポジトリのディレクトリを直接指定することもできます：
-
-```text
-plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")
-```
+パッケージにはビルド済みのクライアントファイルが含まれるため、インストールする側に Node もビルドもインストールスクリプトの許可も不要です。
 
 DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力します。右サイドバーにキャンバスが開き、同時にこのセッションの agent に `comfy_coworking_*` ツールが接続されます。キャンバスのタブを閉じるとツールも外れます。他のセッションからはこれらのツールは見えません。
 
@@ -123,6 +115,8 @@ npm test        # node:test、38 件
 - Client：`src/client/`、esbuild で `client.js` にバンドル。エントリは `entry.jsx`、キャンバスは `CanvasStage.jsx`、ワークフローは `WorkflowView.jsx`。
 - ブラウザ用フィクスチャは `tests/harness/` にあり、ランタイムパッケージには含まれません。
 - Host コードを変更したら、`plugin_manager` で `include:comfy-cowork` をオフにしてからオンにします。Client コードを変更したら再ビルドしてページを更新します。
+- ローカル開発版のインストール：`plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`。
+- 公開：`npm publish`。`prepack` が先に `client.js` をビルドしてテストを実行します。
 
 要件ドキュメント：[docs/REQUIREMENTS.ja.md](docs/REQUIREMENTS.ja.md)。
 

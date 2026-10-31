@@ -38,17 +38,9 @@
 
 ## 安装
 
-插件以 bundle 形式装进 DSH profile。用 `plugin_manager` 安装：
+在 DSH 的「插件」页面点「添加插件」，输入包名 `dsh-comfy-cowork`，安装源保持默认的「npm 官方源」，点安装。
 
-```text
-plugin_manager(action: "install_bundle", target: "github:<owner>/dsh-comfy-cowork")
-```
-
-本地开发也可以直接指向仓库目录：
-
-```text
-plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")
-```
+安装包带着构建好的客户端文件：装插件的机器不需要 Node，不需要构建，也不需要放行安装脚本。
 
 刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_coworking_*` 工具接到该会话的 agent 上；关闭画布标签页时工具随之移除。其它会话看不到这些工具。
 
@@ -123,6 +115,8 @@ npm test        # node:test，38 项
 - Client：`src/client/`，由 esbuild 打成 `client.js`；入口 `entry.jsx`，画布 `CanvasStage.jsx`，工作流 `WorkflowView.jsx`。
 - 浏览器夹具在 `tests/harness/`，不属于运行时包。
 - 改了 Host 代码后，用 `plugin_manager` 把 `include:comfy-cowork` 关掉再打开。改了 Client 代码后重新构建并刷新页面。
+- 本地开发安装：`plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`。
+- 发布：`npm publish`。`prepack` 会先构建 `client.js` 并跑测试，发布包里带的是构建产物。
 
 需求文档：[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)。
 
