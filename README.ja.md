@@ -107,7 +107,7 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 
 ```bash
 npm install     # esbuild + React（開発とテスト専用）
-npm run build   # client.js を生成（リポジトリにコミット）
+npm run build   # client.js を生成（gitignore 済みのビルド成果物）
 npm test        # node:test、38 件
 ```
 
@@ -116,6 +116,7 @@ npm test        # node:test、38 件
 - ブラウザ用フィクスチャは `tests/harness/` にあり、ランタイムパッケージには含まれません。
 - Host コードを変更したら、`plugin_manager` で `include:comfy-cowork` をオフにしてからオンにします。Client コードを変更したら再ビルドしてページを更新します。
 - ローカル開発版のインストール：`plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`。
+- `client.js` はビルド成果物でコミットしません。`npm install` 時に `prepare` が自動でビルドします。
 - 公開：`npm publish`。`prepack` が先に `client.js` をビルドしてテストを実行します。
 
 要件ドキュメント：[docs/REQUIREMENTS.ja.md](docs/REQUIREMENTS.ja.md)。

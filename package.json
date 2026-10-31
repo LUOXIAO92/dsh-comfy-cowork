@@ -32,6 +32,7 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "test": "node --test tests/*.test.js",
+    "prepare": "npm run build",
     "prepack": "npm run build && npm test"
   },
   "devDependencies": {

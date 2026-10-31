@@ -63,8 +63,9 @@ pipeline that writes every prompt into the plugin prompt box.
   tarball carries the prebuilt `client.js`, so installing needs no build. `npm publish` ships
   the same tarball and must only run with the user's approval.
 - The npm tarball is the user-facing distribution: users enter the package name in the DSH
-  plugin dialog and get the prebuilt bundle. `client.js` stays committed so `link:` and
-  GitHub installs also work without a build.
+  plugin dialog and get the prebuilt bundle. `client.js` is gitignored; `prepare` builds it for
+  local and git installs, and `prepack` builds it for the published tarball. A git install
+  therefore needs pnpm's build approval.
 - Verify the tarball install in a scratch profile:
   `DSH_HOME=/tmp/dsh-test <dsh> plugin --profile test add <tarball>` followed by
   `DSH_HOME=/tmp/dsh-test <dsh> --profile test --dump-config` (the bundle layer must appear).

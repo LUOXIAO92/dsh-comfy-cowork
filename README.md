@@ -107,7 +107,7 @@
 
 ```bash
 npm install     # esbuild + React，仅开发与测试
-npm run build   # 生成 client.js（提交到仓库）
+npm run build   # 生成 client.js（已 gitignore，构建产物）
 npm test        # node:test，38 项
 ```
 
@@ -116,6 +116,7 @@ npm test        # node:test，38 项
 - 浏览器夹具在 `tests/harness/`，不属于运行时包。
 - 改了 Host 代码后，用 `plugin_manager` 把 `include:comfy-cowork` 关掉再打开。改了 Client 代码后重新构建并刷新页面。
 - 本地开发安装：`plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`。
+- `client.js` 是构建产物，不提交；clone 后 `npm install` 会通过 `prepare` 自动构建。
 - 发布：`npm publish`。`prepack` 会先构建 `client.js` 并跑测试，发布包里带的是构建产物。
 
 需求文档：[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)。

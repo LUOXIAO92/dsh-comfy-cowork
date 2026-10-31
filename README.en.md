@@ -107,7 +107,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 
 ```bash
 npm install     # esbuild + React, development and tests only
-npm run build   # writes client.js (committed)
+npm run build   # writes client.js (gitignored build output)
 npm test        # node:test, 38 tests
 ```
 
@@ -116,6 +116,7 @@ npm test        # node:test, 38 tests
 - Browser fixtures live in `tests/harness/` and are not part of the runtime package.
 - After a Host change, toggle `include:comfy-cowork` off and on with `plugin_manager`. After a Client change, rebuild and refresh the page.
 - Local install: `plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")`.
+- `client.js` is a build output and is not committed; `npm install` builds it through `prepare`.
 - Publish: `npm publish`; `prepack` builds `client.js` and runs the tests first.
 
 Requirements: [docs/REQUIREMENTS.en.md](docs/REQUIREMENTS.en.md).
