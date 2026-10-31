@@ -361,7 +361,7 @@ test('enabling in a chat with history asks before attaching the tools', async ()
   }
   const config = normalizeConfig({})
   const store = new DocStore(ctx, config)
-  const hooks = { historyCount: () => 12, sync: async () => {} }
+  const hooks = { historyCount: () => ({ messages: 12, tokens: 24000 }), sync: async () => {} }
   const routes = createRoutes({ ctx, config, store, hooks })
   try {
     const session = 'session-enable-guard'
@@ -370,6 +370,7 @@ test('enabling in a chat with history asks before attaching the tools', async ()
     const body = JSON.parse(guarded.body)
     assert.equal(body.needsConfirmation, true)
     assert.equal(body.messages, 12)
+    assert.equal(body.tokens, 24000, 'the warning quotes the context it would re-send')
     assert.equal(body.doc.enabled, false, 'nothing changes until the user confirms')
 
     const confirmed = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true, confirm: true }))
@@ -390,7 +391,7 @@ test('a fresh chat enables without asking', async () => {
   }
   const config = normalizeConfig({})
   const store = new DocStore(ctx, config)
-  const routes = createRoutes({ ctx, config, store, hooks: { historyCount: () => 0 } })
+  const routes = createRoutes({ ctx, config, store, hooks: { historyCount: () => ({ messages: 0, tokens: null }) } })
   try {
     const session = 'session-enable-fresh'
     const on = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true }))

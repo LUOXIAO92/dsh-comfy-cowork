@@ -5,6 +5,7 @@ node_modules/
 tmp/
 dist/
 build/
+.dev-pack/
 /client.js
 .agents/
 .DS_Store

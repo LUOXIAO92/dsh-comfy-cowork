@@ -45,6 +45,14 @@ function snapSize(value) {
   return Math.min(16384, Math.max(16, Math.round(value / 8) * 8))
 }
 
+/** Compact a context size for the warning: 987, 12.4k, 1.2M. */
+function formatTokens(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null
+  if (value < 1000) return String(Math.round(value))
+  if (value < 1000000) return `${(value / 1000).toFixed(value < 10000 ? 1 : 0)}k`
+  return `${(value / 1000000).toFixed(1)}M`
+}
+
 function useDoc(sessionId, setError) {
   const [doc, setDoc] = useState(null)
   const [status, setStatus] = useState('connecting')
@@ -332,7 +340,7 @@ export function CanvasTab(props) {
   // One modal, two decisions: turn the tools on (costs one cache miss in a chat
   // that already has history) or take them away (same cost).
   const [modal, setModal] = useState(null)
-  const [historyCount, setHistoryCount] = useState(0)
+  const [historyCount, setHistoryCount] = useState({ messages: 0, tokens: null })
   const [comfyUrl, setComfyUrl] = useState('')
   const [comfyUrlDraft, setComfyUrlDraft] = useState('')
   const [comfyUrlSaving, setComfyUrlSaving] = useState(false)
@@ -940,7 +948,7 @@ export function CanvasTab(props) {
     try {
       const result = await saveEnabled(sessionId, true)
       if (result?.needsConfirmation === true) {
-        setHistoryCount(result.messages ?? 0)
+        setHistoryCount({ messages: result.messages ?? 0, tokens: result.tokens ?? null })
         setModal('enable')
         return
       }
@@ -1876,7 +1884,11 @@ export function CanvasTab(props) {
             </div>
             <p className="ccw-modal-body">
               {modal === 'enable'
-                ? t('enableWarning.body').replace('{count}', String(historyCount))
+                ? `${t('enableWarning.body').replace('{count}', String(historyCount.messages ?? 0))}${
+                    formatTokens(historyCount.tokens) === null
+                      ? ''
+                      : ` ${t('enableWarning.tokens').replace('{tokens}', formatTokens(historyCount.tokens))}`
+                  }`
                 : t('unload.body')}
             </p>
             <p className="ccw-modal-advice">

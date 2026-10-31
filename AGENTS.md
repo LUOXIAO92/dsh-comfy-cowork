@@ -92,6 +92,27 @@ pipeline that writes every prompt into the plugin prompt box.
   plugin dialog and get the prebuilt bundle. `client.js` is gitignored; `prepare` builds it for
   local and git installs, and `prepack` builds it for the published tarball. A git install
   therefore needs pnpm's build approval.
+- `npm run pack:dev` — build + test, then pack `dist/dsh-comfy-cowork-<version>-dev.<stamp>.tgz`.
+  The author's machine runs this pre-release build so it can be tested before release; the
+  published package is the only official version. The `-dev.` suffix keeps the release above
+  every pre-release of it, and `GET /health` reports which one is running.
+- Install a dev build into the author's live profile: `plugin_manager install_bundle` with the
+  tarball's absolute path, then restart the DSH process (host modules are ESM-cached; an
+  install without a restart leaves the old host half running). Confirm with
+  `GET /api/comfy-cowork/health` that `version` is the dev build.
+
+### Verification before a release
+
+Nothing is published before it ran in a live host; one published version carries one verified
+batch, so a fix is never split across two releases.
+
+1. `npm run build`, then `npm test`.
+2. `npm run pack:dev`, install the tarball, restart DSH, and check `/health` reports that
+   version — a stale host is the failure that already cost a release.
+3. Exercise the changed paths on the real page: the affected canvas controls, the API route
+   with a signed cookie, and the agent-facing tool call.
+4. Only then bump the version once and `npm publish` with the user's explicit approval.
+
 - Verify the tarball install in a scratch profile:
   `DSH_HOME=/tmp/dsh-test <dsh> plugin --profile test add <tarball>` followed by
   `DSH_HOME=/tmp/dsh-test <dsh> --profile test --dump-config` (the bundle layer must appear).

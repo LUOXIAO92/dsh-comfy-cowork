@@ -64,12 +64,13 @@ test('the model catalog groups files by folder and writes the snapshot', async (
 test('a stale snapshot refreshes, and a failed refresh keeps the last one', async () => {
   const { root, cleanup } = await makeRoot()
   try {
-    const config = normalizeConfig({ modelCacheTtlMs: 1 })
+    const config = normalizeConfig({ modelCacheTtlMs: 60_000 })
     const catalog = new ModelCatalog(config)
     const first = await catalog.ensure(root, fakeComfy())
     assert.equal(catalog.stale(root, first.snapshot), false)
-    await new Promise((resolve) => setTimeout(resolve, 5))
-    assert.equal(catalog.stale(root, first.snapshot), true)
+    // Age the snapshot instead of racing the clock: one millisecond of TTL made
+    // the "fresh" assertion fail whenever the write happened to take longer.
+    assert.equal(catalog.stale(root, { ...first.snapshot, updatedAt: Date.now() - 120_000 }), true)
 
     const failing = fakeComfy({
       async models() {
