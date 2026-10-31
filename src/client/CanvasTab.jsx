@@ -7,6 +7,7 @@ import {
   getConfig,
   getDoc,
   health,
+  refreshModels,
   saveConfig,
   saveCanvas,
   patchWorkflow,
@@ -335,6 +336,8 @@ export function CanvasTab(props) {
   const [comfyUrl, setComfyUrl] = useState('')
   const [comfyUrlDraft, setComfyUrlDraft] = useState('')
   const [comfyUrlSaving, setComfyUrlSaving] = useState(false)
+  const [modelsRefreshing, setModelsRefreshing] = useState(false)
+  const [modelsNote, setModelsNote] = useState('')
   const autoEnableTried = useRef(false)
   const unloaded = useRef(false)
   useEffect(() => {
@@ -669,6 +672,22 @@ export function CanvasTab(props) {
     } catch (caught) {
       setProbeError(caught.message)
       setComfy(null)
+    }
+  }
+
+  /** Re-read the model list from ComfyUI and say how many folders came back. */
+  async function refreshModelList() {
+    setModelsRefreshing(true)
+    setModelsNote('')
+    try {
+      const result = await refreshModels(sessionId)
+      const folders = Array.isArray(result.folders) ? result.folders.length : 0
+      setModelsNote(t('comfy.modelsRefreshed').replace('{count}', String(folders)))
+      setError('')
+    } catch (caught) {
+      setError(caught.message)
+    } finally {
+      setModelsRefreshing(false)
     }
   }
 
@@ -1811,8 +1830,12 @@ export function CanvasTab(props) {
               <button type="button" className="ccw-btn ccw-btn-small" onClick={probe}>
                 {t('comfy.test')}
               </button>
+              <button type="button" className="ccw-btn ccw-btn-small" disabled={modelsRefreshing} onClick={refreshModelList}>
+                {modelsRefreshing ? t('comfy.modelsRefreshing') : t('comfy.refreshModels')}
+              </button>
             </div>
             <p className="ccw-hint">{t('comfy.hint')}</p>
+            {modelsNote === '' ? null : <p className="ccw-hint">{modelsNote}</p>}
           </Section>
 
           <Section title={t('session.title')} icon="lock" className="ccw-section-session">

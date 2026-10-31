@@ -168,18 +168,23 @@ export function readWorkflow(name) {
   return request(`/workflows/${encodeURIComponent(name)}`)
 }
 
-export function loadWorkflowFile(sessionId, name) {
+export function loadWorkflowFile(sessionId, id) {
   return request('/workflows/load', {
     method: 'POST',
-    body: JSON.stringify({ sessionId: requireSession(sessionId), name }),
+    body: JSON.stringify({ sessionId: requireSession(sessionId), id }),
   })
 }
 
-export function saveWorkflowFile(sessionId, name, workflow) {
+export function saveWorkflowFile(sessionId, name, workflow, target = 'workspace') {
   return request('/workflows/save', {
     method: 'POST',
-    body: JSON.stringify({ sessionId: requireSession(sessionId), name, workflow }),
+    body: JSON.stringify({ sessionId: requireSession(sessionId), name, workflow, target }),
   })
+}
+
+/** Re-read the model list from ComfyUI and rewrite the cached snapshot. */
+export function refreshModels(sessionId) {
+  return request(`/models/refresh?${sessionQuery(sessionId)}`, { method: 'POST' })
 }
 
 export function runWorkflow(sessionId, payload = {}) {

@@ -69,6 +69,12 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 
 レイアウト枠は MOSS-Image でのみ意味を持ちます。anima、SDXL などのモデルはプロンプト欄で通常のワークフローを実行します。
 
+### モデルとワークフロー
+
+エージェントはファイルを辿るのと同じようにモデルを探します。`comfy_coworking_list_models` はまずフォルダー（`checkpoints`、`loras`、`vae` など）とファイル数を返し、次にフォルダーを指定するとその中のファイルを返します。そのファイル名がローダーのウィジェットにそのまま入る値です（`Illustrious/model.safetensors`、フォルダー名の前置きも絶対パスも不要）。一覧は `.comfy-cowork/models.json` にキャッシュされ、起動時・期限切れ・`comfy_coworking_refresh_models` で更新されます。
+
+ワークフローは 3 か所から集めて `comfy_coworking_list_workflows` が一覧します。ComfyUI の `userdata/workflows`、comfy スキルのプロジェクト規約（`fragments/*.json`、`blueprints/*.compiled.json`）、そしてこのプラグインが `.comfy-cowork/workflows` に保存したものです。保存は既定でワークスペースへ、別名保存では ComfyUI へも書き込めます。
+
 ### Agent との協働
 
 | ツール | 役割 |

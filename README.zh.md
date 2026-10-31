@@ -69,6 +69,12 @@
 
 布局框只对 MOSS-Image 有意义；anima、SDXL 等模型用提示词框跑普通工作流。
 
+### 模型与工作流
+
+agent 浏览模型和浏览文件一样：`comfy_coworking_list_models` 先返回文件夹（`checkpoints`、`loras`、`vae`……）和文件数量，再按文件夹返回文件。这些文件名就是节点里该填的值——`Illustrious/model.safetensors`，不带文件夹前缀，也不是绝对路径。清单缓存在 `.comfy-cowork/models.json`，启动时刷新、过期后刷新，也可以让 agent 调 `comfy_coworking_refresh_models` 强制刷新。
+
+工作流有三个来源，`comfy_coworking_list_workflows` 会一起列出：ComfyUI 自己的 `userdata/workflows`、comfy 技能的项目约定（`fragments/*.json`、`blueprints/*.compiled.json`），以及本插件保存在 `.comfy-cowork/workflows` 的。保存默认写工作区，另存为可以选择写回 ComfyUI。
+
 ### Agent 协作
 
 | 工具 | 作用 |

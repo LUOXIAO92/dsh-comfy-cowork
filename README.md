@@ -69,6 +69,12 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 
 Layout boxes only matter to MOSS-Image; models such as anima and SDXL use the prompt box and a normal workflow.
 
+### Models and workflows
+
+The agent browses models the way it browses files: `comfy_coworking_list_models` first returns the folders (`checkpoints`, `loras`, `vae`, …) with file counts, then one folder returns its files. Those file names are exactly what a loader widget takes — `Illustrious/model.safetensors`, no folder prefix, never an absolute path. The list is a snapshot cached in `.comfy-cowork/models.json`, refreshed on start, when it goes stale, and on demand with `comfy_coworking_refresh_models`.
+
+Workflows come from three places and are listed together by `comfy_coworking_list_workflows`: ComfyUI's own `userdata/workflows`, the comfy skill's project convention (`fragments/*.json`, `blueprints/*.compiled.json`), and whatever this plugin saved in `.comfy-cowork/workflows`. Saving writes to the workspace by default; **Save as** can also write back into ComfyUI.
+
 ### Working with the agent
 
 | Tool | What it does |

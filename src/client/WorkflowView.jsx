@@ -378,9 +378,10 @@ function runTone(status) {
 
 export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   const [workflows, setWorkflows] = useState([])
-  const [selectedName, setSelectedName] = useState('')
+  const [selectedId, setSelectedId] = useState('')
   const [saveName, setSaveName] = useState('')
   const [saveAsOpen, setSaveAsOpen] = useState(false)
+  const [saveTarget, setSaveTarget] = useState('workspace')
   const [workflow, setWorkflow] = useState(doc?.workflow?.json ?? null)
   const [infos, setInfos] = useState({})
   const [selectedNode, setSelectedNode] = useState(null)
@@ -457,14 +458,14 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }, 650)
   }
 
-  async function load(name) {
-    if (!name) return
+  async function load(id) {
+    if (!id) return
     setBusy(true)
     try {
-      const result = await loadWorkflowFile(sessionId, name)
+      const result = await loadWorkflowFile(sessionId, id)
       setDoc(result.doc)
-      setSelectedName(name)
-      setSaveName(name)
+      setSelectedId(id)
+      setSaveName(result.doc?.workflow?.name ?? '')
       setError('')
     } catch (error) {
       setError(error.message)
@@ -473,16 +474,18 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     }
   }
 
-  async function save(name = saveName || selectedName) {
+  async function save(name = saveName || doc?.workflow?.name || '', target = 'workspace') {
     if (workflow === null || !name) return
     setBusy(true)
     try {
-      const result = await saveWorkflowFile(sessionId, name, workflow)
+      const result = await saveWorkflowFile(sessionId, name, workflow, target)
       if (result.doc) setDoc(result.doc)
       setDirty(false)
       setError('')
       const listed = await listWorkflows()
       setWorkflows(listed.workflows ?? [])
+      const loaded = (listed.workflows ?? []).find((entry) => entry.name === (result.doc?.workflow?.name ?? name))
+      if (loaded !== undefined) setSelectedId(loaded.id)
     } catch (error) {
       setError(error.message)
     } finally {
@@ -493,7 +496,7 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   /** Save the graph under a new name through an inline popover (no window.prompt). */
   function openSaveAs() {
     if (workflow === null) return
-    setSaveName(saveName || selectedName || 'workflow.json')
+    setSaveName(saveName || doc?.workflow?.name || 'workflow.json')
     setSaveAsOpen(true)
   }
 
@@ -501,7 +504,7 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
     const trimmed = String(saveName ?? '').trim()
     if (trimmed === '') return
     setSaveAsOpen(false)
-    await save(trimmed)
+    await save(trimmed, saveTarget)
   }
 
   /** Drag the graph band height; remembered per browser. */
@@ -595,16 +598,20 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
           <span className="ccw-selector-icon" aria-hidden="true"><Icon name="workflow" size={15} /></span>
           <select
             className="ccw-workflow-select"
-            value={selectedName}
+            value={selectedId}
             aria-label={t('workflow.pick')}
             title={t('workflow.pick')}
             onChange={(event) => {
-              setSelectedName(event.target.value)
+              setSelectedId(event.target.value)
               load(event.target.value)
             }}
           >
             <option value="">{t('workflow.pick')}</option>
-            {workflows.map((entry) => <option key={entry.path} value={entry.path}>{entry.path}</option>)}
+            {workflows.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.source === 'comfyui' ? '' : `${entry.source} · `}{entry.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="ccw-workflow-file-actions">
@@ -649,6 +656,13 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                     }
                   }}
                 />
+                <label className="ccw-saveas-target">
+                  <span>{t('workflow.saveTo')}</span>
+                  <select value={saveTarget} onChange={(event) => setSaveTarget(event.target.value)}>
+                    <option value="workspace">{t('workflow.saveToWorkspace')}</option>
+                    <option value="comfyui">{t('workflow.saveToComfyui')}</option>
+                  </select>
+                </label>
                 <div className="ccw-saveas-actions">
                   <button type="button" className="ccw-btn ccw-btn-ghost ccw-btn-small" onClick={() => setSaveAsOpen(false)}>
                     {t('workflow.cancel')}
@@ -678,7 +692,7 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
             <Graph
               key={doc?.workflow?.loadedAt ?? 'workflow'}
               workflow={workflow}
-              title={selectedName || doc?.workflow?.name || t('workflow.graph')}
+              title={doc?.workflow?.name || t('workflow.graph')}
               infos={infos}
               selectedId={selectedNode}
               onSelect={setSelectedNode}

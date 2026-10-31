@@ -3353,3 +3353,22 @@
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* Save-as: the name field, the target choice, then the actions. */
+.ccw-saveas-target {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ccw-text-ui);
+  color: var(--ccw-text-secondary);
+}
+
+.ccw-saveas-target select {
+  height: 26px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm);
+  background: var(--ccw-surface-base);
+  color: var(--ccw-text);
+  font-family: inherit;
+  font-size: var(--ccw-text-ui);
+}

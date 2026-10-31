@@ -29,6 +29,17 @@ pipeline that writes every prompt into the plugin prompt box.
   working; that legacy name is the only place the old spelling belongs.
 - `lib/workflow.js` — infers canvas→workflow injection bindings from the ComfyUI JSON itself.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
+- `lib/model-catalog.js` — the workspace model snapshot: `/models` plus one
+  `/models/<folder>` per folder, written to `<workspace>/.comfy-cowork/models.json`. File
+  strings stay exactly as ComfyUI reports them (folder-relative, no prefix), because that is
+  what a loader widget takes. TTL is `modelCacheTtlMs` (10 min); a failed refresh keeps the
+  last snapshot and reports it stale.
+- `lib/workflow-index.js` — one list over three sources: ComfyUI `userdata/workflows`
+  (`comfyui:<userdata path>`), the comfy project convention (`fragments/*.json`,
+  `blueprints/*.compiled.json`, absolute workspace paths), and this plugin's own saves
+  (`<workspace>/.comfy-cowork/workflows/*.json`). Written to
+  `<workspace>/.comfy-cowork/workflows/index.json` with explicit paths. Saving defaults to the
+  workspace; `target: 'comfyui'` writes back to userdata.
 - `lib/tools.js` — the agent-facing `comfy_coworking_*` tools.
 - `src/client/` — browser half, bundled into `client.js` by `node scripts/build-client.mjs`:
   - `CanvasTab.jsx` — app shell: tool rail, canvas, inspector (size, mask, prompt, layout…).
@@ -112,6 +123,11 @@ pipeline that writes every prompt into the plugin prompt box.
 - The workflow JSON is the single source of truth; never add plugin-private fields to nodes.
 
 ## Feature map (agent-relevant)
+
+- Model browsing is two levels on purpose: folders first (with counts), then one folder's files,
+  paged (default 200). Never dump every model into a tool result, and never tell the agent to
+  `ls` a ComfyUI directory outside the workspace — the catalog exists to avoid that.
+- Workflow ids are `<source>:<path>`; `find()` still accepts a bare ComfyUI file name.
 
 - Layout boxes are **MOSS-Image only**; other models ignore them and use the prompt box.
 - Comments are annotation bboxes the user (or the agent) draws on the image to explain what is
