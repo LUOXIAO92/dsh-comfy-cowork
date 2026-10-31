@@ -103,8 +103,6 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
   runs/
 ```
 
-When upgrading from an older version, the plugin renames `.comfy-coworking/` to `.comfy-cowork/` on first access. Add `.comfy-cowork/` to the project's `.gitignore`.
-
 ## Compatibility
 
 - ComfyUI's `LoadImage` `MASK` output is **1 - alpha**. `canvas_rgba.png` is already inverted this way; `mask.png` keeps white = editable area and suits `LoadImageMask`.

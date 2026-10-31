@@ -103,8 +103,6 @@ plugin_manager(action: "install_bundle", target: "/path/to/dsh-comfy-cowork")
   runs/
 ```
 
-升级自旧版本时，插件首次访问会把 `.comfy-coworking/` 改名为 `.comfy-cowork/`。把 `.comfy-cowork/` 加进项目 `.gitignore`。
-
 ## 兼容性
 
 - ComfyUI `LoadImage` 的 `MASK` 输出是 **1 - alpha**。`canvas_rgba.png` 已按此反转；`mask.png` 保持白色 = 编辑区，适合 `LoadImageMask`。

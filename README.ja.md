@@ -103,8 +103,6 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
   runs/
 ```
 
-旧バージョンからアップグレードした場合、プラグインは初回アクセス時に `.comfy-coworking/` を `.comfy-cowork/` にリネームします。`.comfy-cowork/` をプロジェクトの `.gitignore` に追加してください。
-
 ## 互換性
 
 - ComfyUI `LoadImage` の `MASK` 出力は **1 - alpha** です。`canvas_rgba.png` はこれに合わせて反転済みです。`mask.png` は白 = 編集領域のままで、`LoadImageMask` に適しています。
