@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { ModelCatalog } from '../lib/model-catalog.js'
+import { buildModelGroups, ModelCatalog } from '../lib/model-catalog.js'
 import { WorkflowIndex } from '../lib/workflow-index.js'
 import { normalizeConfig } from '../lib/config.js'
 
@@ -11,15 +11,44 @@ async function makeRoot() {
   return { root, cleanup: () => fs.rm(root, { recursive: true, force: true }) }
 }
 
+/** A slice of object_info covering both combo shapes and the traps. */
+const OBJECT_INFO = {
+  CheckpointLoaderSimple: {
+    input: {
+      required: {
+        ckpt_name: [['Illustrious/a.safetensors', 'Illustrious/b.safetensors'], {}],
+        config_name: [['v1-inference.yaml'], {}],
+      },
+    },
+  },
+  CheckpointLoaderKJ: { input: { required: { ckpt_name: [['Illustrious/a.safetensors'], {}] } } },
+  LoraLoader: { input: { required: { lora_name: [['style/c.safetensors'], {}] } } },
+  QuadrupleCLIPLoaderGGUF: {
+    input: { required: { clip_name1: ['COMBO', { options: ['anima/clip.safetensors'] }] } },
+  },
+  KSampler: {
+    input: {
+      required: {
+        sampler_name: [['euler', 'dpmpp_2m'], {}],
+        model: ['MODEL', {}],
+      },
+    },
+  },
+  VAELoader: {
+    input: {
+      required: {
+        // The sentinel is a valid value; it must not hide the real list.
+        vae_name: [['anima/qwen_image_vae.safetensors', 'pixel_space'], {}],
+      },
+    },
+  },
+  LoadImage: { input: { required: { image: [['in.png'], {}] } } },
+}
+
 function fakeComfy(overrides = {}) {
   return {
-    async models() {
-      return ['checkpoints', 'loras']
-    },
-    async modelFiles(folder) {
-      return folder === 'checkpoints'
-        ? ['Illustrious/a.safetensors', 'Illustrious/b.safetensors']
-        : ['style/c.safetensors']
+    async objectInfo() {
+      return OBJECT_INFO
     },
     async listWorkflows() {
       return [{ path: 'workflows/moss.json', size: 10, modified: 123 }]
@@ -34,28 +63,46 @@ function fakeComfy(overrides = {}) {
   }
 }
 
-test('the model catalog groups files by folder and writes the snapshot', async () => {
+test('the catalog keeps only model-valued node inputs', () => {
+  const groups = buildModelGroups(OBJECT_INFO)
+  // The filename, not the folder: the widget takes these strings as-is.
+  assert.deepEqual(Object.keys(groups).sort(), ['ckpt_name', 'clip_name1', 'lora_name', 'vae_name'])
+  assert.deepEqual(groups.ckpt_name.values, ['Illustrious/a.safetensors', 'Illustrious/b.safetensors'])
+  assert.deepEqual(groups.ckpt_name.nodes, ['CheckpointLoaderKJ', 'CheckpointLoaderSimple'])
+  // Both object_info shapes read the same.
+  assert.deepEqual(groups.clip_name1.values, ['anima/clip.safetensors'])
+  // A sentinel next to real files keeps the list useful.
+  assert.deepEqual(groups.vae_name.values, ['anima/qwen_image_vae.safetensors', 'pixel_space'])
+  // Non-model file lists and plain enums stay out.
+  assert.equal(groups.config_name, undefined)
+  assert.equal(groups.image, undefined)
+  assert.equal(groups.sampler_name, undefined)
+})
+
+test('the model catalog groups inputs by widget name and writes the snapshot', async () => {
   const { root, cleanup } = await makeRoot()
   try {
     const config = normalizeConfig({})
     const catalog = new ModelCatalog(config)
     const comfy = fakeComfy()
     const { snapshot } = await catalog.ensure(root, comfy)
-    assert.deepEqual(catalog.folders(snapshot), [
-      { folder: 'checkpoints', count: 2 },
-      { folder: 'loras', count: 1 },
+    assert.deepEqual(catalog.groups(snapshot), [
+      { group: 'ckpt_name', count: 2, nodes: ['CheckpointLoaderKJ', 'CheckpointLoaderSimple'] },
+      { group: 'clip_name1', count: 1, nodes: ['QuadrupleCLIPLoaderGGUF'] },
+      { group: 'lora_name', count: 1, nodes: ['LoraLoader'] },
+      { group: 'vae_name', count: 2, nodes: ['VAELoader'] },
     ])
     const file = JSON.parse(await fs.readFile(path.join(root, '.comfy-cowork', 'models.json'), 'utf8'))
-    assert.equal(file.version, 1)
-    assert.deepEqual(file.folders.checkpoints, ['Illustrious/a.safetensors', 'Illustrious/b.safetensors'])
+    assert.equal(file.version, 2)
+    assert.deepEqual(file.groups.ckpt_name.values, ['Illustrious/a.safetensors', 'Illustrious/b.safetensors'])
 
-    const page = catalog.files(snapshot, 'checkpoints', { limit: 1 })
+    const page = catalog.values(snapshot, 'ckpt_name', { limit: 1 })
     assert.equal(page.total, 2)
-    assert.deepEqual(page.files, ['Illustrious/a.safetensors'])
+    assert.deepEqual(page.values, ['Illustrious/a.safetensors'])
     assert.equal(page.truncated, true)
 
-    const searched = catalog.files(snapshot, 'checkpoints', { query: 'b.safe' })
-    assert.deepEqual(searched.files, ['Illustrious/b.safetensors'])
+    const searched = catalog.values(snapshot, 'ckpt_name', { query: 'b.safe' })
+    assert.deepEqual(searched.values, ['Illustrious/b.safetensors'])
   } finally {
     await cleanup()
   }
@@ -73,16 +120,13 @@ test('a stale snapshot refreshes, and a failed refresh keeps the last one', asyn
     assert.equal(catalog.stale(root, { ...first.snapshot, updatedAt: Date.now() - 120_000 }), true)
 
     const failing = fakeComfy({
-      async models() {
+      async objectInfo() {
         throw new Error('server down')
       },
     })
     await assert.rejects(() => catalog.ensure(root, failing, { force: true }))
     const kept = await catalog.read(root)
-    assert.deepEqual(catalog.folders(kept), [
-      { folder: 'checkpoints', count: 2 },
-      { folder: 'loras', count: 1 },
-    ])
+    assert.deepEqual(catalog.groups(kept).map((entry) => entry.group), ['ckpt_name', 'clip_name1', 'lora_name', 'vae_name'])
   } finally {
     await cleanup()
   }
