@@ -42,7 +42,7 @@ DSH の「プラグイン」ページで「プラグインを追加」を選び�
 
 パッケージにはビルド済みのクライアントファイルが含まれるため、インストールする側に Node もビルドもインストールスクリプトの許可も不要です。
 
-DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力します。右サイドバーにキャンバスが開き、同時にこのセッションの agent に `comfy_coworking` ツールが接続されます。他のセッションからはこのツールは見えません。
+DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力します。右サイドバーにキャンバスが開き、同時にこのセッションの agent に `comfy_cowork` ツールが接続されます。他のセッションからはこのツールは見えません。
 
 キャンバスを閉じてもツールは外れません。モデルが見るツール一覧が変わらないため、プロンプトキャッシュがそのまま効きます。ツールを外せるのはアプリバーの専用ボタンだけで、押す前に警告が出ます。ツール一覧が変わると、会話全体が一度キャッシュなしで処理し直されるためです。会話が長い場合は、外す前に圧縮してください。
 
@@ -79,7 +79,7 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 
 ### Agent との協働
 
-プラグインが登録するツールは `comfy_coworking` の 1 つだけで、能力ごとに 1 つずつ並べる代わりに 3 つのアクションを使います。
+プラグインが登録するツールは `comfy_cowork` の 1 つだけで、能力ごとに 1 つずつ並べる代わりに 3 つのアクションを使います。
 
 - `discover` — 他の引数がなければ 5 つの機能グループを一覧します。`group` は 1 グループを展開し、`query` は名前・別名（英語と中国語）・説明を検索します。
 - `describe` — 1 つ以上の機能の入力スキーマを返します。
@@ -88,10 +88,10 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 機能のスキーマは `describe` の結果にだけ現れ、リクエストのツール一覧には入りません。最初のターンはおおよそ次のようになります。
 
 ```text
-comfy_coworking {"action": "discover"}
-comfy_coworking {"action": "discover", "group": "canvas"}
-comfy_coworking {"action": "describe", "features": ["set_prompt"]}
-comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+comfy_cowork {"action": "discover"}
+comfy_cowork {"action": "discover", "group": "canvas"}
+comfy_cowork {"action": "describe", "features": ["set_prompt"]}
+comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
 ```
 
 機能名がわかった後は `execute` だけで足ります。5 つのグループ：

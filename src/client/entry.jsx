@@ -69,7 +69,7 @@ function CanvasIcon({ size = 16 }) {
 
 /**
  * The canvas belongs to one chat at a time. Follow the on-screen session's
- * document stream and turn an `openSeq` bump — what `comfy_coworking_open_canvas`
+ * document stream and turn an `openSeq` bump — what the `open_canvas` feature
  * writes — into a sidebar tab, so the agent can ask for the canvas too.
  */
 function watchOpenRequests(ctx) {

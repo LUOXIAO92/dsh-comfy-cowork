@@ -42,7 +42,7 @@
 
 安装包带着构建好的客户端文件：装插件的机器不需要 Node，不需要构建，也不需要放行安装脚本。
 
-刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_coworking` 工具接到该会话的 agent 上。其它会话看不到这个工具。
+刷新 DSH 页面，在聊天里输入 `/dsh-comfy-cowork`。右侧栏打开画布，同时把这个会话的 `comfy_cowork` 工具接到该会话的 agent 上。其它会话看不到这个工具。
 
 关闭画布不会带走工具：模型看到的工具列表保持不变，前缀缓存继续命中。appbar 上的卸载按钮才会移除工具，点之前会先警告——工具列表一变，整段对话要重新处理一次且不命中缓存。对话较长时，先压缩再卸载。
 
@@ -79,7 +79,7 @@ agent 浏览模型和浏览文件一样：`list_models` 功能先返回文件夹
 
 ### Agent 协作
 
-插件只注册一个工具 `comfy_coworking`，用三个动作取代过去每个能力一个工具：
+插件只注册一个工具 `comfy_cowork`，用三个动作取代过去每个能力一个工具：
 
 - `discover`——不带其它参数时列出五个功能组；`group` 展开一组，`query` 搜索名称、别名（中英文）和描述。
 - `describe`——返回一个或多个功能的输入 schema。
@@ -88,10 +88,10 @@ agent 浏览模型和浏览文件一样：`list_models` 功能先返回文件夹
 功能的 schema 只出现在 `describe` 的结果里，不会进入请求的工具列表。第一次调用大致是这样：
 
 ```text
-comfy_coworking {"action": "discover"}
-comfy_coworking {"action": "discover", "group": "canvas"}
-comfy_coworking {"action": "describe", "features": ["set_prompt"]}
-comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+comfy_cowork {"action": "discover"}
+comfy_cowork {"action": "discover", "group": "canvas"}
+comfy_cowork {"action": "describe", "features": ["set_prompt"]}
+comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
 ```
 
 知道功能名之后，单用 `execute` 就够了。五个功能组：

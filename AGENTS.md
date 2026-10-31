@@ -51,7 +51,7 @@ pipeline that writes every prompt into the plugin prompt box.
   (`<workspace>/.comfy-cowork/workflows/*.json`). Written to
   `<workspace>/.comfy-cowork/workflows/index.json` with explicit paths. Saving defaults to the
   workspace; `target: 'comfyui'` writes back to userdata.
-- `lib/tools.js` — the one agent tool, `comfy_coworking`: `discover` (groups, or search names and
+- `lib/tools.js` — the one agent tool, `comfy_cowork`: `discover` (groups, or search names and
   aliases), `describe` (input schemas), `execute` (run one feature). Features are stored in a
   table filed under canvas, workflow, runs, catalog, and misc; `discover` lists their flat ids
   (`state`, `set_prompt`, `list_models`, `node_info`, `refresh`, `run`, `run_status`, …) and
@@ -68,13 +68,13 @@ pipeline that writes every prompt into the plugin prompt box.
 ## Activation (per session, never global)
 
 - The plugin mounts dormant: no tool and no prompt section exists until one chat opens
-  the canvas. Enabling is strictly per session — the host attaches `comfy_coworking`
+  the canvas. Enabling is strictly per session — the host attaches `comfy_cowork`
   through that agent's `ctx.inject(['tools','systemPrompt'])`, so other chats never see it.
 - The only way in is the `/dsh-comfy-cowork` slash-menu row (label `DSH Comfy协同` /
   `DSH Comfy cowork`). It is a client command contribution (`ctx.commandUi.register`), not a
   host command — that is the only way a menu row gets a localized label and an icon, and its
   whole effect (enable the session + open the tab) is client-side. There is no composer button.
-- The `open_canvas` feature (run through `comfy_coworking`) bumps `doc.ui.openSeq`; the plugin
+- The `open_canvas` feature (run through `comfy_cowork`) bumps `doc.ui.openSeq`; the plugin
   follows the on-screen session's SSE stream and opens the tab when the sequence moves.
 - Ways out, and why there are two. Closing the canvas (appbar ✕ or any tab close) runs the
   tab type's close handler, which clears `doc.enabled` but leaves `doc.toolsPinned` set, so the
@@ -162,7 +162,7 @@ batch, so a fix is never split across two releases.
 
 ## Feature map (agent-relevant)
 
-- The only agent entry is `comfy_coworking`: `discover` walks groups → features, `describe`
+- The only agent entry is `comfy_cowork`: `discover` walks groups → features, `describe`
   returns input schemas, `execute` runs one. Feature ids are flat; discover matches names,
   groups, descriptions, and English + Chinese aliases, so 「跑图」, 「刷新」, or 「批注」 finds the
   right feature without knowing its id.

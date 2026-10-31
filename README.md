@@ -42,7 +42,7 @@ Open the Plugins page in DSH, choose **Add plugin**, enter the package name `dsh
 
 The package ships its built client bundle: the installing machine needs no Node, no build step, and no build-script approval.
 
-Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking` tool to that chat's agent. Other chats never see this tool.
+Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_cowork` tool to that chat's agent. Other chats never see this tool.
 
 Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The appbar's unload button removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
 
@@ -79,7 +79,7 @@ Workflows come from three places and are listed together by the `list_workflows`
 
 ### Working with the agent
 
-The plugin registers one tool, `comfy_coworking`, with three actions instead of one tool per capability:
+The plugin registers one tool, `comfy_cowork`, with three actions instead of one tool per capability:
 
 - `discover` — with no other argument, lists the five feature groups; `group` expands one, and `query` searches names, aliases (English and Chinese), and descriptions.
 - `describe` — returns the input schema of one or more features.
@@ -88,10 +88,10 @@ The plugin registers one tool, `comfy_coworking`, with three actions instead of 
 Feature schemas exist only in `describe` results, never in the request's tool list. A first turn looks like this:
 
 ```text
-comfy_coworking {"action": "discover"}
-comfy_coworking {"action": "discover", "group": "canvas"}
-comfy_coworking {"action": "describe", "features": ["set_prompt"]}
-comfy_coworking {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
+comfy_cowork {"action": "discover"}
+comfy_cowork {"action": "discover", "group": "canvas"}
+comfy_cowork {"action": "describe", "features": ["set_prompt"]}
+comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"prompt": "…"}}
 ```
 
 Once the feature ids are known, `execute` alone is enough. The five groups:
