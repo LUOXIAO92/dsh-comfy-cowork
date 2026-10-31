@@ -1,6 +1,6 @@
 {
   "name": "dsh-comfy-cowork",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Human + agent image/video coworking canvas for ComfyUI, inside DeepSeek Harness.",
   "license": "MIT",
   "type": "module",

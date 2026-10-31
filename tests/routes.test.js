@@ -313,7 +313,35 @@ test('stores the session enable switch', async () => {
     const off = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled?session=' + session, { enabled: false }))
     assert.equal(off.status, 200)
     assert.equal(JSON.parse(off.body).doc.enabled, false)
+    assert.equal(JSON.parse(off.body).doc.toolsPinned, true, 'a normal close keeps the tools')
   } finally {
     await cleanup()
+  }
+})
+
+test('the unload route drops the pin and tells the host to detach', async () => {
+  const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
+  const ctx = {
+    logger: { warn() {} },
+    sessions: { get: () => undefined },
+    workingDirectory: { defaultDirectory: root },
+    connection: { admit: () => ({ peer: { id: 'peer-1' } }) },
+  }
+  const config = normalizeConfig({})
+  const store = new DocStore(ctx, config)
+  const synced = []
+  const hooks = { sync: async (sessionId, doc) => { synced.push({ sessionId, enabled: doc.enabled, pinned: doc.toolsPinned }) } }
+  const routes = createRoutes({ ctx, config, store, hooks })
+  try {
+    const session = 'session-unload-route'
+    await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/enabled', { sessionId: session, enabled: true }))
+    const unloaded = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/unload', { sessionId: session }))
+    assert.equal(unloaded.status, 200)
+    const doc = JSON.parse(unloaded.body).doc
+    assert.equal(doc.enabled, false)
+    assert.equal(doc.toolsPinned, false)
+    assert.deepEqual(synced.at(-1), { sessionId: session, enabled: false, pinned: false })
+  } finally {
+    await fs.rm(root, { recursive: true, force: true })
   }
 })

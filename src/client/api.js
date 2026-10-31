@@ -77,6 +77,14 @@ export function saveEnabled(sessionId, enabled) {
   })
 }
 
+/** Close the canvas and take the tools away from this chat's agent. */
+export function unloadTools(sessionId) {
+  return request('/doc/unload', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), source: 'user' }),
+  })
+}
+
 export function saveComment(sessionId, comment) {
   return request('/doc/comment', {
     method: 'PUT',

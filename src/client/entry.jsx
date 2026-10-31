@@ -158,9 +158,10 @@ export function apply(ctx) {
 
   const t = ctx.locale.bind(NS)
 
-  // Closing the canvas tab is the off switch. The sidebar calls a tab type's
-  // close handler on the way out (the chip's ✕, the tab menu, or the appbar ✕),
-  // so the tools leave that chat's agent at the same moment.
+  // Closing the canvas tab only closes the canvas. The tools stay pinned to the
+  // chat, because adding or removing them rewrites the request prefix and costs
+  // one full-context cache miss. Removing them is the separate, warned action
+  // inside the canvas (`/doc/unload`).
   try {
     const registerCloseHandler = ctx.sidebarRight?.registerCloseHandler
     if (typeof registerCloseHandler === 'function') {

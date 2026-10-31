@@ -42,7 +42,9 @@ Open the Plugins page in DSH, choose **Add plugin**, enter the package name `dsh
 
 The package ships its built client bundle: the installing machine needs no Node, no build step, and no build-script approval.
 
-Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking_*` tools to that chat's agent; closing the canvas tab removes them. Other chats never see these tools.
+Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_coworking_*` tools to that chat's agent. Other chats never see these tools.
+
+Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The appbar's unload button removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
 
 The default connection is `http://127.0.0.1:8188`. To change it, edit `baseUrl` in `cordis.patch.yml`, or override `config.baseUrl` on the `comfy-cowork` row in the profile's patch layer.
 

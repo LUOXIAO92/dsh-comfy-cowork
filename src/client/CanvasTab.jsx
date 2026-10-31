@@ -14,6 +14,7 @@ import {
   saveNegative,
   savePrompt,
   saveSelection,
+  unloadTools,
   removeComment,
   upsertBox,
   uploadAsset,
@@ -325,6 +326,15 @@ export function CanvasTab(props) {
   const [comfy, setComfy] = useState(null)
   const [probeError, setProbeError] = useState('')
   const [view, setView] = useState('canvas')
+  const [unloadOpen, setUnloadOpen] = useState(false)
+  useEffect(() => {
+    if (!unloadOpen) return undefined
+    const onKey = (event) => {
+      if (event.key === 'Escape') setUnloadOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [unloadOpen])
   const [widthInput, setWidthInput] = useState(null)
   const [negative, setNegative] = useState('')
   const [negativeFocused, setNegativeFocused] = useState(false)
@@ -860,7 +870,11 @@ export function CanvasTab(props) {
     }
   }
 
-  /** The appbar's ✕: closing the canvas takes the tools away from this chat. */
+  /**
+   * The appbar's ✕: close the canvas and keep the tools. Removing tools
+   * rewrites the request prefix, so the chat keeps them until the user asks
+   * for the explicit unload.
+   */
   function closeCanvas() {
     if (closeTabAction !== null) {
       try {
@@ -871,6 +885,23 @@ export function CanvasTab(props) {
       }
     }
     saveEnabled(sessionId, false).then((result) => setDoc(result.doc)).catch((caught) => setError(caught.message))
+  }
+
+  /** The deliberate exit: confirm first, then drop the tools and close the tab. */
+  async function unloadAndClose() {
+    setUnloadOpen(false)
+    try {
+      const result = await unloadTools(sessionId)
+      setDoc(result.doc)
+      if (closeTabAction !== null) {
+        try {
+          closeTabAction()
+          return
+        } catch {}
+      }
+    } catch (caught) {
+      setError(caught.message)
+    }
   }
 
   async function createComment(bbox) {
@@ -1194,6 +1225,7 @@ export function CanvasTab(props) {
             <span className="ccw-health-label">{comfyLabel}</span>
           </span>
           <IconButton icon="refresh" label={t('probe')} onClick={probe} className="ccw-appbar-probe" />
+          <IconButton icon="unlink" label={t('tab.unload')} onClick={() => setUnloadOpen(true)} className="ccw-appbar-unload" />
           <IconButton icon="x" label={t('tab.close')} onClick={closeCanvas} className="ccw-appbar-close" />
         </div>
       </header>
@@ -1680,12 +1712,52 @@ export function CanvasTab(props) {
               </ul>
             )}
           </Section>
+
+          <Section title={t('session.title')} icon="lock" className="ccw-section-session">
+            <div className="ccw-danger-zone">
+              <p className="ccw-hint">
+                <Icon name="info" size={13} />
+                <span>{t('session.keepHint')}</span>
+              </p>
+              <button type="button" className="ccw-btn ccw-btn-danger-ghost ccw-btn-small" onClick={() => setUnloadOpen(true)}>
+                <Icon name="unlink" size={13} />
+                <span>{t('session.unload')}</span>
+              </button>
+            </div>
+          </Section>
         </aside>
       </div>
 
       {view === 'workflow' ? (
         <div className="ccw-workflow-host">
           <WorkflowView sessionId={sessionId} doc={doc} setDoc={setDoc} t={t} setError={setError} />
+        </div>
+      ) : null}
+
+      {unloadOpen ? (
+        <div
+          className="ccw-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setUnloadOpen(false)
+          }}
+        >
+          <div className="ccw-modal" role="alertdialog" aria-modal="true" aria-labelledby="ccw-unload-title">
+            <div className="ccw-modal-head">
+              <Icon name="alert" size={16} />
+              <h2 className="ccw-modal-title" id="ccw-unload-title">{t('unload.title')}</h2>
+            </div>
+            <p className="ccw-modal-body">{t('unload.body')}</p>
+            <p className="ccw-modal-advice">{t('unload.advice')}</p>
+            <div className="ccw-modal-actions">
+              <button type="button" className="ccw-btn" onClick={() => setUnloadOpen(false)}>
+                {t('unload.cancel')}
+              </button>
+              <button type="button" className="ccw-btn ccw-btn-danger" onClick={unloadAndClose}>
+                {t('unload.confirm')}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

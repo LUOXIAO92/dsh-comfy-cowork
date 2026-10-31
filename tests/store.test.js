@@ -255,6 +255,49 @@ test('keeps the session enable switch in the document', async () => {
   }
 })
 
+test('closing the canvas keeps the tools pinned; only an unload drops them', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-pin'
+    const initial = await store.snapshot(session)
+    assert.equal(initial.toolsPinned, false)
+    const on = await store.setEnabled(session, true)
+    assert.equal(on.enabled, true)
+    assert.equal(on.toolsPinned, true, 'opening the canvas pins the tools')
+    const closed = await store.setEnabled(session, false)
+    assert.equal(closed.enabled, false)
+    assert.equal(closed.toolsPinned, true, 'a normal close keeps the tools')
+    const reopened = await store.setEnabled(session, true)
+    assert.equal(reopened.toolsPinned, true)
+    const unloaded = await store.unloadTools(session)
+    assert.equal(unloaded.enabled, false)
+    assert.equal(unloaded.toolsPinned, false, 'the explicit unload drops the pin')
+    const persisted = await store.snapshot(session)
+    assert.equal(persisted.toolsPinned, false)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('an enabled document written before the pin existed keeps its tools', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-legacy-pin'
+    // A document from the version without the pin: enabled, no toolsPinned key.
+    await fs.mkdir(store.sessionDir(session), { recursive: true })
+    await fs.writeFile(
+      path.join(store.sessionDir(session), 'document.json'),
+      JSON.stringify({ version: 1, sessionId: session, enabled: true, prompt: 'legacy' }),
+      'utf8',
+    )
+    const doc = await store.snapshot(session)
+    assert.equal(doc.enabled, true)
+    assert.equal(doc.toolsPinned, true)
+  } finally {
+    await cleanup()
+  }
+})
+
 test('migrates a legacy .comfy-coworking store directory', async () => {
   const { store, root, cleanup } = await makeStore()
   try {

@@ -48,6 +48,7 @@ const doc = {
   sessionId: 'session-test',
   rev: 7,
   enabled: true,
+  toolsPinned: true,
   mode: 'layout',
   canvas: {
     width: 1024,
@@ -204,6 +205,16 @@ window.fetch = async (url, options = {}) => {
     if (Number.isInteger(patch.height)) current.canvas.height = patch.height
     if (patch.mask) current.mask = { ...current.mask, ...patch.mask }
     if (patch.image !== undefined) current.canvas.image = patch.image
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/enabled')) {
+    current.enabled = bodyOf(options).enabled === true
+    if (current.enabled) current.toolsPinned = true
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/unload')) {
+    current.enabled = false
+    current.toolsPinned = false
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/prompt')) {

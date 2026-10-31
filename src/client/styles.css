@@ -3282,3 +3282,66 @@
   border-color: color-mix(in srgb, var(--ccw-warning) 45%, var(--ccw-border));
   background: color-mix(in srgb, var(--ccw-warning) 10%, var(--ccw-surface-raised));
 }
+
+/* The unload confirmation. Closing the canvas keeps the chat's tools; this
+   dialog guards the exit that removes them and breaks the prompt cache. */
+.ccw-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--ccw-surface-overlay) 72%, transparent);
+}
+
+.ccw-modal {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--ccw-border);
+  border-radius: 14px;
+  background: var(--ccw-surface-panel);
+  box-shadow: 0 18px 48px color-mix(in srgb, black 28%, transparent);
+}
+
+.ccw-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ccw-warning);
+}
+
+.ccw-modal-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ccw-text);
+}
+
+.ccw-modal-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ccw-text);
+}
+
+.ccw-modal-advice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ccw-warning) 40%, var(--ccw-border));
+  background: color-mix(in srgb, var(--ccw-warning) 9%, var(--ccw-surface-raised));
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ccw-text-secondary);
+}
+
+.ccw-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

@@ -48,12 +48,18 @@ pipeline that writes every prompt into the plugin prompt box.
   whole effect (enable the session + open the tab) is client-side. There is no composer button.
 - The agent's `comfy_coworking_open_canvas` tool bumps `doc.ui.openSeq`; the plugin follows the
   on-screen session's SSE stream and opens the tab when the sequence moves.
-- Ways out: the appbar ✕ (and any tab close) run the tab type's close handler, which
-  disables the session again; the tools leave that agent.
+- Ways out, and why there are two. Closing the canvas (appbar ✕ or any tab close) runs the
+  tab type's close handler, which clears `doc.enabled` but leaves `doc.toolsPinned` set, so the
+  tools stay with that chat. Removing tools rewrites the request's tool array, which sits in
+  front of every message and invalidates the provider prefix cache for one full-context
+  request. Only `PUT /api/comfy-cowork/doc/unload` clears the pin; the canvas asks for it from
+  a warning dialog that recommends compacting the chat first. Never detach tools on a plain
+  close, and never make unload the default.
 - The canvas tab has its own title (`Comfy 画布`); the *command* carries the plugin's name.
   Never call the plugin "canvas" in UI copy, and never add a composer button for it.
-- `doc.enabled` is the durable switch; `GET /api/comfy-cowork/health` reports the live
-  attach list as `scoped`.
+- `doc.enabled` is the open-tab switch and `doc.toolsPinned` the attach switch; the host
+  attaches when either is true. `GET /api/comfy-cowork/health` reports the live attach list as
+  `scoped`.
 
 ## Commands
 
