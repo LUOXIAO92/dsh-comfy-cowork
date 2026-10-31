@@ -44,7 +44,7 @@ The package ships its built client bundle: the installing machine needs no Node,
 
 Refresh the DSH page and type `/dsh-comfy-cowork` in a chat. The right sidebar opens the canvas and connects the `comfy_cowork` tool to that chat's agent. Other chats never see this tool.
 
-Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The appbar's unload button removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
+Closing the canvas keeps the tools with that chat, so the model's tool list stays byte-identical and the prompt cache keeps hitting. The **Canvas tools** section in the inspector removes them; it warns first, because a changed tool list reprocesses the whole conversation once without a cache hit. Compact the chat before unloading if it is long.
 
 The canvas connects to `http://127.0.0.1:8188` by default. Change it in the canvas: the **ComfyUI** section of the inspector takes any address, saves it to `<workspace>/.comfy-cowork/config.json`, and switches the running plugin immediately — no restart. Every chat in that workspace and the agent tools follow it.
 

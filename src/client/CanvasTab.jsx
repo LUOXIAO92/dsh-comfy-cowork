@@ -1326,7 +1326,6 @@ export function CanvasTab(props) {
             <span className="ccw-health-label">{comfyLabel}</span>
           </span>
           <IconButton icon="refresh" label={t('probe')} onClick={probe} className="ccw-appbar-probe" />
-          <IconButton icon="unlink" label={t('tab.unload')} onClick={() => setModal('unload')} className="ccw-appbar-unload" />
           <IconButton icon="x" label={t('tab.close')} onClick={closeCanvas} className="ccw-appbar-close" />
         </div>
       </header>
