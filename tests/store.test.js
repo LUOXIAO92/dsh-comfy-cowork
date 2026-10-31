@@ -334,3 +334,53 @@ test('leaves an existing current store directory alone during migration', async 
     await cleanup()
   }
 })
+
+test('prefers the session header project while the directory projection is missing', async () => {
+  const base = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-root-'))
+  const fallback = path.join(base, 'process-cwd')
+  const project = path.join(base, 'project')
+  try {
+    await fs.mkdir(path.join(project, '.comfy-cowork', 'session-head'), { recursive: true })
+    await fs.writeFile(
+      path.join(project, '.comfy-cowork', 'session-head', 'document.json'),
+      JSON.stringify({ prompt: 'from the project' }),
+    )
+    // The projection has not replayed yet: get() answers with the process default.
+    const session = { header: { cwd: project } }
+    const ctx = {
+      sessions: { get: () => session },
+      workingDirectory: { get: () => fallback, defaultDirectory: fallback },
+      logger: { warn() {} },
+    }
+    const store = new DocStore(ctx, normalizeConfig({}))
+    assert.equal(store.resolveRoot('session-head'), project)
+    assert.equal((await store.snapshot('session-head')).prompt, 'from the project')
+  } finally {
+    await fs.rm(base, { recursive: true, force: true })
+  }
+})
+
+test('reloads a document when the session root changes', async () => {
+  const base = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-root-'))
+  const first = path.join(base, 'first')
+  const second = path.join(base, 'second')
+  let current = first
+  try {
+    await fs.mkdir(path.join(second, '.comfy-cowork', 'session-move'), { recursive: true })
+    await fs.writeFile(
+      path.join(second, '.comfy-cowork', 'session-move', 'document.json'),
+      JSON.stringify({ prompt: 'from the second root' }),
+    )
+    const ctx = {
+      sessions: { get: () => ({ header: {} }) },
+      workingDirectory: { get: () => current, defaultDirectory: first },
+      logger: { warn() {} },
+    }
+    const store = new DocStore(ctx, normalizeConfig({}))
+    assert.equal((await store.snapshot('session-move')).prompt, '')
+    current = second
+    assert.equal((await store.snapshot('session-move')).prompt, 'from the second root')
+  } finally {
+    await fs.rm(base, { recursive: true, force: true })
+  }
+})
