@@ -235,11 +235,10 @@ batch, so a fix is never split across two releases.
   `bindings.denoise` points at, so 0.5 keeps most of the old content and 0.9 invents it. The
   canvas posts that strength with its own run (`POST /run` `denoise`) so it never races the
   debounced mask save, and a run records it as `maskDenoise` (with `promptKind`) which `state`
-  repeats for the recent runs.
-  mask section's other slider, `doc.mask.opacity`, is display only: it is the red overlay's
-  opacity in the browser and never reaches the mask asset or a workflow. The brush has no
-  opacity at all — a stroke always writes full alpha, because the mask is a stencil and the
-  soft edge comes from the brush hardness and the feather slider.
+  repeats for the recent runs. The mask section's other slider, `doc.mask.opacity`, is display
+  only: it is the red overlay's opacity in the browser and never reaches the mask asset or a
+  workflow. The brush has no opacity at all — a stroke always writes full alpha because the
+  mask is a stencil, and the soft edge comes from the brush hardness and the feather slider.
 - The stage imports an image from the file picker, a drop on the stage, or a paste outside a
   text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
   cleared mask prompt. Never let a text paste be swallowed: the paste handler ignores inputs,
