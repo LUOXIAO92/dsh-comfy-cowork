@@ -413,6 +413,28 @@ test('keeps the summary item first and rejects a second one', async () => {
   }
 })
 
+test('keeps a compact handle when the summary item has no bbox', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-summary-handle'
+    const doc = await store.setLayout(session, {
+      items: [
+        { id: 's', label: 'summary', caption: 'whole image', text: '', palette: [] },
+        { id: 'a', label: 'object', caption: 'apple', bbox: [10, 10, 100, 100], text: '', palette: [] },
+      ],
+    })
+    assert.deepEqual(doc.layout.items[0].bbox, [16, 16, 336, 156])
+    const updated = await store.upsertBox(session, { id: 's', label: 'summary', caption: 'still whole image' })
+    assert.deepEqual(updated.layout.items[0].bbox, [16, 16, 336, 156], 'a caption edit keeps the same handle')
+    const moved = await store.upsertBox(session, { id: 's', label: 'summary', caption: 'still whole image', bbox: [200, 300, 500, 420] })
+    assert.deepEqual(moved.layout.items[0].bbox, [200, 300, 500, 420])
+    const renamed = await store.upsertBox(session, { id: 's', label: 'summary', caption: 'renamed' })
+    assert.deepEqual(renamed.layout.items[0].bbox, [200, 300, 500, 420], 'a caption-only edit keeps a moved handle')
+  } finally {
+    await cleanup()
+  }
+})
+
 test('migrates the old layout.summary field into the one summary item', async () => {
   const { store, cleanup } = await makeStore()
   try {
@@ -430,7 +452,7 @@ test('migrates the old layout.summary field into the one summary item', async ()
     assert.equal(doc.layout.items.length, 2)
     assert.equal(doc.layout.items[0].label, 'summary')
     assert.equal(doc.layout.items[0].caption, 'The old caption for the whole image.')
-    assert.deepEqual(doc.layout.items[0].bbox, [0, 0, 800, 600])
+    assert.deepEqual(doc.layout.items[0].bbox, [16, 16, 336, 156])
     assert.equal(doc.layout.items[1].caption, 'an apple')
     // The next write persists the new shape and the old field is gone.
     await store.setNegative(session, 'blurry')

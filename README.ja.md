@@ -125,7 +125,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 - ComfyUI `LoadImage` の `MASK` 出力は **1 - alpha** です。`canvas_rgba.png` はこれに合わせて反転済みです。`mask.png` は白 = 編集領域のままで、`LoadImageMask` に適しています。
 - MOSS コンパイルは `comfy_extras/nodes_moss_image.py` とバイト単位で一致します：
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`。
-- 画像全体のキャプションは種類 `summary` のレイアウト項目で、1 つだけ存在できます。`items` には入らず、文字が `summary.caption` になります。キャンバス上の枠は文字を載せるためのもので、MOSS は位置とサイズを使いません。
+- 画像全体のキャプションは種類 `summary` のレイアウト項目で、1 つだけ存在できます。`items` には入らず、文字が `summary.caption` になります。キャンバス上の枠は文字を載せるためのもので、MOSS は位置とサイズを使いません。サイズは自由です（ダブルクリックで全文表示。bbox を省略すると小さな既定の枠が付きます）。
 - `CreateBoundingBoxes` の `editor_state` は list 型ですが、API 検証は list を link として扱います。プラグインは `"[]"` 文字列を送信し、実際の枠は `bboxes` JSON で渡します。
 - ブラウザは ComfyUI に直接接続しません。`Origin` 付きのリクエストは 403 になります。すべてのリクエストは DSH Host がプロキシします。
 

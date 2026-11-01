@@ -31,7 +31,9 @@ pipeline that writes every prompt into the plugin prompt box.
 - `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser). The
   whole-image caption is one layout item with label `summary`, never a separate field: at most
   one may exist, it is first in the list, and it never reaches `items` — its caption becomes
-  `summary.caption`. Old documents are migrated from `layout.summary` on load.
+  `summary.caption`. Its bbox is only an on-canvas handle (a compact default when the bbox is
+  missing or zero; any size or position is fine), and MOSS never uses it. Old documents are
+  migrated from `layout.summary` on load.
 - `lib/png.js` — host-side PNG reader for the mask assets: decodes one non-interlaced 8-bit
   file and returns the painted region's bbox, so `state` can describe the mask without the
   browser and without shipping an image library.

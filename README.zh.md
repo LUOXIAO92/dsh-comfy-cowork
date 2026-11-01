@@ -125,7 +125,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 - ComfyUI `LoadImage` 的 `MASK` 输出是 **1 - alpha**。`canvas_rgba.png` 已按此反转；`mask.png` 保持白色 = 编辑区，适合 `LoadImageMask`。
 - MOSS 编译逐字节对齐 `comfy_extras/nodes_moss_image.py`：
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`。
-- 整图描述是类型为 `summary` 的布局项，只能有一个；它不会出现在 `items` 里，文字填进 `summary.caption`，画布上的框只是承载文字的手柄，MOSS 不用它的位置和大小。
+- 整图描述是类型为 `summary` 的布局项，只能有一个；它不会出现在 `items` 里，文字填进 `summary.caption`，画布上的框只是承载文字的手柄，MOSS 不用它的位置和大小——所以多大都行（双击看全文；不写 bbox 时会自动给一个小的默认框）。
 - `CreateBoundingBoxes` 的 `editor_state` 是 list 类型但 API 校验把 list 当 link；插件发 `"[]"` 字符串，实际框走 `bboxes` JSON。
 - 浏览器不直连 ComfyUI：带 `Origin` 的请求会得到 403。所有请求由 DSH Host 代理。
 

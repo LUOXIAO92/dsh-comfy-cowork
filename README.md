@@ -125,7 +125,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 - ComfyUI's `LoadImage` `MASK` output is **1 - alpha**. `canvas_rgba.png` is already inverted this way; `mask.png` keeps white = editable area and suits `LoadImageMask`.
 - MOSS compilation matches `comfy_extras/nodes_moss_image.py` byte for byte:
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`.
-- The whole-image caption is one layout item with label `summary`, and at most one may exist. It never appears in `items`; its caption fills `summary.caption`, and its box on the canvas is a handle only — MOSS ignores its position and size.
+- The whole-image caption is one layout item with label `summary`, and at most one may exist. It never appears in `items`; its caption fills `summary.caption`, and its box on the canvas is a handle only — MOSS ignores its position and size, so any size works (double-click it to read the full text; a compact default is used when the box is omitted).
 - `CreateBoundingBoxes` declares `editor_state` as a list, but the API validator treats lists as links; the plugin sends the string `"[]"` and passes the actual boxes in the `bboxes` JSON.
 - The browser never talks to ComfyUI directly: requests carrying an `Origin` header get a 403. The DSH Host proxies every request.
 

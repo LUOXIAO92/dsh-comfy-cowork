@@ -22,7 +22,7 @@ const items = [
   { id: 'box-4', label: 'object', caption: '', text: '', bbox: [620, 800, 900, 940], palette: [] },
 ]
 const summaryCaption = 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.'
-const summaryItem = { id: 'box-summary', label: 'summary', caption: summaryCaption, text: '', bbox: [0, 0, 1024, 1024], palette: [] }
+const summaryItem = { id: 'box-summary', label: 'summary', caption: summaryCaption, text: '', bbox: [16, 16, 336, 156], palette: [] }
 const prompt = JSON.stringify({
   summary: { caption: 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.' },
   items: [
@@ -97,7 +97,7 @@ if (demo !== null) {
   doc.enabled = true
   doc.comments = []
   doc.layout.items = demo === 'layout'
-    ? [{ id: 'box-summary', label: 'summary', caption: 'A clean still life on pale linen, soft window light.', text: '', bbox: [0, 0, doc.canvas.width, doc.canvas.height], palette: [] }]
+    ? [{ id: 'box-summary', label: 'summary', caption: 'A clean still life on pale linen, soft window light.', text: '', bbox: [16, 16, 336, 156], palette: [] }]
     : []
   doc.selected = null
   doc.prompt = ''
