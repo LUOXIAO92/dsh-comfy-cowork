@@ -57,7 +57,19 @@ const doc = {
     height: 1024,
     image: { asset: 'canvas.png', name: 'linen-still-life.png', width: 1024, height: 1024, rev: 1 },
   },
-  mask: { feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: true, rev: 1, shapes: [{ id: 'ms-1', kind: 'rect', bbox: [620, 520, 900, 760], opacity: 1 }] },
+  mask: {
+    feather: 8,
+    grow: 0,
+    inverted: false,
+    visible: true,
+    color: '#ff3b30',
+    opacity: 0.45,
+    hasMask: true,
+    rev: 1,
+    prompt: 'A glossy red pear instead of the apple, keep the linen table and soft window light.',
+    promptSource: 'agent',
+    shapes: [{ id: 'ms-1', kind: 'rect', bbox: [620, 520, 900, 760], opacity: 1 }],
+  },
   prompt,
   promptSource: 'layout',
   promptManual: false,
@@ -104,7 +116,7 @@ if (demo !== null) {
   // The layout flow demonstrates the compiler: box edits own the prompt box.
   doc.promptManual = demo !== 'layout'
   doc.promptSource = doc.promptManual ? 'user' : 'layout'
-  doc.mask = { ...doc.mask, hasMask: false, shapes: [] }
+  doc.mask = { ...doc.mask, hasMask: false, shapes: [], prompt: '' }
   doc.mode = demo === 'layout' ? 'layout' : 'image'
   if (demo === 'layout') doc.canvas.image = null
 }
@@ -165,7 +177,14 @@ const bodyOf = (options) => {
 }
 
 window.EventSource = MockEventSource
+// Test hook: every mocked request is recorded so a driver can assert on writes.
+window.__ccwFetchLog = []
 window.fetch = async (url, options = {}) => {
+  try {
+    window.__ccwFetchLog.push({ method: (options.method ?? 'GET').toUpperCase(), url: String(url), body: options.body ?? null })
+    if (window.__ccwFetchLog.length > 200) window.__ccwFetchLog.shift()
+    window.__ccwDoc = current
+  } catch {}
   const text = String(url)
   const method = (options.method ?? 'GET').toUpperCase()
   if (realSession !== null && method === 'GET' && text.includes('/api/comfy-cowork/asset')) {
@@ -236,6 +255,10 @@ window.fetch = async (url, options = {}) => {
   if (method === 'PUT' && text.includes('/doc/prompt')) {
     current.prompt = bodyOf(options).prompt ?? current.prompt
     current.promptSource = 'agent'
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/mask-prompt')) {
+    current.mask = { ...current.mask, prompt: bodyOf(options).prompt ?? '', promptSource: 'user' }
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/layout')) {

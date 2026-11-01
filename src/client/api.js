@@ -63,6 +63,13 @@ export function saveNegative(sessionId, negative) {
   })
 }
 
+export function saveMaskPrompt(sessionId, prompt) {
+  return request('/doc/mask-prompt', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId: requireSession(sessionId), prompt, source: 'user' }),
+  })
+}
+
 export function saveLayout(sessionId, items) {
   return request('/doc/layout', {
     method: 'PUT',

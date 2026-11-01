@@ -176,9 +176,11 @@ batch, so a fix is never split across two releases.
   right feature without knowing its id.
 - `state` is the whole canvas in one call: prompt and negative prompt, size and image,
   the layout items, workflow bindings, recent runs, every comment with its crop path, and the
-  painted mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted
-  mask means the next edit is a local repaint of that region; never regenerate the whole image
-  while a mask is painted. An empty mask plus a full-image prompt is a new image.
+  painted mask's bbox in canvas pixels plus its asset paths and its mask prompt. Read it before
+  editing. A painted mask means the next edit is a local repaint of that region; never regenerate
+  the whole image while a mask is painted. An empty mask plus a full-image prompt is a new image.
+  Write the local repaint text with `set_prompt` target `mask`, not by overwriting the
+  whole-image prompt.
 - The whole-image description is the layout item with label `summary`; there is exactly one,
   and it is what a MOSS layout run reads. The agent may edit it only when the user asked for
   that text: never replace it with the agent's own wording, and never "fix" it to match the
@@ -209,6 +211,17 @@ batch, so a fix is never split across two releases.
   `mask.png` when missing. When a mask is painted but the loaded
   workflow has no inpaint node, an agent run is refused (pass `ignore_mask: true` only after
   the user asks for a full-image render); a pure generation graph records a note instead.
+- Mask prompt. `doc.mask.prompt` is the local repaint instruction the user edits in the mask
+  section; the agent writes it with `set_prompt` target `mask`, or `load_image`'s `mask_prompt`
+  when it brings a mask. While a mask is painted, a run sends it as the positive text instead
+  of `doc.prompt` (a MOSS layout run still sends the summary caption), and the run records the
+  source it used as `promptKind` (`mask` / `canvas` / `layout`). Loading a new image or
+  clearing the canvas resets it together with the mask. Keep the whole-image prompt describing
+  the image: a local edit belongs in the mask prompt.
+- The stage imports an image from the file picker, a drop on the stage, or a paste outside a
+  text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
+  cleared mask prompt. Never let a text paste be swallowed: the paste handler ignores inputs,
+  textareas, and contenteditable targets.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
   files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
   directories button) or when the ComfyUI address changes — never on a timer. Never dump every

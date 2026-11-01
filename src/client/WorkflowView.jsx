@@ -583,12 +583,16 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
       await uploadAsset(sessionId, 'canvas.png', blob)
       await uploadAsset(sessionId, 'source.png', blob)
       await deleteAsset(sessionId, 'mask.png')
+      await deleteAsset(sessionId, 'mask-brush.png')
       await deleteAsset(sessionId, 'canvas_rgba.png')
       const result = await saveCanvas(sessionId, {
         mode: 'image',
         width: bitmap.width,
         height: bitmap.height,
         image: { asset: 'canvas.png', name: output.filename, width: bitmap.width, height: bitmap.height, rev: Date.now() },
+        // The applied edit consumed the mask; leaving hasMask true would make
+        // the next paint flow think a mask is still there.
+        mask: { rev: Date.now(), hasMask: false },
       })
       setDoc(result.doc)
     } catch (error) {
@@ -780,6 +784,9 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                 {latestRun ? <code title={latestRun.id}>{latestRun.id}</code> : null}
               </div>
               {latestRun?.error ? <div className="ccw-inline-error" role="alert">{latestRun.error}</div> : null}
+              {latestRun?.promptKind ? (
+                <div className="ccw-hint">{t(`run.promptSource.${latestRun.promptKind}`)}</div>
+              ) : null}
               {latestRun?.notes?.length > 0 ? <div className="ccw-hint">{latestRun.notes.join(' · ')}</div> : null}
             </Section>
 

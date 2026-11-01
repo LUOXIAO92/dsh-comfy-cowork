@@ -14,6 +14,7 @@ import {
   saveComment,
   saveEnabled,
   saveLayout,
+  saveMaskPrompt,
   saveNegative,
   savePrompt,
   saveSelection,
@@ -157,7 +158,7 @@ function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
   )
 }
 
-function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
+function MaskSliders({ brush, setBrush, mask, setMask, t }) {
   return (
     <div className="ccw-mask-controls">
       <div className="ccw-control-group">
@@ -227,13 +228,6 @@ function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
             <span>{t('mask.visible')}</span>
           </label>
         </div>
-      </div>
-
-      <div className="ccw-danger-zone">
-        <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={onClear}>
-          <Icon name="eraser" size={14} />
-          <span>{t('mask.clear')}</span>
-        </button>
       </div>
     </div>
   )
@@ -423,10 +417,21 @@ export function CanvasTab(props) {
   const [tool, setTool] = useState('brush')
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
   const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
+  // The local repaint prompt belongs to the mask, not to the whole image: while
+  // a mask is painted a run sends it instead of the canvas prompt.
+  const [maskPrompt, setMaskPrompt] = useState('')
+  const [maskPromptFocused, setMaskPromptFocused] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const [showMaskTools] = useState(true)
   const maskInit = useRef(false)
   const saveTimer = useRef(null)
   const maskSaveTimer = useRef(null)
+  const maskPromptTimer = useRef(null)
+  const maskPromptRef = useRef('')
+  const maskPromptFocusedRef = useRef(false)
+  const maskPromptPending = useRef(false)
+  const dragTimer = useRef(null)
+  const loadImageRef = useRef(null)
   const docRef = useRef(null)
   const focusedRef = useRef(false)
   const draftRef = useRef('')
@@ -439,6 +444,9 @@ export function CanvasTab(props) {
   draftRef.current = draft
   negativeRef.current = negative
   negativeFocusedRef.current = negativeFocused
+  maskPromptRef.current = maskPrompt
+  maskPromptFocusedRef.current = maskPromptFocused
+  loadImageRef.current = loadImage
 
   // Keyboard: undo/redo, tool letters, brush size and Delete on the selection.
   useEffect(() => {
@@ -511,6 +519,26 @@ export function CanvasTab(props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  // Pasting an image anywhere outside a text field imports it, the same way a
+  // drop on the stage does. Text pastes keep going to their inputs untouched.
+  useEffect(() => {
+    function onPaste(event) {
+      const target = event.target
+      const tag = target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable === true) return
+      const items = Array.from(event.clipboardData?.items ?? [])
+      const image = items.find((item) => item.kind === 'file' && String(item.type).startsWith('image/'))
+      if (image === undefined) return
+      const file = image.getAsFile()
+      if (file === null) return
+      event.preventDefault()
+      setError('')
+      void loadImageRef.current?.(file)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [])
+
   const shapesKey = JSON.stringify(doc?.mask?.shapes ?? [])
   useEffect(() => {
     if (!doc) return
@@ -520,6 +548,14 @@ export function CanvasTab(props) {
       return { ...current, shapes: nextShapes }
     })
   }, [shapesKey])
+
+  // hasMask is written by other paths too (a newly loaded image, an applied run
+  // output, the agent), so the local copy follows the document instead of
+  // sticking to the last brush stroke.
+  const hasMask = doc?.mask?.hasMask === true
+  useEffect(() => {
+    setMask((current) => (current.hasMask === hasMask ? current : { ...current, hasMask }))
+  }, [hasMask])
 
   const commentsKey = comments.map((comment) => `${comment.id}:${comment.bbox.join(',')}:${comment.text}`).join('|')
   const commentsLoaded = useRef(false)
@@ -543,7 +579,14 @@ export function CanvasTab(props) {
       maskInit.current = true
       setMask((current) => ({ ...current, ...doc.mask }))
       if (!negativeFocusedRef.current) setNegative(doc.negative ?? '')
+      setMaskPrompt(doc.mask?.prompt ?? '')
       setTool(doc.mode === 'layout' ? 'box' : 'brush')
+    }
+    // Another writer (the agent) may have changed the mask prompt; follow it
+    // unless the user is typing or a local save is already on its way.
+    const incomingMaskPrompt = doc.mask?.prompt ?? ''
+    if (!maskPromptFocusedRef.current && !maskPromptPending.current && maskPromptTimer.current === null && incomingMaskPrompt !== maskPromptRef.current) {
+      setMaskPrompt(incomingMaskPrompt)
     }
     if (!focusedRef.current) {
       const current = draftRef.current
@@ -561,6 +604,8 @@ export function CanvasTab(props) {
   useEffect(() => () => {
     if (saveTimer.current !== null) clearTimeout(saveTimer.current)
     if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
+    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
+    if (dragTimer.current !== null) clearTimeout(dragTimer.current)
   }, [])
 
   useEffect(() => {
@@ -658,6 +703,35 @@ export function CanvasTab(props) {
     setNegativeFocused(false)
     if (negativeTimer.current !== null) clearTimeout(negativeTimer.current)
     persistNegative(negativeRef.current)
+  }
+
+  async function persistMaskPrompt(value) {
+    if (!sessionId || value === (docRef.current?.mask?.prompt ?? '')) return
+    maskPromptPending.current = true
+    try {
+      const result = await saveMaskPrompt(sessionId, value)
+      setDoc(result.doc)
+    } catch (caught) {
+      setError(caught.message)
+    } finally {
+      maskPromptPending.current = false
+    }
+  }
+
+  function onMaskPromptChange(value) {
+    setMaskPrompt(value)
+    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
+    maskPromptTimer.current = setTimeout(() => {
+      maskPromptTimer.current = null
+      persistMaskPrompt(value)
+    }, 450)
+  }
+
+  function onMaskPromptBlur() {
+    setMaskPromptFocused(false)
+    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
+    maskPromptTimer.current = null
+    persistMaskPrompt(maskPromptRef.current)
   }
 
   /** Drag the canvas viewport height; remembered per browser. */
@@ -1078,9 +1152,12 @@ export function CanvasTab(props) {
         width: bitmap.width,
         height: bitmap.height,
         image: { asset: 'canvas.png', name: file.name, width: bitmap.width, height: bitmap.height, rev: Date.now() },
-        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, inverted: mask.inverted },
+        // A new image starts a new edit; the old local repaint prompt does not
+        // describe it, so it goes away with the old mask.
+        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, inverted: mask.inverted, prompt: '', promptSource: 'user' },
       })
       setDoc(result.doc)
+      setMaskPrompt('')
       setTool('brush')
       setError('')
     } catch (caught) {
@@ -1096,8 +1173,9 @@ export function CanvasTab(props) {
       await deleteAsset(sessionId, 'mask.png')
       await deleteAsset(sessionId, 'mask-brush.png')
       await deleteAsset(sessionId, 'canvas_rgba.png')
-      const result = await saveCanvas(sessionId, { mode: 'layout', image: null, mask: { rev: Date.now(), hasMask: false } })
+      const result = await saveCanvas(sessionId, { mode: 'layout', image: null, mask: { rev: Date.now(), hasMask: false, prompt: '', promptSource: 'user' } })
       setDoc(result.doc)
+      setMaskPrompt('')
     } catch (caught) {
       setError(caught.message)
     }
@@ -1112,6 +1190,74 @@ export function CanvasTab(props) {
     } catch (caught) {
       setError(caught.message)
     }
+  }
+
+  /** Whether a drag carries at least one image file (true during dragover too). */
+  function hasImageFile(transfer) {
+    if (transfer === null || transfer === undefined) return false
+    for (const item of Array.from(transfer.items ?? [])) {
+      if (item.kind === 'file' && String(item.type).startsWith('image/')) return true
+    }
+    for (const file of Array.from(transfer.files ?? [])) {
+      if (String(file.type).startsWith('image/')) return true
+    }
+    return false
+  }
+
+  function carriesFiles(transfer) {
+    return transfer !== null && transfer !== undefined && Array.from(transfer.types ?? []).includes('Files')
+  }
+
+  function onStageDragEnter(event) {
+    if (!carriesFiles(event.dataTransfer)) return
+    event.preventDefault()
+    if (dragTimer.current !== null) {
+      clearTimeout(dragTimer.current)
+      dragTimer.current = null
+    }
+    if (hasImageFile(event.dataTransfer)) setDragOver(true)
+  }
+
+  function onStageDragOver(event) {
+    if (!carriesFiles(event.dataTransfer)) return
+    // Swallow the browser's default (open the file), even for a non-image drop;
+    // the empty state keeps showing the ordinary canvas background.
+    event.preventDefault()
+    if (dragTimer.current !== null) {
+      clearTimeout(dragTimer.current)
+      dragTimer.current = null
+    }
+    const image = hasImageFile(event.dataTransfer)
+    if (event.dataTransfer !== null) event.dataTransfer.dropEffect = image ? 'copy' : 'none'
+    if (image && !dragOver) setDragOver(true)
+  }
+
+  function onStageDragLeave() {
+    // dragleave fires for every child too; clear only after the pointer stopped
+    // producing dragover events over the stage.
+    if (dragTimer.current !== null) clearTimeout(dragTimer.current)
+    dragTimer.current = setTimeout(() => {
+      dragTimer.current = null
+      setDragOver(false)
+    }, 140)
+  }
+
+  function onStageDrop(event) {
+    const transfer = event.dataTransfer
+    if (!carriesFiles(transfer)) return
+    event.preventDefault()
+    if (dragTimer.current !== null) {
+      clearTimeout(dragTimer.current)
+      dragTimer.current = null
+    }
+    setDragOver(false)
+    const file = Array.from(transfer?.files ?? []).find((entry) => String(entry.type).startsWith('image/'))
+    if (file === undefined) {
+      setError(t('image.dropUnsupported'))
+      return
+    }
+    setError('')
+    void loadImage(file)
   }
 
   async function setCanvasSize(nextWidth, nextHeight) {
@@ -1447,7 +1593,14 @@ export function CanvasTab(props) {
             </div>
           </div>
 
-          <div className="ccw-canvas-wrap" style={stageHeight === null ? undefined : { '--ccw-stage-height': `${stageHeight}px` }}>
+          <div
+            className={`ccw-canvas-wrap${dragOver ? ' is-dragover' : ''}`}
+            style={stageHeight === null ? undefined : { '--ccw-stage-height': `${stageHeight}px` }}
+            onDragEnter={onStageDragEnter}
+            onDragOver={onStageDragOver}
+            onDragLeave={onStageDragLeave}
+            onDrop={onStageDrop}
+          >
             <CanvasStage
               ref={stageRef}
               sessionId={sessionId}
@@ -1476,6 +1629,14 @@ export function CanvasTab(props) {
               onMessage={setError}
               onDeleteKey={removeSelected}
             />
+            {dragOver ? (
+              <div className="ccw-dropzone" aria-hidden="true">
+                <div className="ccw-dropzone-inner">
+                  <Icon name="upload" size={22} />
+                  <span>{t('image.drop')}</span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div
@@ -1589,8 +1750,29 @@ export function CanvasTab(props) {
                 mask={mask}
                 setMask={setMask}
                 t={t}
-                onClear={() => stageRef.current?.clearMask()}
               />
+              <label className="ccw-subfield ccw-mask-prompt">
+                <span>{t('mask.prompt')}</span>
+                <textarea
+                  className="ccw-negative"
+                  value={maskPrompt}
+                  placeholder={t('mask.promptPlaceholder')}
+                  spellCheck={false}
+                  aria-label={t('mask.prompt')}
+                  onChange={(event) => onMaskPromptChange(event.target.value)}
+                  onFocus={() => setMaskPromptFocused(true)}
+                  onBlur={onMaskPromptBlur}
+                />
+              </label>
+              <p className="ccw-hint">{mask.hasMask
+                ? (maskPrompt.trim() !== '' ? t('mask.promptActive') : t('mask.promptEmpty'))
+                : t('mask.promptHint')}</p>
+              <div className="ccw-danger-zone">
+                <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={() => stageRef.current?.clearMask()}>
+                  <Icon name="eraser" size={14} />
+                  <span>{t('mask.clear')}</span>
+                </button>
+              </div>
             </Section>
           ) : null}
 

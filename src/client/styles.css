@@ -709,6 +709,37 @@
   outline-offset: 1px;
 }
 
+.ccw-canvas-wrap.is-dragover {
+  border-color: var(--ccw-accent);
+}
+
+/* Dropping an image on the stage replaces the canvas image, so the whole
+   stage answers with one dashed target instead of moving anything. */
+.ccw-dropzone {
+  position: absolute;
+  inset: 8px;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--ccw-accent) 70%, transparent);
+  border-radius: var(--ccw-radius-md);
+  background: color-mix(in srgb, var(--ccw-accent) 10%, transparent);
+  pointer-events: none;
+}
+
+.ccw-dropzone-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--ccw-border);
+  border-radius: var(--ccw-radius-md);
+  background: var(--ccw-surface-panel);
+  color: var(--ccw-text);
+  font-size: var(--ccw-text-ui);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ccw-text) 12%, transparent);
+}
+
 .ccw-canvas-wrap {
   position: relative;
   flex: none;

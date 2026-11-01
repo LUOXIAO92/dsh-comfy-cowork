@@ -465,3 +465,39 @@ test('migrates the old layout.summary field into the one summary item', async ()
     await cleanup()
   }
 })
+
+test('stores the local repaint prompt on the mask without touching the canvas prompt', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-mask-prompt'
+    await store.setPrompt(session, 'a girl doing a handstand', { source: 'agent' })
+    const doc = await store.setMaskPrompt(session, 'yellow hair, single ponytail', { source: 'agent' })
+    assert.equal(doc.mask.prompt, 'yellow hair, single ponytail')
+    assert.equal(doc.mask.promptSource, 'agent')
+    assert.equal(doc.prompt, 'a girl doing a handstand')
+    const reloaded = await store.snapshot(session)
+    assert.equal(reloaded.mask.prompt, 'yellow hair, single ponytail')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('normalizes a persisted mask prompt and its source', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-mask-prompt-legacy'
+    const dir = await store.ensureDir(session)
+    await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
+      rev: 3,
+      prompt: 'whole image',
+      mask: { feather: 4, grow: 8, prompt: 42, promptSource: 'robot' },
+    }))
+    const doc = await store.snapshot(session)
+    assert.equal(doc.mask.prompt, '')
+    assert.equal(doc.mask.promptSource, 'user')
+    assert.equal(doc.mask.feather, 4)
+    assert.equal(doc.mask.grow, 8)
+  } finally {
+    await cleanup()
+  }
+})

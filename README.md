@@ -57,8 +57,9 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 1. Load an image into the canvas: file picker, drag and drop, paste, or a ComfyUI result.
 2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust size, hardness, and opacity.
 3. Adjust feather, grow/shrink, and invert. The mask shows as a red overlay.
-4. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
-5. Set the seed and click "Queue run". The result appears below; use "Use as canvas" to keep iterating.
+4. Write the **local repaint prompt** in the mask section. While a mask is painted, the run sends this text instead of the whole-image prompt, so the prompt box keeps describing the image and the mask section describes only the change. The agent writes it with `set_prompt` target `mask`; leaving it empty falls back to the whole-image prompt.
+5. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
+6. Set the seed and click "Queue run". The run panel says which prompt drove it; the result appears below; use "Use as canvas" to keep iterating.
 
 ### Blank layout (MOSS-Image)
 
@@ -104,7 +105,7 @@ Once the feature ids are known, `execute` alone is enough. The five groups:
 | `catalog` | `list_models`, `list_nodes`, `node_info`, `refresh` | Browse models and node types, refresh the caches |
 | `misc` | `health` | Connection, version, and recent errors |
 
-Every prompt write lands in `document.prompt`, the text box the user sees.
+Every whole-image prompt write lands in `document.prompt`, the text box the user sees. The local repaint prompt is separate, in `document.mask.prompt`, and only drives a run while a mask is painted.
 
 ## Storage
 

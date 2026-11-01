@@ -429,3 +429,23 @@ test('the unload route drops the pin and tells the host to detach', async () => 
     await fs.rm(root, { recursive: true, force: true })
   }
 })
+
+test('stores the local repaint prompt on the mask route', async () => {
+  const { routes, store, cleanup } = await makeRoutes()
+  try {
+    const session = 'session-mask-prompt-route'
+    await store.setPrompt(session, 'a whole-image description', { source: 'user' })
+    const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/mask-prompt', {
+      sessionId: session,
+      prompt: 'yellow hair, single ponytail',
+    }))
+    assert.equal(res.status, 200)
+    const doc = JSON.parse(res.body).doc
+    assert.equal(doc.mask.prompt, 'yellow hair, single ponytail')
+    assert.equal(doc.mask.promptSource, 'user')
+    assert.equal(doc.prompt, 'a whole-image description')
+    assert.equal((await store.snapshot(session)).mask.prompt, 'yellow hair, single ponytail')
+  } finally {
+    await cleanup()
+  }
+})
