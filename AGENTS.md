@@ -229,6 +229,14 @@ batch, so a fix is never split across two releases.
   source it used as `promptKind` (`mask` / `canvas` / `layout`). Loading a new image or
   clearing the canvas resets it together with the mask. Keep the whole-image prompt describing
   the image: a local edit belongs in the mask prompt.
+- Mask strength and opacity are different things and the inspector keeps them apart.
+  `doc.mask.denoise` is the repaint strength (A1111's denoising strength): while a mask is
+  painted, a run writes it — or the `denoise` override — into the sampler node that
+  `bindings.denoise` points at, so 0.5 keeps most of the old content and 0.9 invents it. The
+  mask section's other slider, `doc.mask.opacity`, is display only: it is the red overlay's
+  opacity in the browser and never reaches the mask asset or a workflow. The brush has no
+  opacity at all — a stroke always writes full alpha, because the mask is a stencil and the
+  soft edge comes from the brush hardness and the feather slider.
 - The stage imports an image from the file picker, a drop on the stage, or a paste outside a
   text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
   cleared mask prompt. Never let a text paste be swallowed: the paste handler ignores inputs,

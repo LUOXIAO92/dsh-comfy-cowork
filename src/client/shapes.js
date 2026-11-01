@@ -141,7 +141,6 @@ export function splitShapePieces(shape, width, height, makeId) {
       kind: 'path',
       bbox: component.bbox.slice(),
       points: outline,
-      opacity: shape.opacity ?? 1,
       holes: [],
     })
   }

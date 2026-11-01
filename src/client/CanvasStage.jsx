@@ -500,9 +500,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         live = { ...shape, bbox: draft.bbox }
         if (shape.kind === 'path') live.points = remapPathPoints(shape, shape.bbox, draft.bbox)
       }
-      fillMaskShape(ctx, live, live.opacity ?? 1, 'source-over', true)
+      fillMaskShape(ctx, live, 1, 'source-over', true)
     }
-    if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, draft.opacity ?? 1, 'source-over', true)
+    if (draft !== null && draft.id === '__draft__') fillMaskShape(ctx, draft, 1, 'source-over', true)
     compositeRef.current = composite
     return composite
   }
@@ -1128,7 +1128,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       gestureRef.current = stroke
       drawDot(layer.getContext('2d'), point, {
         size: brush.size,
-        opacity: brush.opacity,
+        // The mask is a stencil: a stroke always paints full alpha, and the
+        // edges come from the brush hardness (the feather slider adds blur).
+        opacity: 1,
         erase: stroke.erase,
       })
       buildComposite()
@@ -1223,7 +1225,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       drawStrokeSegment(layer.getContext('2d'), gesture.last, point, {
         size: brush.size,
         hardness: brush.hardness,
-        opacity: brush.opacity,
+        opacity: 1,
         erase: gesture.erase,
       })
       if (gesture.erase) appendShapeHoles(gesture.holes, point, gesture.last)
@@ -1262,7 +1264,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     if (gesture.kind === 'shape') {
       gesture.current = clampPoint(point, limit)
       const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
-      const draft = { id: '__draft__', kind: gesture.shape, bbox: [x1, y1, x2, y2], opacity: brush.opacity }
+      const draft = { id: '__draft__', kind: gesture.shape, bbox: [x1, y1, x2, y2] }
       draftShapeRef.current = draft
       buildComposite(draft)
       drawMaskPreview(true)
@@ -1405,7 +1407,6 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
           id: `ms-${Date.now().toString(36)}`,
           kind: gesture.shape,
           bbox: [x1, y1, x2, y2],
-          opacity: brush.opacity,
         }
         const next = [...shapesRef.current, shape]
         setShapeList(next)

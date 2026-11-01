@@ -90,14 +90,16 @@ test('infers bindings and injects prompt/image/size/seed', () => {
   assert.equal(bindings.image, '1')
   assert.equal(bindings.width, '3')
   assert.equal(bindings.seed, '4')
+  assert.equal(bindings.denoise, '4')
   const { prompt, notes } = applyBindings(workflowToPrompt(wf, info).prompt, bindings, {
-    prompt: 'new prompt', imageName: 'uploaded.png', width: 768, height: 1024, seed: 7,
+    prompt: 'new prompt', imageName: 'uploaded.png', width: 768, height: 1024, seed: 7, denoise: 0.7,
   })
   assert.equal(prompt['2'].inputs.text, 'new prompt')
   assert.equal(prompt['1'].inputs.image, 'uploaded.png')
   assert.equal(prompt['3'].inputs.width, 768)
   assert.equal(prompt['3'].inputs.height, 1024)
   assert.equal(prompt['4'].inputs.seed, 7)
+  assert.equal(prompt['4'].inputs.denoise, 0.7)
   assert.deepEqual(notes, [])
 })
 

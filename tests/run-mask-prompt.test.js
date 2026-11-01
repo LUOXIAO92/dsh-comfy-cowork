@@ -107,18 +107,22 @@ async function makeRunManager(overrides = {}) {
   const queued = { prompt: null }
   const runs = []
   const doc = {
-    workflow: { name: 'inpaint.json', json: inpaintWorkflow(), bindings: {} },
+    workflow: { name: 'inpaint.json', json: inpaintWorkflow(), bindings: overrides.workflowBindings ?? {} },
     layout: { items: [] },
     canvas: { width: 1024, height: 1024 },
     prompt: 'canvas prompt',
     negative: 'negative',
-    mask: { prompt: 'local repaint prompt' },
+    mask: { prompt: 'local repaint prompt', denoise: 0.85 },
     runs: [],
     ...overrides,
   }
   const store = {
     load: async () => doc,
-    readAsset: async (_sessionId, name) => (name === 'canvas.png' ? canvas : name === 'mask.png' ? mask : null),
+    readAsset: async (_sessionId, name) => {
+      if (name === 'canvas.png') return canvas
+      if (name === 'mask.png') return overrides.dropMask === true ? null : mask
+      return null
+    },
     addRun: async (_sessionId, run) => { runs.push(run) },
     updateRun: async (_sessionId, id, patch) => ({ ...runs[0], ...patch }),
   }
@@ -157,6 +161,51 @@ test('without a mask prompt the canvas prompt drives the run', async () => {
   try {
     await manager.start('session-run', {}, { agent: true })
     assert.equal(queued.prompt['4'].inputs.text, 'canvas prompt')
+    assert.equal(runs[0].promptKind, 'canvas')
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('a mask run writes the mask strength into the sampler denoise', async () => {
+  const { manager, queued, runs } = await makeRunManager({ mask: { prompt: 'local repaint prompt', denoise: 0.6 } })
+  try {
+    await manager.start('session-run', {}, { agent: true })
+    assert.equal(queued.prompt['6'].inputs.denoise, 0.6)
+    assert.equal(runs[0].maskDenoise, 0.6)
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('a denoise override wins over the mask strength', async () => {
+  const { manager, queued, runs } = await makeRunManager({ mask: { prompt: 'local repaint prompt', denoise: 0.6 } })
+  try {
+    await manager.start('session-run', { denoise: 0.25 }, { agent: true })
+    assert.equal(queued.prompt['6'].inputs.denoise, 0.25)
+    assert.equal(runs[0].maskDenoise, 0.25)
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('the mask strength is clamped to the sampler range', async () => {
+  const { manager, queued } = await makeRunManager({ mask: { prompt: 'local repaint prompt', denoise: 3 } })
+  try {
+    await manager.start('session-run', {}, { agent: true })
+    assert.equal(queued.prompt['6'].inputs.denoise, 1)
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('a full-image run keeps the workflow denoise', async () => {
+  // A generation graph: no mask binding, no painted mask.
+  const { manager, queued, runs } = await makeRunManager({ dropMask: true, workflowBindings: { mask: '' } })
+  try {
+    await manager.start('session-run', {}, { agent: true })
+    assert.equal(queued.prompt['6'].inputs.denoise, 1)
+    assert.equal(runs[0].maskDenoise, null)
     assert.equal(runs[0].promptKind, 'canvas')
   } finally {
     manager.dispose()

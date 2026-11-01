@@ -179,20 +179,20 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             onChange={(value) => setBrush((current) => ({ ...current, hardness: value / 100 }))}
             suffix="%"
           />
-          <Slider
-            label={t('brush.opacity')}
-            value={Math.round(brush.opacity * 100)}
-            min={1}
-            max={100}
-            onChange={(value) => setBrush((current) => ({ ...current, opacity: value / 100 }))}
-            suffix="%"
-          />
         </div>
       </div>
 
       <div className="ccw-control-group">
         <div className="ccw-group-label">{t('mask.group')}</div>
         <div className="ccw-range-grid">
+          <Slider
+            label={t('mask.strength')}
+            value={Math.round(mask.denoise * 100)}
+            min={0}
+            max={100}
+            onChange={(value) => setMask((current) => ({ ...current, denoise: value / 100 }))}
+            suffix="%"
+          />
           <Slider
             label={t('mask.feather')}
             value={mask.feather}
@@ -228,6 +228,17 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             <span>{t('mask.visible')}</span>
           </label>
         </div>
+        {/* Display only, and deliberately below the toggles: it changes how the
+            red overlay looks, never the mask or the repaint. */}
+        <Slider
+          label={t('mask.opacity')}
+          value={Math.round(mask.opacity * 100)}
+          min={10}
+          max={100}
+          onChange={(value) => setMask((current) => ({ ...current, opacity: value / 100 }))}
+          suffix="%"
+        />
+        <p className="ccw-hint">{t('mask.strengthHint')}</p>
       </div>
     </div>
   )
@@ -415,8 +426,12 @@ export function CanvasTab(props) {
   })
   const ratioRef = useRef(null)
   const [tool, setTool] = useState('brush')
-  const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
-  const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
+  // The brush has no opacity setting: it always writes full-alpha mask pixels,
+  // so the mask stays a 0/1 selection and the repaint strength is the only
+  // knob (A1111 inpaint semantics). The red overlay's opacity is the mask's
+  // display setting below.
+  const [brush, setBrush] = useState({ size: 64, hardness: 0.7 })
+  const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, denoise: 0.85, hasMask: false })
   // The local repaint prompt belongs to the mask, not to the whole image: while
   // a mask is painted a run sends it instead of the canvas prompt.
   const [maskPrompt, setMaskPrompt] = useState('')
@@ -628,6 +643,7 @@ export function CanvasTab(props) {
             visible: mask.visible,
             color: mask.color,
             opacity: mask.opacity,
+            denoise: mask.denoise,
             rev: Date.now(),
           },
         })
@@ -640,7 +656,7 @@ export function CanvasTab(props) {
     return () => {
       if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
     }
-  }, [mask.feather, mask.grow, mask.inverted, mask.visible, mask.color, mask.opacity, sessionId])
+  }, [mask.feather, mask.grow, mask.inverted, mask.visible, mask.color, mask.opacity, mask.denoise, sessionId])
 
   /** A hand-written prompt also updates the text node, so the graph and the box agree. */
   async function pushPromptToNode(current, value) {

@@ -55,13 +55,13 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 ### Local image edits
 
 1. Load an image into the canvas: file picker, drag and drop, paste, or a ComfyUI result.
-2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust size, hardness, and opacity.
-3. Adjust feather, grow/shrink, and invert. The mask shows as a red overlay.
+2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust size and hardness. The mask is a stencil, so a stroke always paints full alpha and there is no brush opacity.
+3. Adjust repaint strength, feather, grow/shrink, and invert. The mask shows as a red overlay; **Overlay opacity** changes only how strong that red looks, never the mask or the repaint.
 4. Write the **local repaint prompt** in the mask section. While a mask is painted, the run sends this text instead of the whole-image prompt, so the prompt box keeps describing the image and the mask section describes only the change. The agent writes it with `set_prompt` target `mask`; leaving it empty falls back to the whole-image prompt.
 5. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
 6. Set the seed and click "Queue run". The run panel says which prompt drove it; the result appears below; use "Use as canvas" to keep iterating.
 
-For a change to one small area, use an **inpaint-at-full-resolution** graph (the A1111-style shape): `LoadImageMask` → `ImageCropByMaskAndResize` (crop the painted bbox to ~1024 with padding) → `GrowMaskWithBlur` → `SetLatentNoiseMask` → `KSampler` at denoise 0.75–0.85 → `VAEDecode` → `ImageUncropByMask` back into the original. Sampling the whole 1920×1080 latent instead leaves a small mask with only a few latent pixels, and the model all but ignores the prompt there. Denoise is the strength knob: low keeps the old content, high invents a new object.
+For a change to one small area, use an **inpaint-at-full-resolution** graph (the A1111-style shape): `LoadImageMask` → `ImageCropByMaskAndResize` (crop the painted bbox to ~1024 with padding) → `GrowMaskWithBlur` → `SetLatentNoiseMask` → `KSampler` at denoise 0.75–0.85 → `VAEDecode` → `ImageUncropByMask` back into the original. Sampling the whole 1920×1080 latent instead leaves a small mask with only a few latent pixels, and the model all but ignores the prompt there. Denoise is the strength knob: low keeps the old content, high invents a new object. The mask section's **Repaint strength** is that knob (stored as `mask.denoise`): while a mask is painted, a run writes it into the bound sampler's `denoise`, so you can try 0.5 and 0.85 without editing the workflow.
 
 ### Blank layout (MOSS-Image)
 

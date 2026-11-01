@@ -64,11 +64,12 @@ const doc = {
     visible: true,
     color: '#ff3b30',
     opacity: 0.45,
+    denoise: 0.85,
     hasMask: true,
     rev: 1,
     prompt: 'A glossy red pear instead of the apple, keep the linen table and soft window light.',
     promptSource: 'agent',
-    shapes: [{ id: 'ms-1', kind: 'rect', bbox: [620, 520, 900, 760], opacity: 1 }],
+    shapes: [{ id: 'ms-1', kind: 'rect', bbox: [620, 520, 900, 760] }],
   },
   prompt,
   promptSource: 'layout',
@@ -446,6 +447,34 @@ function runSmoke() {
       featherInput.dispatchEvent(new Event('change', { bubbles: true }))
       await sleep(700)
       report.steps.push({ step: 'feather', value: featherInput.value, maskPixels: maskPixels() })
+    }
+
+    // The mask strength is the repaint knob: it must reach the saved document
+    // (and from there the sampler's denoise), while overlay opacity must not.
+    const sliderByLabel = (text) => Array.from(document.querySelectorAll('#canvas-root label'))
+      .find((element) => element.textContent.includes(text))
+    const setRange = async (text, value) => {
+      const input = sliderByLabel(text)?.querySelector('input[type=range]')
+      if (!input) return null
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(input, String(value))
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      await sleep(700)
+      return input.value
+    }
+    const strengthValue = await setRange('重绘强度', 50)
+    if (strengthValue !== null) {
+      report.steps.push({ step: 'mask-strength', value: strengthValue, denoise: window.__ccwDoc?.mask?.denoise })
+    }
+    const overlayValue = await setRange('显示不透明度', 80)
+    if (overlayValue !== null) {
+      report.steps.push({
+        step: 'mask-overlay-opacity',
+        value: overlayValue,
+        denoise: window.__ccwDoc?.mask?.denoise,
+        overlay: document.querySelector('#canvas-root .ccw-stage-mask')?.style.opacity ?? null,
+      })
     }
 
     byLabel('布局')?.click()
