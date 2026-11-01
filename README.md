@@ -122,7 +122,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 
 ## Compatibility
 
-- ComfyUI's `LoadImage` `MASK` output is **1 - alpha**. `canvas_rgba.png` is already inverted this way; `mask.png` keeps white = editable area and suits `LoadImageMask`.
+- ComfyUI reads an image mask as **1 - alpha** — both `LoadImage`'s `MASK` output and `LoadImageMask`'s `alpha` channel. `mask.png` keeps the painted region opaque and white, so a run uploads a cutout of it instead: white where painted, transparent where preserved. `LoadImage` `MASK`, `LoadImageMask` `alpha`, and `LoadImageMask` `red` all then read the painted region. `canvas_rgba.png` uses the same `1 - mask` alpha for the legacy `LoadImage` wiring.
 - MOSS compilation matches `comfy_extras/nodes_moss_image.py` byte for byte:
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`.
 - The whole-image caption is one layout item with label `summary`, and at most one may exist. It never appears in `items`; its caption fills `summary.caption`, and its box on the canvas is a handle only — MOSS ignores its position and size, so any size works (double-click it to read the full text; a compact default is used when the box is omitted).

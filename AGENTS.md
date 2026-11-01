@@ -197,11 +197,16 @@ batch, so a fix is never split across two releases.
   never binds. The canvas image is the `LoadImage` whose IMAGE output feeds an output node.
   The mask binds only through a real repaint consumer — `VAEEncodeForInpaint`,
   `SetLatentNoiseMask`, `InpaintModelConditioning` — walked back through GrowMask/FeatherMask/
-  ImageToMask to a `LoadImageMask` or its `LoadImage`, so a graph built from ComfyUI's mask
-  nodes receives `mask.png` directly. Compositing nodes that merely accept a mask
-  (`ImageCompositeMasked`) do not count. The legacy shape — `LoadImage`'s MASK output wired
-  straight into the mask — still makes the canvas hand over `canvas_rgba.png` cut from the
-  alpha; a run derives it from `mask.png` when missing. When a mask is painted but the loaded
+  ImageToMask to a `LoadImageMask` or its `LoadImage`. A graph built from ComfyUI's mask nodes
+  receives a cutout of the painted region, not `mask.png` itself: white where painted and
+  transparent where preserved, because ComfyUI reads an image mask as `1 - alpha` (both
+  `LoadImage`'s MASK output and `LoadImageMask`'s `alpha` channel), while the canvas asset keeps
+  the painted region opaque. Uploading the asset as-is preserves the painted area and repaints
+  everything else. The same cutout keeps a red-channel load correct. Compositing nodes that
+  merely accept a mask (`ImageCompositeMasked`) do not count. The legacy shape — `LoadImage`'s
+  MASK output wired straight into the mask — still makes the canvas hand over
+  `canvas_rgba.png`, which already has the same `1 - mask` alpha; a run derives it from
+  `mask.png` when missing. When a mask is painted but the loaded
   workflow has no inpaint node, an agent run is refused (pass `ignore_mask: true` only after
   the user asks for a full-image render); a pure generation graph records a note instead.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's

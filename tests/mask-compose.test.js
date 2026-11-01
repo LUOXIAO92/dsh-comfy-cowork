@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { decodePng, encodePng } from '../lib/png.js'
-import { composeMaskedImage } from '../lib/mask-compose.js'
+import { composeMaskImage, composeMaskedImage } from '../lib/mask-compose.js'
 
 function image(size, channels, paint) {
   const data = Buffer.alloc(size * size * channels)
@@ -44,4 +44,28 @@ test('refuses mismatched or undecodable pairs', () => {
   assert.equal(composeMaskedImage(canvas, mask), null)
   assert.equal(composeMaskedImage(Buffer.from('not a png'), mask), null)
   assert.equal(composeMaskedImage(canvas, null), null)
+})
+
+test('builds the canonical mask image ComfyUI reads', () => {
+  const mask = image(4, 4, (x, y) => (x === 1 && y === 2 ? [255, 255, 255, 255] : [0, 0, 0, 0]))
+  const cutout = decodePng(composeMaskImage(mask))
+  assert.equal(cutout.width, 4)
+  assert.equal(cutout.channels, 4)
+  const at = (x, y) => [...cutout.data.slice((y * 4 + x) * 4, (y * 4 + x) * 4 + 4)]
+  // Painted pixels are white and transparent: LoadImage MASK and LoadImageMask
+  // alpha both read 1 - alpha, and a red-channel load reads the white.
+  assert.deepEqual(at(1, 2), [255, 255, 255, 0])
+  // Unpainted pixels stay opaque black.
+  assert.deepEqual(at(0, 0), [0, 0, 0, 255])
+})
+
+test('keeps a soft brush edge in both channels', () => {
+  const mask = image(3, 4, () => [255, 255, 255, 128])
+  const cutout = decodePng(composeMaskImage(mask))
+  assert.deepEqual([...cutout.data.slice(0, 4)], [128, 128, 128, 127])
+})
+
+test('refuses an undecodable mask image', () => {
+  assert.equal(composeMaskImage(null), null)
+  assert.equal(composeMaskImage(Buffer.from('not a png')), null)
 })
