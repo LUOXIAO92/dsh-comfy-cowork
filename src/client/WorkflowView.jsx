@@ -792,6 +792,9 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
               {latestRun?.promptKind ? (
                 <div className="ccw-hint">{t(`run.promptSource.${latestRun.promptKind}`)}</div>
               ) : null}
+              {typeof latestRun?.maskDenoise === 'number' ? (
+                <div className="ccw-hint">{t('run.maskStrength', { percent: Math.round(latestRun.maskDenoise * 100) })}</div>
+              ) : null}
               {latestRun?.notes?.length > 0 ? <div className="ccw-hint">{latestRun.notes.join(' · ')}</div> : null}
             </Section>
 
