@@ -239,8 +239,9 @@ function MaskSliders({ brush, setBrush, mask, setMask, t, onClear }) {
   )
 }
 
-function BoxEditor({ selected, updateSelected, removeSelected, t }) {
+function BoxEditor({ selected, summaryExists, updateSelected, removeSelected, t }) {
   const palette = Array.isArray(selected.palette) ? selected.palette : []
+  const isSummary = selected.label === 'summary'
   return (
     <div className="ccw-box-editor">
       <div className="ccw-box-editor-top">
@@ -250,25 +251,32 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
             value={selected.label}
             onChange={(event) => updateSelected({ label: event.target.value })}
           >
-            <option value="object">object</option>
-            <option value="character">character</option>
-            <option value="text">text</option>
+            <option value="object">{t('box.type.object')}</option>
+            <option value="character">{t('box.type.character')}</option>
+            <option value="text">{t('box.type.text')}</option>
+            <option value="summary" disabled={summaryExists}>
+              {t('box.type.summary')}
+            </option>
           </select>
         </label>
-        <div className="ccw-bbox-readout">
-          <span>{t('layout.bbox')}</span>
-          <code>{selected.bbox.map((number) => Math.round(number)).join(', ')}</code>
-        </div>
+        {isSummary ? null : (
+          <div className="ccw-bbox-readout">
+            <span>{t('layout.bbox')}</span>
+            <code>{selected.bbox.map((number) => Math.round(number)).join(', ')}</code>
+          </div>
+        )}
       </div>
       <label className="ccw-field">
-        <span>{t('box.caption')}</span>
+        <span>{isSummary ? t('layout.summary') : t('box.caption')}</span>
         <textarea
           rows={2}
           value={selected.caption}
+          placeholder={isSummary ? t('layout.summaryPlaceholder') : undefined}
           onChange={(event) => updateSelected({ caption: event.target.value })}
         />
       </label>
-      {selected.label === 'text' ? (
+      {isSummary ? <p className="ccw-hint">{t('layout.summaryBoxHint')}</p> : null}
+      {!isSummary && selected.label === 'text' ? (
         <label className="ccw-field">
           <span>{t('box.text')}</span>
           <input
@@ -278,35 +286,37 @@ function BoxEditor({ selected, updateSelected, removeSelected, t }) {
           />
         </label>
       ) : null}
-      <div className="ccw-field">
-        <span>{t('box.palette')}</span>
-        <div className="ccw-palette">
-          {palette.map((color, index) => (
-            <ColorField
-              key={`${index}-${color}`}
-              value={color}
-              label={t('box.palette')}
-              t={t}
-              onChange={(nextColor) => {
-                const next = palette.slice()
-                next[index] = nextColor
-                updateSelected({ palette: next })
-              }}
-              onRemove={() => updateSelected({ palette: palette.filter((_, at) => at !== index) })}
-            />
-          ))}
-          {palette.length < 5 ? (
-            <button
-              type="button"
-              className="ccw-btn ccw-btn-ghost ccw-btn-small"
-              onClick={() => updateSelected({ palette: [...palette, '#cccccc'] })}
-            >
-              <Icon name="plus" size={13} />
-              <span>{t('box.paletteAdd')}</span>
-            </button>
-          ) : null}
+      {isSummary ? null : (
+        <div className="ccw-field">
+          <span>{t('box.palette')}</span>
+          <div className="ccw-palette">
+            {palette.map((color, index) => (
+              <ColorField
+                key={`${index}-${color}`}
+                value={color}
+                label={t('box.palette')}
+                t={t}
+                onChange={(nextColor) => {
+                  const next = palette.slice()
+                  next[index] = nextColor
+                  updateSelected({ palette: next })
+                }}
+                onRemove={() => updateSelected({ palette: palette.filter((_, at) => at !== index) })}
+              />
+            ))}
+            {palette.length < 5 ? (
+              <button
+                type="button"
+                className="ccw-btn ccw-btn-ghost ccw-btn-small"
+                onClick={() => updateSelected({ palette: [...palette, '#cccccc'] })}
+              >
+                <Icon name="plus" size={13} />
+                <span>{t('box.paletteAdd')}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
       <div className="ccw-danger-zone">
         <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={removeSelected}>
           <Icon name="trash" size={14} />
@@ -413,7 +423,6 @@ export function CanvasTab(props) {
   const [tool, setTool] = useState('brush')
   const [brush, setBrush] = useState({ size: 64, hardness: 0.7, opacity: 0.9 })
   const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, hasMask: false })
-  const [summary, setSummary] = useState('')
   const [showMaskTools] = useState(true)
   const maskInit = useRef(false)
   const saveTimer = useRef(null)
@@ -533,7 +542,6 @@ export function CanvasTab(props) {
     if (!maskInit.current) {
       maskInit.current = true
       setMask((current) => ({ ...current, ...doc.mask }))
-      setSummary(doc.layout.summary ?? '')
       if (!negativeFocusedRef.current) setNegative(doc.negative ?? '')
       setTool(doc.mode === 'layout' ? 'box' : 'brush')
     }
@@ -733,28 +741,13 @@ export function CanvasTab(props) {
       return
     }
     try {
-      const result = await saveLayout(sessionId, summary, doc.layout.items)
+      const result = await saveLayout(sessionId, doc.layout.items)
       setDoc(result.doc)
       setDraft(result.doc.prompt)
       setError(result.doc.promptError ?? '')
     } catch (caught) {
       setError(caught.message)
     }
-  }
-
-  async function saveSummary(value) {
-    setSummary(value)
-    if (saveTimer.current !== null) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(async () => {
-      saveTimer.current = null
-      try {
-        const result = await saveLayout(sessionId, value, docRef.current?.layout?.items ?? [])
-        setDoc(result.doc)
-        setDraft(result.doc.prompt)
-      } catch (caught) {
-        setError(caught.message)
-      }
-    }, 500)
   }
 
   async function addBox() {
@@ -1147,7 +1140,7 @@ export function CanvasTab(props) {
       })
       setDoc(result.doc)
       if (scaled && items.length > 0) {
-        const layoutResult = await saveLayout(sessionId, current?.layout?.summary ?? '', nextItems)
+        const layoutResult = await saveLayout(sessionId, nextItems)
         setDoc(layoutResult.doc)
       }
       if (scaled) {
@@ -1240,6 +1233,11 @@ export function CanvasTab(props) {
   const workflowNodes = doc?.workflow?.json?.nodes ?? []
   const mossWorkflow = workflowNodes.some((node) => node?.type === 'MOSSImageLayoutPrompt' || node?.type === 'CreateBoundingBoxes')
   const items = doc?.layout?.items ?? []
+  // The whole-image description is one layout item (label summary); the
+  // remaining items are the spatial boxes.
+  const summaryItem = items.find((item) => item.label === 'summary') ?? null
+  const summaryTaken = summaryItem !== null
+  const spatialCount = items.filter((item) => item.label !== 'summary').length
   const selected = items.find((item) => item.id === doc?.selected?.id) ?? null
   const image = doc?.canvas?.image ?? null
   // The ratio chips stay highlighted whenever the canvas sits on their ratio,
@@ -1632,7 +1630,7 @@ export function CanvasTab(props) {
             ) : null}
             {hasBoxes ? (
               <div className="ccw-prompt-source">
-                <span>{t('prompt.compiled').replace('{count}', String(items.length))}</span>
+                <span>{t('prompt.compiled').replace('{count}', String(spatialCount))}</span>
                 <span className={`ccw-source-mode ${compiled ? 'is-layout' : ''}`}>
                   {compiled ? t('prompt.modeLayout') : t('prompt.manual')}
                 </span>
@@ -1681,15 +1679,12 @@ export function CanvasTab(props) {
                 <span>{t('layout.mossMismatch')}</span>
               </p>
             ) : null}
-            <label className="ccw-field">
-              <span>{t('layout.summary')}</span>
-              <textarea
-                rows={3}
-                value={summary}
-                placeholder={t('layout.summaryPlaceholder')}
-                onChange={(event) => saveSummary(event.target.value)}
-              />
-            </label>
+            {items.length > 0 && summaryItem === null ? (
+              <p className="ccw-hint ccw-warn-hint" role="status">
+                <Icon name="alert" size={13} />
+                <span>{t('layout.summaryMissing')}</span>
+              </p>
+            ) : null}
             <div className="ccw-subhead-row">
               <div className="ccw-subhead">{t('layout.list')}</div>
               <span className="ccw-subhead-meta">{items.length}</span>
@@ -1705,7 +1700,7 @@ export function CanvasTab(props) {
                     <li key={item.id || index} className={`ccw-box-item ${isSelected ? 'is-selected' : ''}`}>
                       <button
                         type="button"
-                        className={`ccw-box-row ${isSelected ? 'is-selected' : ''}`}
+                        className={`ccw-box-row ${isSelected ? 'is-selected' : ''} ${item.label === 'summary' ? 'is-summary' : ''}`}
                         aria-pressed={isSelected}
                         aria-expanded={isSelected}
                         title={item.caption || undefined}
@@ -1714,7 +1709,7 @@ export function CanvasTab(props) {
                       >
                         <span className="ccw-box-index">{String(index + 1).padStart(2, '0')}</span>
                         <span className="ccw-box-main">
-                          <span className="ccw-box-label">{item.label}</span>
+                          <span className="ccw-box-label">{t(`box.type.${item.label}`)}</span>
                           <span className={`ccw-box-caption ${missingCaption ? 'is-missing' : ''}`}>
                             {item.caption || t('layout.captionMissing')}
                           </span>
@@ -1725,6 +1720,7 @@ export function CanvasTab(props) {
                       {isSelected ? (
                         <BoxEditor
                           selected={item}
+                          summaryExists={summaryTaken && item.label !== 'summary'}
                           updateSelected={updateSelected}
                           removeSelected={removeSelected}
                           t={t}

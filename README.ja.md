@@ -28,7 +28,7 @@ UI の言語：中国語、英語、日本語。その他の言語は英語に�
 
 ![枠を引いて MOSS レイアウトをコンパイル](docs/media/layout.gif)
 
-空のキャンバスに枠を引き、枠ごとに caption と表示テキストを書くと、プロンプト欄がリアルタイムでコンパイル済みの 1 行 layout JSON に変わります。
+空のキャンバスに枠を引き、枠ごとに caption と表示テキストを書くと、プロンプト欄がリアルタイムでコンパイル済みの 1 行 layout JSON に変わります。画像全体のキャプションも枠です。枠を引き、種類を `summary` にして全体のシーンを書きます（1 つだけ）。
 
 ### コメント注釈
 
@@ -63,9 +63,9 @@ DSH のページを更新し、チャットで `/dsh-comfy-cowork` と入力し�
 ### 空のレイアウト（MOSS-Image）
 
 1. 「レイアウト」モードに切り替え、キャンバスの幅と高さを設定します（MOSS は 16 の倍数を要求します）。
-2. 「ボックス」で bbox を描きます。各枠で `object` / `character` / `text` を選び、caption を書きます。`text` の場合はさらに表示テキストを書きます。
+2. 「ボックス」で bbox を描きます。各枠で `object` / `character` / `text` を選び、caption を書きます。`text` の場合はさらに表示テキストを書きます。画像全体のキャプションも枠の 1 つです。種類を `summary`（1 つだけ）にして、プロンプト欄ではなくそこへ全体のシーンを書きます。
 3. プロンプト欄は自動でコンパイル済みの layout JSON になります。手で編集することもできます。ネガティブプロンプトは別の欄に書き、実行時にサンプラーの `negative` に接続されたテキストノードへ注入されます。
-4. `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` を含むワークフローを読み込んで実行します。`CLIPTextEncode` のみの場合は、プラグインがコンパイル済み JSON を直接注入します。
+4. `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` を含むワークフローを読み込んで実行します。`CLIPTextEncode` のみの場合は、プラグインがコンパイル済み JSON を直接注入します。キャンバスの幅と高さは latent のサイズを決めるノードに書き込まれるため、出力解像度はキャンバス解像度になります。
 
 レイアウト枠は MOSS-Image でのみ意味を持ちます。anima、SDXL などのモデルはプロンプト欄で通常のワークフローを実行します。
 
@@ -125,6 +125,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 - ComfyUI `LoadImage` の `MASK` 出力は **1 - alpha** です。`canvas_rgba.png` はこれに合わせて反転済みです。`mask.png` は白 = 編集領域のままで、`LoadImageMask` に適しています。
 - MOSS コンパイルは `comfy_extras/nodes_moss_image.py` とバイト単位で一致します：
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`。
+- 画像全体のキャプションは種類 `summary` のレイアウト項目で、1 つだけ存在できます。`items` には入らず、文字が `summary.caption` になります。キャンバス上の枠は文字を載せるためのもので、MOSS は位置とサイズを使いません。
 - `CreateBoundingBoxes` の `editor_state` は list 型ですが、API 検証は list を link として扱います。プラグインは `"[]"` 文字列を送信し、実際の枠は `bboxes` JSON で渡します。
 - ブラウザは ComfyUI に直接接続しません。`Origin` 付きのリクエストは 403 になります。すべてのリクエストは DSH Host がプロキシします。
 
@@ -133,7 +134,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 ```bash
 npm install     # esbuild + React（開発とテスト専用）
 npm run build   # client.js を生成（gitignore 済みのビルド成果物）
-npm test        # node:test、73 件
+npm test        # node:test、100 件
 ```
 
 - Host：`index.js` → `lib/plugin.js`。ツールは `lib/tools.js`、ルートは `lib/routes.js`、ワークフロー変換は `lib/workflow.js`、MOSS コンパイルは `lib/moss.js`。

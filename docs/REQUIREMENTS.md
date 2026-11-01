@@ -101,7 +101,7 @@ Host 的系统提示要求：生图相关提示词必须通过这些工具写进
 - 主题：只用 `--dsw-alias-*` token，暗色与亮色都可读；所有 UI 文案走 locale：中文、英文、日文；其余语言回退英文。
 - 性能：显示用缩略图，蒙版与导出用原图像素；`object_info` 缓存加手动刷新；文档变更走 SSE；运行状态每秒轮询一次。
 - 可靠性：文档原子写（临时文件 + rename）；文档损坏时备份并重建；ComfyUI 断连时画布仍可编辑；运行失败保留错误与节点 id。无遥测；图片只发用户配置的 ComfyUI；日志默认不打印提示词全文。
-- 测试：38 个 `node:test` 单测，覆盖 MOSS 编译、工作流转换、文档存储、HTTP 路由；真实 ComfyUI 上手工验证出图（MOSS 文生图、MOSS 布局、SDXL inpaint）。
+- 测试：100 个 `node:test` 单测，覆盖 MOSS 编译、工作流转换、文档存储、HTTP 路由；真实 ComfyUI 上手工验证出图（MOSS 文生图、MOSS 布局、SDXL inpaint）。
 
 ## 9. 已确认决策
 
@@ -110,7 +110,7 @@ Host 的系统提示要求：生图相关提示词必须通过这些工具写进
 - 默认工作流：不内置模板，从 ComfyUI 服务器加载；用 `moss_template.json`、`coworking_smoke.json`、`coworking_inpaint.json`、`coworking_moss_layout.json` 验证兼容性。
 - 局部编辑：通用工作流加绑定；SDXL `VAEEncodeForInpaint` 是参考链路。
 - agent 能力：读写画布、写提示词与框、跑工作流、看结果；运行可见、可取消。
-- MOSS 提示词形态：文本框放最终编译的单行 layout JSON，summary 与逐框 caption 在旁边的编辑区改。
+- MOSS 提示词形态：整图描述是一个布局框（类型 `summary`，只能有一个），提示词框放最终编译的单行 layout JSON；出图分辨率取画布宽高。
 - 视频：不做视频编辑 UI；现有视频工作流可以加载、运行、预览输出。
 
 ## 10. 已知限制

@@ -21,6 +21,8 @@ const items = [
   { id: 'box-3', label: 'text', caption: 'Small dark-green Chinese caption in the lower left.', text: '安静的午后', bbox: [120, 800, 520, 900], palette: [] },
   { id: 'box-4', label: 'object', caption: '', text: '', bbox: [620, 800, 900, 940], palette: [] },
 ]
+const summaryCaption = 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.'
+const summaryItem = { id: 'box-summary', label: 'summary', caption: summaryCaption, text: '', bbox: [0, 0, 1024, 1024], palette: [] }
 const prompt = JSON.stringify({
   summary: { caption: 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.' },
   items: [
@@ -60,7 +62,7 @@ const doc = {
   promptSource: 'layout',
   promptManual: false,
   promptError: null,
-  layout: { summary: 'A clean product layout on a pale linen backdrop: a red apple on the left and a blue ceramic cup on the right, soft window light.', items },
+  layout: { items: [summaryItem, ...items] },
   comments: [
     { id: 'cm-1', bbox: [120, 320, 460, 760], text: '这个苹果可以改成绿色的', source: 'user', createdAt: 1, updatedAt: 1 },
     { id: 'cm-2', bbox: [560, 120, 900, 320], text: '', source: 'agent', createdAt: 2, updatedAt: 2 },
@@ -94,8 +96,9 @@ const demo = new URLSearchParams(location.search).get('demo')
 if (demo !== null) {
   doc.enabled = true
   doc.comments = []
-  doc.layout.items = []
-  doc.layout.summary = demo === 'layout' ? 'A clean still life on pale linen, soft window light.' : ''
+  doc.layout.items = demo === 'layout'
+    ? [{ id: 'box-summary', label: 'summary', caption: 'A clean still life on pale linen, soft window light.', text: '', bbox: [0, 0, doc.canvas.width, doc.canvas.height], palette: [] }]
+    : []
   doc.selected = null
   doc.prompt = ''
   // The layout flow demonstrates the compiler: box edits own the prompt box.
@@ -144,7 +147,6 @@ const compileCurrentLayout = () => {
     current.prompt = compileMossLayout({
       width: current.canvas.width,
       height: current.canvas.height,
-      summary: current.layout.summary,
       items: current.layout.items,
     })
     current.promptError = null
@@ -238,7 +240,6 @@ window.fetch = async (url, options = {}) => {
   }
   if (method === 'PUT' && text.includes('/doc/layout')) {
     const body = bodyOf(options)
-    if (typeof body.summary === 'string') current.layout.summary = body.summary
     if (Array.isArray(body.items)) current.layout.items = body.items
     compileCurrentLayout()
     return json({ doc: current })

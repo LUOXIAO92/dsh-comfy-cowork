@@ -75,9 +75,13 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
     const [x1, y1, x2, y2] = item.bbox
     const isDraft = draft !== null && item.id === draft.id
     const selected = item.id === selectedId || isDraft
-    ctx.strokeStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.65)'
+    // The whole-image description is a layout item too, but it has no spatial
+    // meaning; amber marks it apart from the cyan object boxes.
+    const isSummary = String(item.label ?? '') === 'summary'
+    const accent = isSummary ? '#f5a623' : '#4cc9f0'
+    ctx.strokeStyle = selected ? accent : isSummary ? 'rgba(245,166,35,0.75)' : 'rgba(76,201,240,0.65)'
     ctx.lineWidth = selected ? 2.2 / scale : line
-    ctx.setLineDash(isDraft ? [6 / scale, 4 / scale] : [])
+    ctx.setLineDash(isSummary ? [8 / scale, 5 / scale] : isDraft ? [6 / scale, 4 / scale] : [])
     ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
     ctx.setLineDash([])
     // Translucent tint plus the type/caption written inside the box, so the
@@ -88,13 +92,15 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
     ctx.beginPath()
     ctx.rect(x1, y1, x2 - x1, y2 - y1)
     ctx.clip()
-    ctx.fillStyle = selected ? 'rgba(76,201,240,0.16)' : 'rgba(76,201,240,0.10)'
+    ctx.fillStyle = isSummary
+      ? (selected ? 'rgba(245,166,35,0.18)' : 'rgba(245,166,35,0.10)')
+      : (selected ? 'rgba(76,201,240,0.16)' : 'rgba(76,201,240,0.10)')
     ctx.fillRect(x1, y1, x2 - x1, y2 - y1)
-    const label = String(index + 1).padStart(2, '0')
+    const label = isSummary ? 'S' : String(index + 1).padStart(2, '0')
     ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`
     const textWidth = ctx.measureText(label).width
     const labelHeight = fontPx + 6 / scale
-    ctx.fillStyle = selected ? '#4cc9f0' : 'rgba(76,201,240,0.9)'
+    ctx.fillStyle = selected ? accent : isSummary ? 'rgba(245,166,35,0.9)' : 'rgba(76,201,240,0.9)'
     ctx.fillRect(x1, y1, textWidth + 8 / scale, labelHeight)
     ctx.fillStyle = '#06202b'
     ctx.fillText(label, x1 + 4 / scale, y1 + fontPx + 1 / scale)
@@ -104,7 +110,7 @@ function drawBoxOverlay(ctx, boxes, selectedId, scale, draft) {
       ctx.font = `${fontPx}px ui-sans-serif, system-ui, sans-serif`
       ctx.lineWidth = 2.4 / scale
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
-      ctx.fillStyle = '#9be7ff'
+      ctx.fillStyle = isSummary ? '#ffd08a' : '#9be7ff'
       const typeX = x1 + textWidth + 8 / scale + pad * 2
       ctx.strokeText(type, typeX, y1 + fontPx + 1 / scale)
       ctx.fillText(type, typeX, y1 + fontPx + 1 / scale)
@@ -1434,6 +1440,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   let captionEditor = null
   if (captionEdit !== null) {
+    const summaryBox = boxes.find((box) => box.label === 'summary') ?? null
     const container = containerRef.current
     const rect = container === null ? { width: 0, height: 0 } : container.getBoundingClientRect()
     const scale = view.scale
@@ -1455,7 +1462,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
             React.createElement('span', {
               className: `ccw-caption-editor-chip is-${captionEdit.label ?? 'object'}`,
               key: 'type',
-            }, captionEdit.label ?? 'object'),
+            }, tr(`box.type.${captionEdit.label ?? 'object'}`)),
             Array.isArray(captionEdit.palette) && captionEdit.palette.length > 0
               ? React.createElement('span', { className: 'ccw-caption-editor-palette', key: 'palette' },
                   captionEdit.palette.slice(0, 5).map((color, index) => React.createElement('span', {
@@ -1483,9 +1490,14 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
                 }
               },
             }, [
-              React.createElement('option', { key: 'object', value: 'object' }, 'object'),
-              React.createElement('option', { key: 'character', value: 'character' }, 'character'),
-              React.createElement('option', { key: 'text', value: 'text' }, 'text'),
+              React.createElement('option', { key: 'object', value: 'object' }, tr('box.type.object')),
+              React.createElement('option', { key: 'character', value: 'character' }, tr('box.type.character')),
+              React.createElement('option', { key: 'text', value: 'text' }, tr('box.type.text')),
+              React.createElement('option', {
+                key: 'summary',
+                value: 'summary',
+                disabled: summaryBox !== null && summaryBox.id !== captionEdit.id,
+              }, tr('box.type.summary')),
             ])),
       captionEdit.kind === 'box' && captionEdit.label === 'text'
         ? React.createElement('label', { className: 'ccw-caption-editor-type', key: 'visible' },
@@ -1504,7 +1516,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
             }))
         : null,
       captionEdit.kind === 'box'
-        ? React.createElement('span', { className: 'ccw-caption-editor-label', key: 'caption-label' }, tr('box.caption'))
+        ? React.createElement('span', { className: 'ccw-caption-editor-label', key: 'caption-label' }, captionEdit.label === 'summary' ? tr('layout.summary') : tr('box.caption'))
         : null,
       React.createElement('textarea', {
         key: 'input',

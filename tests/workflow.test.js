@@ -252,3 +252,21 @@ test('recognizes SetLatentNoiseMask as an inpaint consumer', () => {
   const bindings = inferBindings(workflow, {})
   assert.equal(bindings.mask, '1')
 })
+
+test('binds width/height to the latent that sizes the output, not a layout helper', () => {
+  const field = (name) => ({ name, type: 'INT', widget: { name }, link: null })
+  const wf = {
+    nodes: [
+      { id: 1, type: 'MOSSImageLayoutPrompt', pos: [0, 0], mode: 0, inputs: [field('width'), field('height')], outputs: [{ name: 'prompt', type: 'STRING', links: [] }] },
+      { id: 2, type: 'CreateBoundingBoxes', pos: [0, 0], mode: 0, inputs: [field('width'), field('height')], outputs: [{ name: 'image', type: 'IMAGE', links: [] }] },
+      { id: 3, type: 'EmptyLatentImage', pos: [0, 0], mode: 0, inputs: [field('width'), field('height'), field('batch_size')], outputs: [{ name: 'LATENT', type: 'LATENT', links: [1] }] },
+      { id: 4, type: 'KSampler', pos: [0, 0], mode: 0, inputs: [field('seed'), { name: 'latent_image', type: 'LATENT', link: 1 }], outputs: [{ name: 'LATENT', type: 'LATENT', links: [2] }] },
+      { id: 5, type: 'SaveImage', pos: [0, 0], mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 2 }], outputs: [] },
+    ],
+    links: [[1, 3, 0, 4, 1, 'LATENT'], [2, 4, 0, 5, 0, 'LATENT']],
+  }
+  const bindings = inferBindings(wf, info)
+  assert.equal(bindings.width, '3')
+  assert.equal(bindings.height, '3')
+  assert.equal(bindings.seed, '4')
+})

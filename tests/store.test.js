@@ -37,8 +37,10 @@ test('compiles a layout into the prompt and keeps manual edits', async () => {
   try {
     const session = 'session-layout'
     await store.setLayout(session, {
-      summary: 'A studio still life.',
-      items: [{ id: 'a', label: 'object', caption: 'an apple', bbox: [100, 100, 300, 300], text: '', palette: [] }],
+      items: [
+        { id: 'summary', label: 'summary', caption: 'A studio still life.', text: '', bbox: [0, 0, 1024, 1024], palette: [] },
+        { id: 'a', label: 'object', caption: 'an apple', bbox: [100, 100, 300, 300], text: '', palette: [] },
+      ],
     })
     let doc = await store.snapshot(session)
     assert.equal(doc.promptSource, 'layout')
@@ -58,8 +60,10 @@ test('keeps a compile error instead of clobbering the shape', async () => {
   try {
     const session = 'session-bad'
     const doc = await store.setLayout(session, {
-      summary: 'x',
-      items: [{ id: 'a', label: 'object', caption: 'c', bbox: [0, 0, 2000, 2000] }],
+      items: [
+        { id: 'summary', label: 'summary', caption: 'x', text: '', bbox: [0, 0, 1024, 1024], palette: [] },
+        { id: 'a', label: 'object', caption: 'c', bbox: [0, 0, 2000, 2000] },
+      ],
     })
     assert.notEqual(doc.promptError, null)
     assert.equal(doc.prompt, '')
@@ -195,24 +199,23 @@ test('clears a stale layout prompt error when the last box is deleted', async ()
   const { store, cleanup } = await makeStore()
   try {
     const session = 'session-prompt-error'
+    const summary = { id: 'summary', label: 'summary', caption: 'A still life.', text: '', bbox: [0, 0, 1024, 1024], palette: [] }
     let doc = await store.setLayout(session, {
-      summary: '',
-      items: [{ id: 'bad', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
+      items: [summary, { id: 'bad', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
     })
     assert.notEqual(doc.promptError, null)
 
     doc = await store.removeBox(session, 'bad')
-    assert.deepEqual(doc.layout.items, [])
+    assert.deepEqual(doc.layout.items.map((item) => item.id), ['summary'])
     assert.equal(doc.promptError, null)
     const stored = JSON.parse(await fs.readFile(path.join(store.sessionDir(session), 'document.json'), 'utf8'))
     assert.equal(stored.promptError, null, 'the cleared error is persisted')
 
     doc = await store.setLayout(session, {
-      summary: '',
-      items: [{ id: 'bad2', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
+      items: [summary, { id: 'bad2', label: 'object', caption: '', bbox: [10, 10, 100, 100] }],
     })
     assert.notEqual(doc.promptError, null)
-    doc = await store.setLayout(session, { summary: '', items: [] })
+    doc = await store.setLayout(session, { items: [] })
     assert.equal(doc.promptError, null)
   } finally {
     await cleanup()
@@ -382,5 +385,59 @@ test('reloads a document when the session root changes', async () => {
     assert.equal((await store.snapshot('session-move')).prompt, 'from the second root')
   } finally {
     await fs.rm(base, { recursive: true, force: true })
+  }
+})
+
+test('keeps the summary item first and rejects a second one', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-summary-unique'
+    const summary = { id: 's', label: 'summary', caption: 'whole image', text: '', bbox: [0, 0, 1024, 1024], palette: [] }
+    const box = { id: 'a', label: 'object', caption: 'apple', bbox: [10, 10, 100, 100], text: '', palette: [] }
+    const doc = await store.setLayout(session, { items: [box, summary] })
+    assert.deepEqual(doc.layout.items.map((item) => item.label), ['summary', 'object'])
+    assert.equal(doc.promptSource, 'layout')
+    assert.match(doc.prompt, /"summary":\{"caption":"whole image"\}/)
+    await assert.rejects(
+      store.setLayout(session, { items: [summary, { ...summary, id: 's2' }, box] }),
+      /only one whole-image description/,
+    )
+    await assert.rejects(
+      store.upsertBox(session, { ...box, label: 'summary' }),
+      /only one whole-image description/,
+    )
+    const current = await store.snapshot(session)
+    assert.equal(current.layout.items.filter((item) => item.label === 'summary').length, 1)
+  } finally {
+    await cleanup()
+  }
+})
+
+test('migrates the old layout.summary field into the one summary item', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-summary-migrate'
+    const dir = store.sessionDir(session)
+    await fs.mkdir(path.join(dir, 'assets'), { recursive: true })
+    await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
+      canvas: { width: 800, height: 600 },
+      layout: {
+        summary: 'The old caption for the whole image.',
+        items: [{ id: 'box-1', label: 'object', caption: 'an apple', bbox: [10, 10, 100, 100], text: '', palette: [] }],
+      },
+    }))
+    const doc = await store.snapshot(session)
+    assert.equal(doc.layout.items.length, 2)
+    assert.equal(doc.layout.items[0].label, 'summary')
+    assert.equal(doc.layout.items[0].caption, 'The old caption for the whole image.')
+    assert.deepEqual(doc.layout.items[0].bbox, [0, 0, 800, 600])
+    assert.equal(doc.layout.items[1].caption, 'an apple')
+    // The next write persists the new shape and the old field is gone.
+    await store.setNegative(session, 'blurry')
+    const stored = JSON.parse(await fs.readFile(path.join(dir, 'document.json'), 'utf8'))
+    assert.equal('summary' in stored.layout, false)
+    assert.equal(stored.layout.items[0].label, 'summary')
+  } finally {
+    await cleanup()
   }
 })

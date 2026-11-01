@@ -101,7 +101,7 @@ The Host system prompt requires that image-generation prompts go through these t
 - Theme: only `--dsw-alias-*` tokens, readable in dark and light; all UI copy goes through the locale catalog: Chinese, English, Japanese; other languages fall back to English.
 - Performance: thumbnails for display, source pixels for masks and export; `object_info` is cached with a manual refresh; document changes go over SSE; run status polls once per second.
 - Reliability: atomic document writes (temp file + rename); a corrupt document is backed up and rebuilt; the canvas stays editable when ComfyUI is disconnected; a failed run keeps the error and node id. No telemetry; images go only to the user's configured ComfyUI; logs do not print full prompts by default.
-- Tests: 38 `node:test` unit tests covering MOSS compilation, workflow conversion, document storage, and the HTTP routes; image generation was verified by hand on a real ComfyUI (MOSS text-to-image, MOSS layout, SDXL inpaint).
+- Tests: 100 `node:test` unit tests covering MOSS compilation, workflow conversion, document storage, and the HTTP routes; image generation was verified by hand on a real ComfyUI (MOSS text-to-image, MOSS layout, SDXL inpaint).
 
 ## 9. Confirmed decisions
 
@@ -110,7 +110,7 @@ The Host system prompt requires that image-generation prompts go through these t
 - Default workflow: no built-in template, loaded from the ComfyUI server; compatibility verified with `moss_template.json`, `coworking_smoke.json`, `coworking_inpaint.json`, and `coworking_moss_layout.json`.
 - Local editing: a generic workflow plus bindings; SDXL `VAEEncodeForInpaint` is the reference chain.
 - Agent capabilities: read and write the canvas, write prompts and boxes, run workflows, view results; runs are visible and cancellable.
-- MOSS prompt shape: the text box holds the final compiled one-line layout JSON; the summary and per-box captions are edited in the adjacent editor area.
+- MOSS prompt shape: the whole-image caption is a layout box (type `summary`, exactly one) and the text box holds the final compiled one-line layout JSON; the render resolution follows the canvas size.
 - Video: no video-editing UI; existing video workflows can load, run, and preview outputs.
 
 ## 10. Known limitations

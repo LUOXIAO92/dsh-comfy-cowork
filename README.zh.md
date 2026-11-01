@@ -28,7 +28,7 @@
 
 ![拉框并编译 MOSS 布局](docs/media/layout.gif)
 
-空白画布拉框，逐框写 caption 和可见文字，提示词框实时变成编译后的单行 layout JSON。
+空白画布拉框，逐框写 caption 和可见文字，提示词框实时变成编译后的单行 layout JSON。整图描述也是一个框：拉一个框，类型选 `summary`，在那里写整体画面——只能有一个。
 
 ### 评论批注
 
@@ -63,9 +63,9 @@
 ### 空白布局（MOSS-Image）
 
 1. 切到「布局」模式，设画布宽高（MOSS 要求 16 的倍数）。
-2. 用「拉框」画 bbox；每个框选 `object` / `character` / `text`，写 caption，`text` 类再写可见文字。
+2. 用「拉框」画 bbox；每个框选 `object` / `character` / `text`，写 caption，`text` 类再写可见文字。整图描述也是其中一个框：把类型设为 `summary`（只能有一个），在那里写整体画面，而不是写在提示词框里。
 3. 提示词框自动变成编译后的 layout JSON，也可以手改。负面提示词写在独立的框里，运行时注入连到采样器 `negative` 的文本节点。
-4. 载入含 `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` 的工作流后运行。只有 `CLIPTextEncode` 时，插件直接注入编译后的 JSON。
+4. 载入含 `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` 的工作流后运行。只有 `CLIPTextEncode` 时，插件直接注入编译后的 JSON。画布宽高会写进决定 latent 尺寸的节点，出图分辨率就是画布分辨率。
 
 布局框只对 MOSS-Image 有意义；anima、SDXL 等模型用提示词框跑普通工作流。
 
@@ -125,6 +125,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 - ComfyUI `LoadImage` 的 `MASK` 输出是 **1 - alpha**。`canvas_rgba.png` 已按此反转；`mask.png` 保持白色 = 编辑区，适合 `LoadImageMask`。
 - MOSS 编译逐字节对齐 `comfy_extras/nodes_moss_image.py`：
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`。
+- 整图描述是类型为 `summary` 的布局项，只能有一个；它不会出现在 `items` 里，文字填进 `summary.caption`，画布上的框只是承载文字的手柄，MOSS 不用它的位置和大小。
 - `CreateBoundingBoxes` 的 `editor_state` 是 list 类型但 API 校验把 list 当 link；插件发 `"[]"` 字符串，实际框走 `bboxes` JSON。
 - 浏览器不直连 ComfyUI：带 `Origin` 的请求会得到 403。所有请求由 DSH Host 代理。
 
@@ -133,7 +134,7 @@ comfy_cowork {"action": "execute", "feature": "set_prompt", "arguments": {"promp
 ```bash
 npm install     # esbuild + React，仅开发与测试
 npm run build   # 生成 client.js（已 gitignore，构建产物）
-npm test        # node:test，73 项
+npm test        # node:test，100 项
 ```
 
 - Host：`index.js` → `lib/plugin.js`；工具在 `lib/tools.js`，路由在 `lib/routes.js`，工作流转换在 `lib/workflow.js`，MOSS 编译在 `lib/moss.js`。

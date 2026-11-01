@@ -63,10 +63,10 @@ export function saveNegative(sessionId, negative) {
   })
 }
 
-export function saveLayout(sessionId, summary, items) {
+export function saveLayout(sessionId, items) {
   return request('/doc/layout', {
     method: 'PUT',
-    body: JSON.stringify({ sessionId: requireSession(sessionId), summary, items, source: 'user' }),
+    body: JSON.stringify({ sessionId: requireSession(sessionId), items, source: 'user' }),
   })
 }
 

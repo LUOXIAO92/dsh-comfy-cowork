@@ -1767,6 +1767,17 @@
   color: var(--ccw-accent);
 }
 
+/* The whole-image caption is a layout item too; warning colour marks it apart
+   from the object boxes in the list. */
+.ccw-box-row.is-summary .ccw-box-index {
+  background: color-mix(in srgb, var(--ccw-warning) 18%, var(--ccw-surface-active));
+  color: var(--ccw-warning);
+}
+
+.ccw-box-row.is-summary .ccw-box-label {
+  color: var(--ccw-warning);
+}
+
 .ccw-box-main {
   display: flex;
   flex-direction: column;
@@ -3063,6 +3074,11 @@
 }
 
 .ccw-caption-editor-chip.is-text {
+  border-color: color-mix(in srgb, var(--ccw-warning) 55%, var(--ccw-border-strong));
+  color: var(--ccw-warning);
+}
+
+.ccw-caption-editor-chip.is-summary {
   border-color: color-mix(in srgb, var(--ccw-warning) 55%, var(--ccw-border-strong));
   color: var(--ccw-warning);
 }

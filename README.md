@@ -28,7 +28,7 @@ Brush, eraser, rectangle, and ellipse all paint one mask. Feather, grow, and inv
 
 ![Drawing boxes and compiling a MOSS layout](docs/media/layout.gif)
 
-Draw boxes on a blank canvas, write a caption and visible text per box, and the prompt box becomes the compiled one-line layout JSON as you go.
+Draw boxes on a blank canvas, write a caption and visible text per box, and the prompt box becomes the compiled one-line layout JSON as you go. The whole-image caption is a box too: draw one, set its type to `summary`, and write the overall scene there — exactly one is allowed.
 
 ### Comment annotations
 
@@ -63,9 +63,9 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 ### Blank layout (MOSS-Image)
 
 1. Switch to Layout mode and set the canvas width and height (MOSS requires multiples of 16).
-2. Draw a bbox with the box tool; pick `object` / `character` / `text` per box, write a caption, and for `text` boxes write the visible text.
+2. Draw a bbox with the box tool; pick `object` / `character` / `text` per box, write a caption, and for `text` boxes write the visible text. The whole-image caption is one of these boxes too: set its type to `summary` (only one allowed) and write the overall scene there, not in the prompt box.
 3. The prompt box becomes the compiled layout JSON; you can also edit it by hand. The negative prompt goes in its own box and is injected into the text node wired to the sampler's `negative` input at run time.
-4. Load a workflow with `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` and run it. With only `CLIPTextEncode`, the plugin injects the compiled JSON directly.
+4. Load a workflow with `CreateBoundingBoxes` + `MOSSImageLayoutPrompt` and run it. With only `CLIPTextEncode`, the plugin injects the compiled JSON directly. The canvas width and height are written into the node that sizes the latent, so the render uses the canvas resolution.
 
 Layout boxes only matter to MOSS-Image; models such as anima and SDXL use the prompt box and a normal workflow.
 
@@ -125,6 +125,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 - ComfyUI's `LoadImage` `MASK` output is **1 - alpha**. `canvas_rgba.png` is already inverted this way; `mask.png` keeps white = editable area and suits `LoadImageMask`.
 - MOSS compilation matches `comfy_extras/nodes_moss_image.py` byte for byte:
   `{"summary":{"caption":…},"items":[{"label":…,"caption":…,"bbox":[y1-H/2,x1-W/2,y2-H/2,x2-W/2]}],"bbox_coord_space":"abs_centralized","bbox_format":"yxyx"}`.
+- The whole-image caption is one layout item with label `summary`, and at most one may exist. It never appears in `items`; its caption fills `summary.caption`, and its box on the canvas is a handle only — MOSS ignores its position and size.
 - `CreateBoundingBoxes` declares `editor_state` as a list, but the API validator treats lists as links; the plugin sends the string `"[]"` and passes the actual boxes in the `bboxes` JSON.
 - The browser never talks to ComfyUI directly: requests carrying an `Origin` header get a 403. The DSH Host proxies every request.
 
@@ -133,7 +134,7 @@ Every prompt write lands in `document.prompt`, the text box the user sees.
 ```bash
 npm install     # esbuild + React, development and tests only
 npm run build   # writes client.js (gitignored build output)
-npm test        # node:test, 73 tests
+npm test        # node:test, 100 tests
 ```
 
 - Host: `index.js` → `lib/plugin.js`; tools in `lib/tools.js`, routes in `lib/routes.js`, workflow conversion in `lib/workflow.js`, MOSS compilation in `lib/moss.js`.

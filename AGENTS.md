@@ -28,7 +28,10 @@ pipeline that writes every prompt into the plugin prompt box.
   renames a pre-rename `.comfy-coworking/` directory in that workspace, so old canvases keep
   working; that legacy name is the only place the old spelling belongs.
 - `lib/workflow.js` — infers canvas→workflow injection bindings from the ComfyUI JSON itself.
-- `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser).
+- `lib/moss.js` — MOSS-Image layout compilation (shared by host and browser). The
+  whole-image caption is one layout item with label `summary`, never a separate field: at most
+  one may exist, it is first in the list, and it never reaches `items` — its caption becomes
+  `summary.caption`. Old documents are migrated from `layout.summary` on load.
 - `lib/png.js` — host-side PNG reader for the mask assets: decodes one non-interlaced 8-bit
   file and returns the painted region's bbox, so `state` can describe the mask without the
   browser and without shipping an image library.
@@ -170,10 +173,23 @@ batch, so a fix is never split across two releases.
   groups, descriptions, and English + Chinese aliases, so 「跑图」, 「刷新」, or 「批注」 finds the
   right feature without knowing its id.
 - `state` is the whole canvas in one call: prompt and negative prompt, size and image,
-  layout, workflow bindings, recent runs, every comment with its crop path, and the painted
-  mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted mask
-  means the next edit is a local repaint of that region; never regenerate the whole image
+  the layout items, workflow bindings, recent runs, every comment with its crop path, and the
+  painted mask's bbox in canvas pixels plus its asset paths. Read it before editing. A painted
+  mask means the next edit is a local repaint of that region; never regenerate the whole image
   while a mask is painted. An empty mask plus a full-image prompt is a new image.
+- The whole-image description is the layout item with label `summary`; there is exactly one,
+  and it is what a MOSS layout run reads. The agent may edit it only when the user asked for
+  that text: never replace it with the agent's own wording, and never "fix" it to match the
+  boxes. When the description and the box captions disagree, quote both and ask the user.
+  `set_prompt` on a canvas with boxes edits this item; without boxes it writes the plain prompt.
+  A second `summary` item is rejected with a 409, in the store and in the tool.
+- Run sizing. The canvas width and height bind to the node that actually decides the rendered
+  image size: an `Empty*` latent/image node whose output reaches an output node, then any node
+  with a LATENT output on that path. Never bind the first node that merely has width/height
+  inputs — MOSS-Image's `CreateBoundingBoxes` / `MOSSImageLayoutPrompt` are helpers, and binding
+  them leaves the latent at the workflow's own 1024x1024 while the canvas said otherwise. The
+  MOSS run additionally writes the canvas size into those helpers, so bbox normalization and
+  the latent agree.
 - Mask plumbing. A node counts only when a path from it reaches an output node (a node that
   produces no value, such as SaveImage or PreviewImage); a dangling loader or a dead branch
   never binds. The canvas image is the `LoadImage` whose IMAGE output feeds an output node.
