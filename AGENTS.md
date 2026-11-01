@@ -233,6 +233,9 @@ batch, so a fix is never split across two releases.
   `doc.mask.denoise` is the repaint strength (A1111's denoising strength): while a mask is
   painted, a run writes it — or the `denoise` override — into the sampler node that
   `bindings.denoise` points at, so 0.5 keeps most of the old content and 0.9 invents it. The
+  canvas posts that strength with its own run (`POST /run` `denoise`) so it never races the
+  debounced mask save, and a run records it as `maskDenoise` (with `promptKind`) which `state`
+  repeats for the recent runs.
   mask section's other slider, `doc.mask.opacity`, is display only: it is the red overlay's
   opacity in the browser and never reaches the mask asset or a workflow. The brush has no
   opacity at all — a stroke always writes full alpha, because the mask is a stencil and the

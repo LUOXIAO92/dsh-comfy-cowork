@@ -556,7 +556,12 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   async function run() {
     setBusy(true)
     try {
-      await runWorkflow(sessionId, {})
+      // While a mask is painted the mask section's repaint strength drives the
+      // sampler denoise; send what the canvas shows instead of letting the run
+      // read a value the debounced mask save has not written yet.
+      const painted = doc?.mask?.hasMask === true
+      const strength = Number(doc?.mask?.denoise)
+      await runWorkflow(sessionId, painted && Number.isFinite(strength) ? { denoise: strength } : {})
       setError('')
     } catch (error) {
       setError(error.message)

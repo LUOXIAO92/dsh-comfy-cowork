@@ -71,13 +71,15 @@ async function makeRoutes(admission = { peer: { id: 'peer-1' } }) {
       return [{ path: 'a.json' }]
     },
   }
+  const runCalls = []
   const runManager = {
-    async start(sessionId) {
+    async start(sessionId, overrides) {
+      runCalls.push({ sessionId, overrides })
       return { run: { id: 'run-test', status: 'queued', sessionId } }
     },
   }
   const routes = createRoutes({ ctx, config, store, comfy, runManager })
-  return { routes, store, cleanup: () => fs.rm(root, { recursive: true, force: true }) }
+  return { routes, store, runCalls, cleanup: () => fs.rm(root, { recursive: true, force: true }) }
 }
 
 async function call(routes, req) {
@@ -215,6 +217,26 @@ test('queues a run whose session id is only in the body', async () => {
     }))
     assert.equal(res.status, 200)
     assert.equal(JSON.parse(res.body).run.id, 'run-test')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('forwards the canvas repaint strength with a run', async () => {
+  const { routes, runCalls, cleanup } = await makeRoutes()
+  try {
+    const res = await call(routes, makeReq('POST', '/api/comfy-cowork/run', {
+      sessionId: 'session-run-strength',
+      denoise: 0.65,
+    }))
+    assert.equal(res.status, 200)
+    assert.equal(runCalls[0].overrides.denoise, 0.65)
+    // A value that is not a number is dropped instead of reaching the sampler.
+    await call(routes, makeReq('POST', '/api/comfy-cowork/run', {
+      sessionId: 'session-run-strength',
+      denoise: 'high',
+    }))
+    assert.equal(runCalls[1].overrides.denoise, undefined)
   } finally {
     await cleanup()
   }
