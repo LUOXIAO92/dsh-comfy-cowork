@@ -430,6 +430,8 @@ test('keeps a compact handle when the summary item has no bbox', async () => {
     assert.deepEqual(moved.layout.items[0].bbox, [200, 300, 500, 420])
     const renamed = await store.upsertBox(session, { id: 's', label: 'summary', caption: 'renamed' })
     assert.deepEqual(renamed.layout.items[0].bbox, [200, 300, 500, 420], 'a caption-only edit keeps a moved handle')
+    const rescued = await store.upsertBox(session, { id: 's', label: 'summary', caption: 'renamed', bbox: [2000, 2000, 2300, 2150] })
+    assert.deepEqual(rescued.layout.items[0].bbox, [1016, 1016, 1024, 1024], 'an off-canvas handle is pulled back into view')
   } finally {
     await cleanup()
   }

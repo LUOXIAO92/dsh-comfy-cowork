@@ -23,6 +23,16 @@ function normalizeBox(a, b) {
   return [Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.x, b.x), Math.max(a.y, b.y)]
 }
 
+/**
+ * A pointer can leave the artboard while a drag is captured (the padding around
+ * the stage is still the wrap's hit area). New layout boxes, mask shapes and
+ * comments must never be born outside it: they would be stored, invisible, and
+ * — for mask shapes — impossible to remove without clearing the mask.
+ */
+function clampPoint(point, limits) {
+  return { x: clamp(point.x, 0, limits.width), y: clamp(point.y, 0, limits.height) }
+}
+
 function resizeBox(box, handle, point, limits) {
   let [x1, y1, x2, y2] = box
   if (handle.includes('w')) x1 = point.x
@@ -1098,7 +1108,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       }
       if (tool === 'comment') {
         onCommentSelect?.(null)
-        gestureRef.current = { kind: 'comment-new', start: point, current: point }
+        const start = clampPoint(point, limit)
+        gestureRef.current = { kind: 'comment-new', start, current: start }
         setOverlayTick((value) => value + 1)
       }
       // In select mode a miss falls through to shapes and layout boxes.
@@ -1126,7 +1137,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
 
     if (tool === 'rect' || tool === 'ellipse') {
-      gestureRef.current = { kind: 'shape', shape: tool, start: point, current: point }
+      const start = clampPoint(point, limit)
+      gestureRef.current = { kind: 'shape', shape: tool, start, current: start }
       setOverlayTick((value) => value + 1)
       return
     }
@@ -1171,7 +1183,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         return
       }
       if (tool === 'box') {
-        gestureRef.current = { kind: 'newbox', start: point, current: point }
+        const start = clampPoint(point, limit)
+        gestureRef.current = { kind: 'newbox', start, current: start }
         setOverlayTick((value) => value + 1)
       } else {
         onBoxSelect?.(null)
@@ -1220,8 +1233,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     if (gesture.kind === 'comment-new') {
-      gesture.current = point
-      const [x1, y1, x2, y2] = normalizeBox(gesture.start, point)
+      gesture.current = clampPoint(point, limit)
+      const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
       draftCommentRef.current = { id: '__draft__', bbox: [x1, y1, x2, y2], text: '' }
       setOverlayTick((value) => value + 1)
       return
@@ -1247,8 +1260,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     if (gesture.kind === 'shape') {
-      gesture.current = point
-      const [x1, y1, x2, y2] = normalizeBox(gesture.start, point)
+      gesture.current = clampPoint(point, limit)
+      const [x1, y1, x2, y2] = normalizeBox(gesture.start, gesture.current)
       const draft = { id: '__draft__', kind: gesture.shape, bbox: [x1, y1, x2, y2], opacity: brush.opacity }
       draftShapeRef.current = draft
       buildComposite(draft)
@@ -1257,7 +1270,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       return
     }
     if (gesture.kind === 'newbox') {
-      gesture.current = point
+      gesture.current = clampPoint(point, limit)
       setOverlayTick((value) => value + 1)
       return
     }
