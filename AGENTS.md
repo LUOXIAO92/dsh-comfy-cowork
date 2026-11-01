@@ -198,10 +198,11 @@ batch, so a fix is never split across two releases.
   produces no value, such as SaveImage or PreviewImage); a dangling loader or a dead branch
   never binds. The canvas image is the `LoadImage` whose IMAGE output feeds an output node.
   The mask binds only through a real repaint consumer — `VAEEncodeForInpaint`,
-  `SetLatentNoiseMask`, `InpaintModelConditioning` — walked back through GrowMask/FeatherMask/
-  ImageToMask to a `LoadImageMask` or its `LoadImage`. A graph built from ComfyUI's mask nodes
-  receives a cutout of the painted region, not `mask.png` itself: white where painted and
-  transparent where preserved, because ComfyUI reads an image mask as `1 - alpha` (both
+  `SetLatentNoiseMask`, `InpaintModelConditioning` — walked back through any mask-in/mask-out
+  node (`GrowMask`, `FeatherMask`, `ImageToMask`, `ImageCropByMaskAndResize`,
+  `GrowMaskWithBlur`, …) to a `LoadImageMask` or its `LoadImage`. A graph built from ComfyUI's
+  mask nodes receives a cutout of the painted region, not `mask.png` itself: white where
+  painted and transparent where preserved, because ComfyUI reads an image mask as `1 - alpha` (both
   `LoadImage`'s MASK output and `LoadImageMask`'s `alpha` channel), while the canvas asset keeps
   the painted region opaque. Uploading the asset as-is preserves the painted area and repaints
   everything else. The same cutout keeps a red-channel load correct. Compositing nodes that
@@ -211,6 +212,16 @@ batch, so a fix is never split across two releases.
   `mask.png` when missing. When a mask is painted but the loaded
   workflow has no inpaint node, an agent run is refused (pass `ignore_mask: true` only after
   the user asks for a full-image render); a pure generation graph records a note instead.
+- Inpaint shape. A plain `SetLatentNoiseMask` graph samples the whole latent, so a small mask on
+  a large image gets only a handful of latent pixels and the prompt barely matters — a
+  "white down" prompt came back as a blue flame that way. The A1111-style shape fixes it and is
+  the one to recommend: `LoadImageMask` → `ImageCropByMaskAndResize` (crop the mask bbox to a
+  model-sized square, ~1024, with padding) → `GrowMaskWithBlur` (mask blur) →
+  `SetLatentNoiseMask` → sampler at denoise 0.75–0.85 → `VAEDecode` → `ImageUncropByMask`
+  pasted back into the original image, so outside pixels are untouched. denoise is the knob:
+  too low keeps the old content, too high invents a new object. The bindings must resolve
+  through the crop nodes (they do, via the pass-through rule above); a workflow saved this way
+  is listed and loaded like any other.
 - Mask prompt. `doc.mask.prompt` is the local repaint instruction the user edits in the mask
   section; the agent writes it with `set_prompt` target `mask`, or `load_image`'s `mask_prompt`
   when it brings a mask. While a mask is painted, a run sends it as the positive text instead

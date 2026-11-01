@@ -61,6 +61,8 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 5. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
 6. Set the seed and click "Queue run". The run panel says which prompt drove it; the result appears below; use "Use as canvas" to keep iterating.
 
+For a change to one small area, use an **inpaint-at-full-resolution** graph (the A1111-style shape): `LoadImageMask` → `ImageCropByMaskAndResize` (crop the painted bbox to ~1024 with padding) → `GrowMaskWithBlur` → `SetLatentNoiseMask` → `KSampler` at denoise 0.75–0.85 → `VAEDecode` → `ImageUncropByMask` back into the original. Sampling the whole 1920×1080 latent instead leaves a small mask with only a few latent pixels, and the model all but ignores the prompt there. Denoise is the strength knob: low keeps the old content, high invents a new object.
+
 ### Blank layout (MOSS-Image)
 
 1. Switch to Layout mode and set the canvas width and height (MOSS requires multiples of 16).

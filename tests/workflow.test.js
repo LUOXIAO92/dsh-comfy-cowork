@@ -270,3 +270,110 @@ test('binds width/height to the latent that sizes the output, not a layout helpe
   assert.equal(bindings.height, '3')
   assert.equal(bindings.seed, '4')
 })
+
+const a1111Info = {
+  CheckpointLoaderSimple: {
+    input: { required: { ckpt_name: ['COMBO', { options: ['model.safetensors'] }] } },
+    input_order: { required: ['ckpt_name'] },
+    output: ['MODEL', 'CLIP', 'VAE'],
+  },
+  LoadImage: info.LoadImage,
+  LoadImageMask: {
+    input: { required: { image: ['COMBO', { options: ['mask.png'] }], channel: ['COMBO', { options: ['alpha', 'red'] }] } },
+    input_order: { required: ['image', 'channel'] },
+    output: ['MASK'],
+  },
+  CLIPTextEncode: info.CLIPTextEncode,
+  KSampler: info.KSampler,
+  VAEEncode: {
+    input: { required: { pixels: ['IMAGE'], vae: ['VAE'] } },
+    input_order: { required: ['pixels', 'vae'] },
+    output: ['LATENT'],
+  },
+  SetLatentNoiseMask: {
+    input: { required: { samples: ['LATENT'], mask: ['MASK'] } },
+    input_order: { required: ['samples', 'mask'] },
+    output: ['LATENT'],
+  },
+  ImageCropByMaskAndResize: {
+    input: { required: { image: ['IMAGE'], mask: ['MASK'], base_resolution: ['INT', { default: 1024 }], padding: ['INT', { default: 32 }], min_crop_resolution: ['INT', { default: 512 }], max_crop_resolution: ['INT', { default: 1024 }] } },
+    input_order: { required: ['image', 'mask', 'base_resolution', 'padding', 'min_crop_resolution', 'max_crop_resolution'] },
+    output: ['IMAGE', 'MASK', 'BBOX'],
+  },
+  GrowMaskWithBlur: {
+    input: { required: { mask: ['MASK'], expand: ['INT', { default: 0 }], incremental_expandrate: ['FLOAT', { default: 0 }], tapered_corners: ['BOOLEAN', { default: true }], flip_input: ['BOOLEAN', { default: false }], blur_radius: ['FLOAT', { default: 0 }], lerp_alpha: ['FLOAT', { default: 1 }], decay_factor: ['FLOAT', { default: 1 }] }, optional: { fill_holes: ['BOOLEAN', { default: false }] } },
+    input_order: { required: ['mask', 'expand', 'incremental_expandrate', 'tapered_corners', 'flip_input', 'blur_radius', 'lerp_alpha', 'decay_factor'], optional: ['fill_holes'] },
+    output: ['MASK', 'MASK'],
+  },
+  VAEDecode: {
+    input: { required: { samples: ['LATENT'], vae: ['VAE'] } },
+    input_order: { required: ['samples', 'vae'] },
+    output: ['IMAGE'],
+  },
+  ImageUncropByMask: {
+    input: { required: { destination: ['IMAGE'], source: ['IMAGE'], mask: ['MASK'], bbox: ['BBOX,BOUNDING_BOX'] } },
+    input_order: { required: ['destination', 'source', 'mask', 'bbox'] },
+    output: ['IMAGE'],
+  },
+  SaveImage: {
+    input: { required: { images: ['IMAGE'], filename_prefix: ['STRING', { default: 'ComfyUI' }] } },
+    input_order: { required: ['images', 'filename_prefix'] },
+    output: [],
+  },
+}
+
+/** An "inpaint at full resolution" graph: crop by mask, sample there, paste back. */
+function a1111Workflow() {
+  const w = (name) => ({ name, type: 'INT', widget: { name }, link: null })
+  const n = (id, type, inputs, outputs) => ({ id, type, pos: [0, 0], size: [200, 100], mode: 0, inputs, outputs, widgets_values: [], widgets_values_named: {} })
+  return {
+    nodes: [
+      n(1, 'CheckpointLoaderSimple', [], [{ name: 'MODEL', type: 'MODEL' }, { name: 'CLIP', type: 'CLIP' }, { name: 'VAE', type: 'VAE' }]),
+      n(2, 'LoadImage', [{ name: 'image', type: 'COMBO', widget: { name: 'image' }, link: null }], [{ name: 'IMAGE', type: 'IMAGE' }, { name: 'MASK', type: 'MASK' }]),
+      n(9, 'LoadImageMask', [{ name: 'image', type: 'COMBO', widget: { name: 'image' }, link: null }, { name: 'channel', type: 'COMBO', widget: { name: 'channel' }, link: null }], [{ name: 'MASK', type: 'MASK' }]),
+      n(11, 'ImageCropByMaskAndResize', [{ name: 'image', type: 'IMAGE', link: 3 }, { name: 'mask', type: 'MASK', link: 4 }, w('base_resolution'), w('padding'), w('min_crop_resolution'), w('max_crop_resolution')], [{ name: 'images', type: 'IMAGE' }, { name: 'masks', type: 'MASK' }, { name: 'bbox', type: 'BBOX' }]),
+      n(12, 'GrowMaskWithBlur', [{ name: 'mask', type: 'MASK', link: 5 }, w('expand'), w('incremental_expandrate'), w('tapered_corners'), w('flip_input'), w('blur_radius'), w('lerp_alpha'), w('decay_factor')], [{ name: 'mask', type: 'MASK' }, { name: 'mask_inverted', type: 'MASK' }]),
+      n(3, 'VAEEncode', [{ name: 'pixels', type: 'IMAGE', link: 6 }, { name: 'vae', type: 'VAE', link: 7 }], [{ name: 'LATENT', type: 'LATENT' }]),
+      n(10, 'SetLatentNoiseMask', [{ name: 'samples', type: 'LATENT', link: 8 }, { name: 'mask', type: 'MASK', link: 9 }], [{ name: 'LATENT', type: 'LATENT' }]),
+      n(4, 'CLIPTextEncode', [{ name: 'clip', type: 'CLIP', link: 10 }, { name: 'text', type: 'STRING', widget: { name: 'text' }, link: null }], [{ name: 'CONDITIONING', type: 'CONDITIONING' }]),
+      n(5, 'CLIPTextEncode', [{ name: 'clip', type: 'CLIP', link: 11 }, { name: 'text', type: 'STRING', widget: { name: 'text' }, link: null }], [{ name: 'CONDITIONING', type: 'CONDITIONING' }]),
+      n(6, 'KSampler', [{ name: 'model', type: 'MODEL', link: 12 }, { name: 'positive', type: 'CONDITIONING', link: 13 }, { name: 'negative', type: 'CONDITIONING', link: 14 }, { name: 'latent_image', type: 'LATENT', link: 15 }, { name: 'seed', type: 'INT', widget: { name: 'seed' }, link: null }, { name: 'steps', type: 'INT', widget: { name: 'steps' }, link: null }, { name: 'cfg', type: 'FLOAT', widget: { name: 'cfg' }, link: null }, { name: 'sampler_name', type: 'COMBO', widget: { name: 'sampler_name' }, link: null }, { name: 'scheduler', type: 'COMBO', widget: { name: 'scheduler' }, link: null }, { name: 'denoise', type: 'FLOAT', widget: { name: 'denoise' }, link: null }], [{ name: 'LATENT', type: 'LATENT' }]),
+      n(7, 'VAEDecode', [{ name: 'samples', type: 'LATENT', link: 16 }, { name: 'vae', type: 'VAE', link: 17 }], [{ name: 'IMAGE', type: 'IMAGE' }]),
+      n(13, 'ImageUncropByMask', [{ name: 'destination', type: 'IMAGE', link: 18 }, { name: 'source', type: 'IMAGE', link: 19 }, { name: 'mask', type: 'MASK', link: 20 }, { name: 'bbox', type: 'BBOX,BOUNDING_BOX', link: 21 }], [{ name: 'image', type: 'IMAGE' }]),
+      n(8, 'SaveImage', [{ name: 'images', type: 'IMAGE', link: 22 }, { name: 'filename_prefix', type: 'STRING', widget: { name: 'filename_prefix' }, link: null }], []),
+    ],
+    links: [
+      [1, 1, 0, 6, 0, 'MODEL'],
+      [2, 1, 1, 4, 0, 'CLIP'],
+      [3, 2, 0, 11, 0, 'IMAGE'],
+      [4, 9, 0, 11, 1, 'MASK'],
+      [5, 11, 1, 12, 0, 'MASK'],
+      [6, 11, 0, 3, 0, 'IMAGE'],
+      [7, 1, 2, 3, 1, 'VAE'],
+      [8, 3, 0, 10, 0, 'LATENT'],
+      [9, 12, 0, 10, 1, 'MASK'],
+      [10, 1, 1, 4, 0, 'CLIP'],
+      [11, 1, 1, 5, 0, 'CLIP'],
+      [12, 1, 0, 6, 0, 'MODEL'],
+      [13, 4, 0, 6, 1, 'CONDITIONING'],
+      [14, 5, 0, 6, 2, 'CONDITIONING'],
+      [15, 10, 0, 6, 3, 'LATENT'],
+      [16, 6, 0, 7, 0, 'LATENT'],
+      [17, 1, 2, 7, 1, 'VAE'],
+      [18, 2, 0, 13, 0, 'IMAGE'],
+      [19, 7, 0, 13, 1, 'IMAGE'],
+      [20, 12, 0, 13, 2, 'MASK'],
+      [21, 11, 2, 13, 3, 'BBOX'],
+      [22, 13, 0, 8, 0, 'IMAGE'],
+    ],
+  }
+}
+
+test('binds the canvas image and mask through an inpaint-at-full-resolution graph', () => {
+  const bindings = inferBindings(a1111Workflow(), a1111Info)
+  assert.equal(bindings.image, '2')
+  assert.equal(bindings.mask, '9')
+  assert.equal(bindings.prompt, '4')
+  assert.equal(bindings.negative, '5')
+  assert.equal(bindings.seed, '6')
+})
