@@ -14,7 +14,6 @@ import {
   saveComment,
   saveEnabled,
   saveLayout,
-  saveMaskPrompt,
   saveNegative,
   savePrompt,
   saveSelection,
@@ -416,20 +415,18 @@ export function CanvasTab(props) {
   // knob (A1111 inpaint semantics). The red overlay's opacity is the mask's
   // display setting below.
   const [brush, setBrush] = useState({ size: 64 })
-  const [mask, setMask] = useState({ feather: 8, grow: 0, color: '#ff3b30', opacity: 0.45, denoise: 0.85, hasMask: false })
+  const [mask, setMask] = useState({ feather: 8, grow: 0, color: '#ff3b30', opacity: 0.45, denoise: 0.85, hasMask: false, regions: [] })
   // The local repaint prompt belongs to the mask, not to the whole image: while
   // a mask is painted a run sends it instead of the canvas prompt.
-  const [maskPrompt, setMaskPrompt] = useState('')
-  const [maskPromptFocused, setMaskPromptFocused] = useState(false)
+  // Region prompts live on the canvas regions; the tab only keeps the metadata
+  // the stage published, so the inspector can show the count.
+  // (No single mask prompt any more: each separate mask region has its own.)
   const [dragOver, setDragOver] = useState(false)
   const [showMaskTools] = useState(true)
   const maskInit = useRef(false)
   const saveTimer = useRef(null)
   const maskSaveTimer = useRef(null)
-  const maskPromptTimer = useRef(null)
-  const maskPromptRef = useRef('')
-  const maskPromptFocusedRef = useRef(false)
-  const maskPromptPending = useRef(false)
+  const regionAssetsRef = useRef(new Set())
   const dragTimer = useRef(null)
   const loadImageRef = useRef(null)
   const docRef = useRef(null)
@@ -444,8 +441,6 @@ export function CanvasTab(props) {
   draftRef.current = draft
   negativeRef.current = negative
   negativeFocusedRef.current = negativeFocused
-  maskPromptRef.current = maskPrompt
-  maskPromptFocusedRef.current = maskPromptFocused
   loadImageRef.current = loadImage
 
   // Keyboard: undo/redo, tool letters, brush size and Delete on the selection.
@@ -539,6 +534,16 @@ export function CanvasTab(props) {
     return () => window.removeEventListener('paste', onPaste)
   }, [])
 
+  // The stage owns region identity (it derives it from the mask pixels) and
+  // publishes the metadata here; the agent may also rewrite region prompts, so
+  // the local copy follows the document too, compared by value.
+  const regionsKey = JSON.stringify(doc?.mask?.regions ?? [])
+  useEffect(() => {
+    if (!doc) return
+    const nextRegions = Array.isArray(doc.mask?.regions) ? doc.mask.regions : []
+    setMask((current) => (JSON.stringify(current.regions ?? []) === JSON.stringify(nextRegions) ? current : { ...current, regions: nextRegions }))
+  }, [regionsKey])
+
   const shapesKey = JSON.stringify(doc?.mask?.shapes ?? [])
   useEffect(() => {
     if (!doc) return
@@ -579,14 +584,7 @@ export function CanvasTab(props) {
       maskInit.current = true
       setMask((current) => ({ ...current, ...doc.mask }))
       if (!negativeFocusedRef.current) setNegative(doc.negative ?? '')
-      setMaskPrompt(doc.mask?.prompt ?? '')
       setTool(doc.mode === 'layout' ? 'box' : 'brush')
-    }
-    // Another writer (the agent) may have changed the mask prompt; follow it
-    // unless the user is typing or a local save is already on its way.
-    const incomingMaskPrompt = doc.mask?.prompt ?? ''
-    if (!maskPromptFocusedRef.current && !maskPromptPending.current && maskPromptTimer.current === null && incomingMaskPrompt !== maskPromptRef.current) {
-      setMaskPrompt(incomingMaskPrompt)
     }
     if (!focusedRef.current) {
       const current = draftRef.current
@@ -604,7 +602,6 @@ export function CanvasTab(props) {
   useEffect(() => () => {
     if (saveTimer.current !== null) clearTimeout(saveTimer.current)
     if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
-    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
     if (dragTimer.current !== null) clearTimeout(dragTimer.current)
   }, [])
 
@@ -614,23 +611,38 @@ export function CanvasTab(props) {
     return () => clearTimeout(timer)
   }, [probeError])
 
+  const localRegionsKey = JSON.stringify(Array.isArray(mask.regions) ? mask.regions : [])
+
+  /** Write the mask settings (and regions, when they moved) right now. */
+  async function persistMaskSettings() {
+    if (!sessionId) return
+    const regions = Array.isArray(mask.regions) ? mask.regions : []
+    const stored = docRef.current?.mask?.regions ?? []
+    // Region identity rides with the mask settings, but a document echo must
+    // not write itself back: only an actual change is persisted.
+    const regionsChanged = JSON.stringify(regions) !== JSON.stringify(stored)
+    const result = await saveCanvas(sessionId, {
+      mask: {
+        feather: mask.feather,
+        grow: mask.grow,
+        color: mask.color,
+        opacity: mask.opacity,
+        denoise: mask.denoise,
+        ...(regionsChanged ? { regions } : {}),
+        rev: Date.now(),
+      },
+    })
+    setDoc(result.doc)
+    return result.doc
+  }
+
   useEffect(() => {
     if (!maskInit.current || !sessionId) return undefined
     if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
     maskSaveTimer.current = setTimeout(async () => {
       maskSaveTimer.current = null
       try {
-        const result = await saveCanvas(sessionId, {
-          mask: {
-            feather: mask.feather,
-            grow: mask.grow,
-            color: mask.color,
-            opacity: mask.opacity,
-            denoise: mask.denoise,
-            rev: Date.now(),
-          },
-        })
-        setDoc(result.doc)
+        await persistMaskSettings()
         stageRef.current?.exportNow?.()
       } catch (caught) {
         setError(caught.message)
@@ -639,7 +651,13 @@ export function CanvasTab(props) {
     return () => {
       if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
     }
-  }, [mask.feather, mask.grow, mask.color, mask.opacity, mask.denoise, sessionId])
+  }, [mask.feather, mask.grow, mask.color, mask.opacity, mask.denoise, localRegionsKey, sessionId])
+
+  /** A run must see the mask exactly as painted: flush assets and settings first. */
+  async function beforeRun() {
+    await stageRef.current?.exportNow?.()
+    await persistMaskSettings()
+  }
 
   /** A hand-written prompt also updates the text node, so the graph and the box agree. */
   async function pushPromptToNode(current, value) {
@@ -702,35 +720,6 @@ export function CanvasTab(props) {
     setNegativeFocused(false)
     if (negativeTimer.current !== null) clearTimeout(negativeTimer.current)
     persistNegative(negativeRef.current)
-  }
-
-  async function persistMaskPrompt(value) {
-    if (!sessionId || value === (docRef.current?.mask?.prompt ?? '')) return
-    maskPromptPending.current = true
-    try {
-      const result = await saveMaskPrompt(sessionId, value)
-      setDoc(result.doc)
-    } catch (caught) {
-      setError(caught.message)
-    } finally {
-      maskPromptPending.current = false
-    }
-  }
-
-  function onMaskPromptChange(value) {
-    setMaskPrompt(value)
-    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
-    maskPromptTimer.current = setTimeout(() => {
-      maskPromptTimer.current = null
-      persistMaskPrompt(value)
-    }, 450)
-  }
-
-  function onMaskPromptBlur() {
-    setMaskPromptFocused(false)
-    if (maskPromptTimer.current !== null) clearTimeout(maskPromptTimer.current)
-    maskPromptTimer.current = null
-    persistMaskPrompt(maskPromptRef.current)
   }
 
   /** Drag the canvas viewport height; remembered per browser. */
@@ -1153,7 +1142,7 @@ export function CanvasTab(props) {
         image: { asset: 'canvas.png', name: file.name, width: bitmap.width, height: bitmap.height, rev: Date.now() },
         // A new image starts a new edit; the old local repaint prompt does not
         // describe it, so it goes away with the old mask.
-        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, prompt: '', promptSource: 'user' },
+        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, prompt: '', promptSource: 'user', regions: [] },
       })
       setDoc(result.doc)
       setMaskPrompt('')
@@ -1275,13 +1264,15 @@ export function CanvasTab(props) {
     const nextItems = scaled ? items.map((item) => ({ ...item, bbox: scaleBbox(item.bbox) })) : items
     const shapes = current?.mask?.shapes ?? []
     const nextShapes = scaled ? shapes.map((shape) => ({ ...shape, bbox: scaleBbox(shape.bbox) })) : shapes
+    const regions = current?.mask?.regions ?? []
+    const nextRegions = scaled ? regions.map((region) => ({ ...region, bbox: scaleBbox(region.bbox) })) : regions
     const comments = current?.comments ?? []
     const nextComments = scaled ? comments.map((comment) => ({ ...comment, bbox: scaleBbox(comment.bbox) })) : comments
     try {
       const result = await saveCanvas(sessionId, {
         width: nextWidth,
         height: nextHeight,
-        ...(scaled ? { mask: { shapes: nextShapes } } : {}),
+        ...(scaled ? { mask: { shapes: nextShapes, ...(regions.length > 0 ? { regions: nextRegions } : {}) } } : {}),
       })
       setDoc(result.doc)
       if (scaled && items.length > 0) {
@@ -1351,7 +1342,7 @@ export function CanvasTab(props) {
     }, 650)
   }
 
-  async function handleMaskReady({ maskBlob, brushBlob, rgbaBlob, hasMask, shapes }) {
+  async function handleMaskReady({ maskBlob, brushBlob, rgbaBlob, regionBlobs, hasMask, shapes }) {
     if (!sessionId) return
     try {
       await uploadAsset(sessionId, 'mask.png', maskBlob)
@@ -1360,8 +1351,21 @@ export function CanvasTab(props) {
         const annotated = await annotatePng(rgbaBlob, docRef.current?.comments ?? [])
         await uploadAsset(sessionId, 'canvas_rgba.png', annotated)
       }
+      // One cutout per region: a run hands each pass its own mask file.
+      const nextIds = new Set()
+      for (const entry of regionBlobs ?? []) {
+        await uploadAsset(sessionId, `mask-${entry.id}.png`, entry.blob)
+        nextIds.add(entry.id)
+      }
+      for (const id of regionAssetsRef.current) {
+        if (!nextIds.has(id)) await deleteAsset(sessionId, `mask-${id}.png`)
+      }
+      regionAssetsRef.current = nextIds
       const patch = { rev: Date.now(), hasMask }
       if (Array.isArray(shapes)) patch.shapes = shapes
+      // Keep the document's region list in step with the files just written.
+      const regions = Array.isArray(mask.regions) ? mask.regions : []
+      if (JSON.stringify(regions) !== JSON.stringify(docRef.current?.mask?.regions ?? [])) patch.regions = regions
       const result = await saveCanvas(sessionId, { mask: patch })
       setDoc(result.doc)
       setMask((current) => ({ ...current, hasMask, shapes: patch.shapes ?? current.shapes }))
@@ -1385,6 +1389,9 @@ export function CanvasTab(props) {
   const spatialCount = items.filter((item) => item.label !== 'summary').length
   const selected = items.find((item) => item.id === doc?.selected?.id) ?? null
   const image = doc?.canvas?.image ?? null
+  const maskRegionList = Array.isArray(mask.regions) ? mask.regions : []
+  const maskRegionCount = maskRegionList.length
+  const maskRegionEmptyCount = maskRegionList.filter((region) => String(region?.prompt ?? '').trim() === '').length
   // The ratio chips stay highlighted whenever the canvas sits on their ratio,
   // not only on the exact preset resolution.
   const canvasWidthValue = Number(widthInput ?? doc?.canvas?.width ?? 1024)
@@ -1600,6 +1607,7 @@ export function CanvasTab(props) {
             onDragLeave={onStageDragLeave}
             onDrop={onStageDrop}
           >
+            {doc === null ? null : (
             <CanvasStage
               ref={stageRef}
               sessionId={sessionId}
@@ -1624,10 +1632,16 @@ export function CanvasTab(props) {
               onBoxEdit={(box, patch) => commitBox({ ...box, ...patch })}
               onBoxSelect={selectBox}
               t={t}
+              maskRegions={maskRegionList}
+              legacyMaskPrompt={doc?.mask?.prompt ?? ''}
+              onRegionsChange={(regions) => setMask((current) => (
+                JSON.stringify(current.regions ?? []) === JSON.stringify(regions) ? current : { ...current, regions }
+              ))}
               onMaskReady={handleMaskReady}
               onMessage={setError}
               onDeleteKey={removeSelected}
             />
+            )}
             {dragOver ? (
               <div className="ccw-dropzone" aria-hidden="true">
                 <div className="ccw-dropzone-inner">
@@ -1757,22 +1771,15 @@ export function CanvasTab(props) {
                 setMask={setMask}
                 t={t}
               />
-              <label className="ccw-subfield ccw-mask-prompt">
-                <span>{t('mask.prompt')}</span>
-                <textarea
-                  className="ccw-negative"
-                  value={maskPrompt}
-                  placeholder={t('mask.promptPlaceholder')}
-                  spellCheck={false}
-                  aria-label={t('mask.prompt')}
-                  onChange={(event) => onMaskPromptChange(event.target.value)}
-                  onFocus={() => setMaskPromptFocused(true)}
-                  onBlur={onMaskPromptBlur}
-                />
-              </label>
-              <p className="ccw-hint">{mask.hasMask
-                ? (maskPrompt.trim() !== '' ? t('mask.promptActive') : t('mask.promptEmpty'))
-                : t('mask.promptHint')}</p>
+              {mask.hasMask ? (
+                <p className="ccw-hint">
+                  {maskRegionCount === 0
+                    ? t('mask.noRegions')
+                    : `${t('mask.regions', { count: maskRegionCount })}${
+                      maskRegionEmptyCount > 0 ? ` · ${t('mask.regionsEmpty', { empty: maskRegionEmptyCount })}` : ''
+                    }`}
+                </p>
+              ) : null}
               <div className="ccw-danger-zone">
                 <button type="button" className="ccw-btn ccw-btn-danger-ghost" onClick={() => stageRef.current?.clearMask()}>
                   <Icon name="eraser" size={14} />
@@ -2051,7 +2058,14 @@ export function CanvasTab(props) {
 
       {view === 'workflow' ? (
         <div className="ccw-workflow-host">
-          <WorkflowView sessionId={sessionId} doc={doc} setDoc={setDoc} t={t} setError={setError} />
+          <WorkflowView
+            sessionId={sessionId}
+            doc={doc}
+            setDoc={setDoc}
+            t={t}
+            setError={setError}
+            beforeRun={beforeRun}
+          />
         </div>
       ) : null}
 

@@ -2630,6 +2630,52 @@
   font-weight: 600;
 }
 
+.ccw-run-passes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ccw-run-passes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--ccw-text-secondary);
+  font-size: var(--ccw-text-ui);
+}
+
+.ccw-run-pass-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--ccw-surface-raised);
+  color: var(--ccw-text);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ccw-run-passes li.is-completed .ccw-run-pass-index {
+  background: color-mix(in srgb, var(--ccw-success) 70%, transparent);
+  color: var(--ccw-surface-base);
+}
+
+.ccw-run-passes li.is-failed .ccw-run-pass-index {
+  background: color-mix(in srgb, var(--ccw-danger) 80%, transparent);
+  color: #fff;
+}
+
+.ccw-run-pass-text {
+  overflow-wrap: anywhere;
+}
+
 .ccw-run-meta {
   display: flex;
   align-items: center;

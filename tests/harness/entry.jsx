@@ -84,6 +84,29 @@ const doc = {
   ui: { openSeq: 0, notice: null },
 }
 
+// ?run=regions seeds the run panel with a two-region run in flight, so the
+// per-pass list can be inspected without queueing against a real ComfyUI.
+if (new URLSearchParams(location.search).get('run') === 'regions') {
+  doc.runs = [{
+    id: 'run-demo-regions',
+    status: 'running',
+    promptId: 'prompt-pass-1',
+    passCount: 2,
+    passIndex: 2,
+    promptKind: 'mask',
+    maskDenoise: 0.85,
+    createdAt: 10,
+    updatedAt: 20,
+    passes: [
+      { index: 1, regionId: 'mr-demo-1', promptId: 'prompt-pass-1', promptKind: 'mask', prompt: 'a white feather wing', status: 'completed', outputs: [], error: null },
+      { index: 2, regionId: 'mr-demo-2', promptId: 'prompt-pass-2', promptKind: 'empty', prompt: '', status: 'running', outputs: [], error: null },
+    ],
+    outputs: [{ asset: 'canvas.png', type: 'output' }],
+    notes: [],
+    error: null,
+  }]
+}
+
 // ?noimage=1 previews the blank-canvas state (size controls, no artboard image).
 if (new URLSearchParams(location.search).get('noimage') === '1') {
   doc.canvas.image = null
@@ -115,7 +138,7 @@ if (demo !== null) {
   // The layout flow demonstrates the compiler: box edits own the prompt box.
   doc.promptManual = demo !== 'layout'
   doc.promptSource = doc.promptManual ? 'user' : 'layout'
-  doc.mask = { ...doc.mask, hasMask: false, shapes: [], prompt: '' }
+  doc.mask = { ...doc.mask, hasMask: false, shapes: [], prompt: '', regions: [] }
   doc.mode = demo === 'layout' ? 'layout' : 'image'
   if (demo === 'layout') doc.canvas.image = null
 }
@@ -413,10 +436,17 @@ function runSmoke() {
       }
     }
     walk(controls)
+    const regions = window.__ccwDoc?.mask?.regions ?? []
+    const assets = (window.__ccwFetchLog ?? [])
+      .filter((entry) => String(entry.url).includes('/asset') && String(entry.url).includes('mask-mr-'))
+      .map((entry) => String(entry.url).split('name=')[1]?.split('&')[0])
     return {
       found: true,
       groups,
       sliders,
+      regions: regions.length,
+      regionPrompts: regions.map((region) => String(region.prompt ?? '')),
+      regionAssets: assets.length,
       legacy: {
         visible: 'visible' in (window.__ccwDoc?.mask ?? {}),
         inverted: 'inverted' in (window.__ccwDoc?.mask ?? {}),

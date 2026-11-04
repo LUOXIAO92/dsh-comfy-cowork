@@ -199,6 +199,31 @@ export function tintedMask(processed, color, opacity) {
   return { canvas, opacity: Math.max(0, Math.min(1, opacity)) }
 }
 
+/**
+ * Turn a painted mask canvas into the canonical mask image ComfyUI reads.
+ *
+ * `LoadImageMask`'s red channel and `LoadImage`'s MASK output disagree about
+ * polarity unless the file stores both: white RGB where painted and
+ * `alpha = 1 - painted`. The host composes the same thing for the union mask;
+ * per-region cutouts have to match it or a pass would select the wrong pixels.
+ */
+export function maskCutout(processed) {
+  const canvas = createCanvas(processed.width, processed.height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(processed, 0, 0)
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const data = image.data
+  for (let pixel = 0; pixel < data.length; pixel += 4) {
+    const painted = data[pixel + 3]
+    data[pixel] = painted
+    data[pixel + 1] = painted
+    data[pixel + 2] = painted
+    data[pixel + 3] = 255 - painted
+  }
+  ctx.putImageData(image, 0, 0)
+  return canvas
+}
+
 export function composeRgba(image, mask, width, height) {
   // ComfyUI's LoadImage returns MASK = 1 - alpha. White in our mask means
   // "editable", so the exported RGBA must be transparent there: alpha = 1 - mask.

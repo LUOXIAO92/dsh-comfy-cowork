@@ -7,9 +7,17 @@ import {
   drawStrokeSegment,
   fillMaskShape,
   hasMaskPixels,
+  maskCutout,
   processMask,
   tintedMask,
 } from './mask.js'
+import {
+  assignRegions,
+  bboxScore,
+  labelComponents,
+  sampleComponents,
+  seedRegions,
+} from './regions.js'
 import { remapPathPoints, splitShapePieces } from './shapes.js'
 import { ColorField } from './ColorField.jsx'
 
@@ -17,6 +25,44 @@ const { forwardRef, useEffect, useImperativeHandle, useRef, useState } = React
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
+}
+
+const MASK_TOOLS = new Set(['brush', 'eraser', 'rect', 'ellipse', 'select'])
+
+/**
+ * Number chips on the painted regions, so a prompt can be matched to a blob.
+ * The overlay canvas is CSS-scaled with the stage, so every size is divided by
+ * the view scale to keep the chip constant on screen.
+ */
+function drawRegionBadges(ctx, regions, scale, color) {
+  if (!Array.isArray(regions) || regions.length === 0) return
+  const radius = 9 / scale
+  const fontPx = 11 / scale
+  const pad = 3 / scale
+  ctx.save()
+  ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  for (let index = 0; index < regions.length; index += 1) {
+    const region = regions[index]
+    const [x1, y1] = region.bbox
+    const cx = x1 + radius + pad
+    const cy = y1 + radius + pad
+    // A hollow chip means "no prompt yet": that region will run empty.
+    const empty = String(region.prompt ?? '').trim() === ''
+    ctx.beginPath()
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+    ctx.globalAlpha = empty ? 0.34 : 0.94
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.globalAlpha = 1
+    ctx.lineWidth = 1.2 / scale
+    ctx.strokeStyle = color
+    if (empty) ctx.stroke()
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(String(index + 1), cx, cy + 0.5 / scale)
+  }
+  ctx.restore()
 }
 
 function normalizeBox(a, b) {
@@ -402,6 +448,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     onBoxCaption,
     onBoxEdit,
     onBoxSelect,
+    maskRegions,
+    legacyMaskPrompt,
+    onRegionsChange,
     onMaskReady,
     onMessage,
     onDeleteKey,
@@ -446,6 +495,18 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   const paintDraftRef = useRef(null)
   const shapesRef = useRef(shapeList)
   shapesRef.current = shapeList
+  // Per-region mask prompts: identity survives edits by matching the previous
+  // components (see regions.js), and the labels of the last sync serve both
+  // hit-testing (double-click opens a region's prompt) and the per-region
+  // cutouts exported for the inpaint passes.
+  const regionListRef = useRef([])
+  const regionLabelsRef = useRef(null)
+  const regionKeyRef = useRef('')
+  const regionSeededRef = useRef(false)
+  const docRegionsRef = useRef(Array.isArray(maskRegions) ? maskRegions : [])
+  docRegionsRef.current = Array.isArray(maskRegions) ? maskRegions : []
+  const legacyPromptRef = useRef(typeof legacyMaskPrompt === 'string' ? legacyMaskPrompt : '')
+  legacyPromptRef.current = typeof legacyMaskPrompt === 'string' ? legacyMaskPrompt : ''
 
   useEffect(() => {
     if (gestureRef.current !== null) return
@@ -454,6 +515,57 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
 
   settingsRef.current = maskSettings
   viewRef.current = view
+  const regionsPropKey = JSON.stringify(Array.isArray(maskRegions) ? maskRegions : [])
+
+  // A document that arrives after the first sync (an empty mount, or an agent
+  // that loaded a mask with a prompt) still gets its single legacy prompt onto
+  // the painted region: the first sync had nothing to seed from.
+  const legacySeededRef = useRef(false)
+  useEffect(() => {
+    const legacy = String(legacyMaskPrompt ?? '')
+    if (legacySeededRef.current || legacy.trim() === '') return
+    if (Array.isArray(maskRegions) && maskRegions.length > 0) {
+      legacySeededRef.current = true
+      return
+    }
+    const regions = regionListRef.current
+    if (regions.length === 0) return
+    let largest = regions[0]
+    let largestArea = 0
+    for (const region of regions) {
+      const area = (region.bbox[2] - region.bbox[0]) * (region.bbox[3] - region.bbox[1])
+      if (area > largestArea) {
+        largestArea = area
+        largest = region
+      }
+    }
+    largest.prompt = legacy
+    legacySeededRef.current = true
+    publishRegions()
+    setOverlayTick((value) => value + 1)
+  }, [legacyMaskPrompt, regionsPropKey])
+
+  // The document is the shared truth for prompts (the agent may write one), so
+  // an incoming region list updates the live prompts without touching identity.
+  useEffect(() => {
+    if (!Array.isArray(maskRegions) || maskRegions.length === 0) return
+    let changed = false
+    for (const incoming of maskRegions) {
+      const region = regionListRef.current.find((item) => item.id === incoming.id)
+      if (region === undefined) continue
+      const prompt = typeof incoming.prompt === 'string' ? incoming.prompt : ''
+      if (region.prompt !== prompt) {
+        region.prompt = prompt
+        changed = true
+      }
+      const source = incoming.promptSource === 'agent' ? 'agent' : 'user'
+      if (region.promptSource !== source) {
+        region.promptSource = source
+        changed = true
+      }
+    }
+    if (changed) setOverlayTick((value) => value + 1)
+  }, [regionsPropKey])
   shapeListRef.current = shapeList
   selectedShapeRef.current = selectedShape
   commentListRef.current = Array.isArray(comments) ? comments : []
@@ -529,6 +641,99 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     processedRef.current = processMask(composite, settingsRef.current)
     drawMaskPreview(false)
     setOverlayTick((value) => value + 1)
+  }
+
+  /** One byte of paint coverage per pixel, from the composited mask. */
+  function compositeAlpha(composite) {
+    const { width: w, height: h } = composite
+    const data = composite.getContext('2d').getImageData(0, 0, w, h).data
+    const alpha = new Uint8Array(w * h)
+    for (let pixel = 0; pixel < alpha.length; pixel += 1) alpha[pixel] = data[pixel * 4 + 3]
+    return alpha
+  }
+
+  /**
+   * Hand the current region metadata to the tab, which persists it. Compared by
+   * value so a document echo never triggers another save.
+   */
+  function publishRegions() {
+    const meta = regionListRef.current.map((region) => ({
+      id: region.id,
+      prompt: region.prompt ?? '',
+      promptSource: region.promptSource === 'agent' ? 'agent' : 'user',
+      bbox: region.bbox.slice(),
+      createdAt: region.createdAt,
+    }))
+    const key = JSON.stringify(meta)
+    if (key === regionKeyRef.current) return
+    regionKeyRef.current = key
+    onRegionsChange?.(meta)
+  }
+
+  /**
+   * Re-derive the mask regions from the composed mask.
+   *
+   * The first sync after mount seeds prompts from the document (a reload has no
+   * runtime samples); later syncs carry identity forward by overlap, so
+   * extending a blob keeps its prompt while a new blob starts empty. `pin`
+   * reattaches an identity that moved as a whole (the select tool dragging a
+   * painted island), because a moved blob no longer overlaps its old position.
+   */
+  function syncRegions({ pin = null } = {}) {
+    const composite = compositeRef.current
+    if (!composite) return
+    const w = composite.width
+    const h = composite.height
+    const { labels, components } = labelComponents(compositeAlpha(composite), w, h)
+    const samples = sampleComponents(labels, components, w, h)
+    regionLabelsRef.current = labels
+    let next
+    if (!regionSeededRef.current) {
+      regionSeededRef.current = true
+      next = seedRegions({
+        components,
+        samples,
+        docRegions: docRegionsRef.current,
+        legacyPrompt: legacyPromptRef.current,
+      })
+    } else {
+      next = assignRegions({ components, samples, previous: regionListRef.current })
+    }
+    if (pin !== null && next.length > 0 && !next.some((region) => region.id === pin.id)) {
+      let best = null
+      let bestScore = 0
+      for (const region of next) {
+        const score = bboxScore(region.bbox, pin.bbox)
+        if (score > bestScore) {
+          bestScore = score
+          best = region
+        }
+      }
+      if (best !== null && bestScore > 0) {
+        best.id = pin.id
+        best.prompt = pin.prompt ?? ''
+        best.promptSource = pin.promptSource === 'agent' ? 'agent' : 'user'
+        if (Number.isFinite(pin.createdAt)) best.createdAt = pin.createdAt
+        if (Number.isFinite(pin.order)) best.order = pin.order
+        next.sort((a, b) => a.order - b.order || a.componentIndex - b.componentIndex)
+      }
+    }
+    regionListRef.current = next
+    publishRegions()
+    setOverlayTick((value) => value + 1)
+  }
+
+  /** The region under a canvas-space point, or null. */
+  function regionAtPoint(point) {
+    const labels = regionLabelsRef.current
+    const composite = compositeRef.current
+    if (labels === null || composite === null) return null
+    const x = Math.round(point.x)
+    const y = Math.round(point.y)
+    if (x < 0 || y < 0 || x >= composite.width || y >= composite.height) return null
+    const label = labels[y * composite.width + x]
+    if (label === 0) return null
+    return regionListRef.current.find((region) => region.componentIndex === label) ?? null
   }
 
   /**
@@ -702,15 +907,18 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     drawShapeObjects(ctx, shapeListRef.current, selectedShapeRef.current, viewRef.current.scale, maskSettings.color ?? '#ff3b30', shapeDraft)
     drawComments(ctx, commentListRef.current, selectedCommentRef.current, viewRef.current.scale, draftCommentRef.current)
     drawPaintSelection(ctx, paintDraftRef.current ?? paintSelectionRef.current?.bbox ?? null, viewRef.current.scale, maskSettings.color ?? '#ff3b30')
+    if (MASK_TOOLS.has(tool)) drawRegionBadges(ctx, regionListRef.current, viewRef.current.scale, maskSettings.color ?? '#ff3b30')
   }
 
   useEffect(() => {
     drawOverlay()
-  }, [boxes, selectedId, draftBox, overlayTick, view.scale, shapeList, selectedShape, comments, selectedComment])
+  }, [boxes, selectedId, draftBox, overlayTick, view.scale, shapeList, selectedShape, comments, selectedComment, tool])
 
-  // Shapes live in the composite mask, so a new list needs a new raster.
+  // Shapes live in the composite mask, so a new list needs a new raster and a
+  // fresh set of regions (a reloaded document's shapes are the only mask there).
   useEffect(() => {
     refreshProcessed()
+    syncRegions()
   }, [shapeList])
 
   // Keep the display canvas matched to the artboard (it can mount before the
@@ -725,7 +933,16 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
   }, [limit.width, limit.height])
 
+  const regionImageRef = useRef(null)
+
   useEffect(() => {
+    if (regionImageRef.current !== imageUrl) {
+      regionImageRef.current = imageUrl
+      regionSeededRef.current = false
+      regionListRef.current = []
+      regionLabelsRef.current = null
+      regionKeyRef.current = ''
+    }
     paintRef.current = createCanvas(limit.width, limit.height)
     compositeRef.current = createCanvas(limit.width, limit.height)
     processedRef.current = createCanvas(limit.width, limit.height)
@@ -757,6 +974,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
             paintRef.current.getContext('2d').drawImage(bitmap, 0, 0, limit.width, limit.height)
             if (!brushOnly) eraseShapesFromPaint()
             refreshProcessed()
+            syncRegions()
           })
           .catch(() => {})
         return () => {
@@ -856,7 +1074,23 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }
     const hit = hitTest(boxes, point, viewRef.current.scale, selectedId)
     if (hit === null) {
-      fit()
+      const region = regionAtPoint(point)
+      if (region === null) {
+        fit()
+        return
+      }
+      // With the brush armed, the two clicks of a double-click have already
+      // painted dots; they are an editing gesture here, not paint.
+      if (tool === 'brush' || tool === 'eraser') {
+        undo()
+        undo()
+      }
+      const target = regionAtPoint(point)
+      if (target === null) {
+        fit()
+        return
+      }
+      setCaptionEdit({ kind: 'mask', id: target.id, value: target.prompt ?? '', bbox: target.bbox.slice() })
       return
     }
     onBoxSelect?.(hit.box.id)
@@ -879,6 +1113,14 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       const comment = commentListRef.current.find((item) => item.id === edit.id)
       if (comment === undefined || String(comment.text ?? '') === edit.value) return
       onCommentText?.(edit.id, edit.value)
+      return
+    }
+    if (edit.kind === 'mask') {
+      const region = regionListRef.current.find((item) => item.id === edit.id)
+      if (region === undefined || String(region.prompt ?? '') === edit.value) return
+      region.prompt = edit.value
+      region.promptSource = 'user'
+      publishRegions()
       return
     }
     const box = boxes.find((item) => item.id === edit.id)
@@ -931,6 +1173,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     setShapeList(next.shapes)
     commitShapes(next.shapes, { silent: true })
     refreshProcessed()
+    syncRegions()
     scheduleMaskExport()
   }
 
@@ -972,6 +1215,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     ctx.putImageData(image, bx1, by1)
     setPaintSelection(null)
     refreshProcessed()
+    syncRegions()
     scheduleMaskExport()
     return true
   }
@@ -985,6 +1229,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     setShapeList(next)
     commitShapes(next)
     refreshProcessed()
+    syncRegions()
     scheduleMaskExport()
     return true
   }
@@ -998,7 +1243,38 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     setShapeList([])
     commitShapes([], { silent: true })
     refreshProcessed()
+    syncRegions()
     scheduleMaskExport()
+  }
+
+  /**
+   * One canonical cutout per region, for that region's inpaint pass. The union
+   * mask cannot stand in: each pass must be handed only its own pixels, with
+   * the same feather/grow the user set once for the whole mask.
+   */
+  async function exportRegionBlobs() {
+    const labels = regionLabelsRef.current
+    const regions = regionListRef.current
+    if (labels === null || regions.length === 0) return []
+    const w = limit.width
+    const h = limit.height
+    const blobs = []
+    for (const region of regions) {
+      const mask = createCanvas(w, h)
+      const ctx = mask.getContext('2d')
+      const image = ctx.createImageData(w, h)
+      const [x1, y1, x2, y2] = region.bbox
+      for (let y = Math.max(0, y1); y < Math.min(h, y2); y += 1) {
+        const row = y * w
+        for (let x = Math.max(0, x1); x < Math.min(w, x2); x += 1) {
+          if (labels[row + x] === region.componentIndex) image.data[(row + x) * 4 + 3] = 255
+        }
+      }
+      ctx.putImageData(image, 0, 0)
+      const processedRegion = processMask(mask, settingsRef.current)
+      blobs.push({ id: region.id, blob: await canvasToBlob(maskCutout(processedRegion)) })
+    }
+    return blobs
   }
 
   async function exportBlobs() {
@@ -1015,7 +1291,16 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       const rgba = composeRgba(imageRef.current, processed, limit.width, limit.height)
       rgbaBlob = await canvasToBlob(rgba)
     }
-    return { maskBlob, brushBlob, rgbaBlob, hasMask: hasMaskPixels(processed), canvas: processed, shapes: shapesRef.current }
+    const regionBlobs = await exportRegionBlobs()
+    return {
+      maskBlob,
+      brushBlob,
+      rgbaBlob,
+      regionBlobs,
+      hasMask: hasMaskPixels(processed),
+      canvas: processed,
+      shapes: shapesRef.current,
+    }
   }
 
   /** Persist the vector shapes; `silent` skips the round trip (undo/redo). */
@@ -1199,7 +1484,13 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         if (region !== null) {
           pushUndo()
           setPaintSelection({ bbox: region.bbox, mask: region.mask })
-          gestureRef.current = { kind: 'paint-move', start: point, ...region }
+          // A moved blob no longer overlaps its old pixels, so its prompt would
+          // look like a brand-new region after the drop: pin the identity.
+          const under = regionAtPoint(point)
+          const pin = under === null
+            ? null
+            : { id: under.id, prompt: under.prompt, promptSource: under.promptSource, createdAt: under.createdAt, order: under.order, bbox: region.bbox }
+          gestureRef.current = { kind: 'paint-move', start: point, pin, ...region }
         } else {
           setPaintSelection(null)
         }
@@ -1383,6 +1674,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         commitShapes(next)
       }
       refreshProcessed()
+      syncRegions()
       scheduleMaskExport()
       return
     }
@@ -1396,6 +1688,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       }
       setOverlayTick((value) => value + 1)
       refreshProcessed()
+      syncRegions({ pin: gesture.pin ?? null })
       scheduleMaskExport()
       return
     }
@@ -1413,6 +1706,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         setShapeList(next)
         commitShapes(next)
         refreshProcessed()
+        syncRegions()
         scheduleMaskExport()
       }
       setOverlayTick((value) => value + 1)
@@ -1433,6 +1727,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         setShapeList(next)
         commitShapes(next)
         refreshProcessed()
+        syncRegions()
         scheduleMaskExport()
       }
       setOverlayTick((value) => value + 1)
@@ -1471,7 +1766,13 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     }, [
       captionEdit.kind === 'comment'
         ? React.createElement('span', { className: 'ccw-caption-editor-title', key: 'title' }, tr('captionEditor.commentTitle'))
-        : React.createElement('div', { className: 'ccw-caption-editor-meta', key: 'meta' }, [
+        : captionEdit.kind === 'mask'
+          ? React.createElement('div', { className: 'ccw-caption-editor-meta', key: 'meta' }, [
+              React.createElement('span', { className: 'ccw-caption-editor-badge', key: 'badge' },
+                String(regionListRef.current.findIndex((region) => region.id === captionEdit.id) + 1).padStart(2, '0')),
+              React.createElement('span', { className: 'ccw-caption-editor-chip', key: 'label' }, tr('captionEditor.maskTitle')),
+            ])
+          : React.createElement('div', { className: 'ccw-caption-editor-meta', key: 'meta' }, [
             React.createElement('span', { className: 'ccw-caption-editor-badge', key: 'badge' },
               String(boxes.findIndex((box) => box.id === captionEdit.id) + 1).padStart(2, '0')),
             React.createElement('span', {
@@ -1487,7 +1788,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
                   })))
               : null,
           ]),
-      captionEdit.kind === 'comment'
+      captionEdit.kind !== 'box'
         ? null
         : React.createElement('label', { className: 'ccw-caption-editor-type', key: 'type' },
             React.createElement('span', null, tr('box.label')),
@@ -1538,7 +1839,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
         autoFocus: true,
         rows: 3,
         value: captionEdit.value,
-        placeholder: captionEdit.kind === 'comment' ? tr('comment.placeholder') : tr('layout.caption'),
+        placeholder: captionEdit.kind === 'comment'
+          ? tr('comment.placeholder')
+          : captionEdit.kind === 'mask' ? tr('mask.promptPlaceholder') : tr('layout.caption'),
         onChange: (event) => setCaptionEdit({ ...captionEdit, value: event.target.value }),
         onKeyDown: (event) => {
           event.stopPropagation()

@@ -376,7 +376,7 @@ function runTone(status) {
   return ''
 }
 
-export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
+export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun }) {
   const [workflows, setWorkflows] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [saveName, setSaveName] = useState('')
@@ -556,6 +556,10 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   async function run() {
     setBusy(true)
     try {
+      // The host reads the mask, its per-region cutouts and their prompts from
+      // the document, so flush what the canvas is showing first: a click right
+      // after a stroke must not race the debounced mask save.
+      await beforeRun?.()
       // While a mask is painted the mask section's repaint strength drives the
       // sampler denoise; send what the canvas shows instead of letting the run
       // read a value the debounced mask save has not written yet.
@@ -597,7 +601,7 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
         image: { asset: 'canvas.png', name: output.filename, width: bitmap.width, height: bitmap.height, rev: Date.now() },
         // The applied edit consumed the mask; leaving hasMask true would make
         // the next paint flow think a mask is still there.
-        mask: { rev: Date.now(), hasMask: false },
+        mask: { rev: Date.now(), hasMask: false, regions: [] },
       })
       setDoc(result.doc)
     } catch (error) {
@@ -606,6 +610,12 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
   }
 
   const latestRun = doc?.runs?.[0] ?? null
+  const multiPass = typeof latestRun?.passCount === 'number' && latestRun.passCount > 1 && Array.isArray(latestRun.passes)
+  // A running region run reports which pass is driving it right now; a settled
+  // one keeps the kind of its last pass.
+  const passKind = multiPass
+    ? latestRun.passes.find((pass) => pass.index === (latestRun.passIndex ?? latestRun.passCount))?.promptKind ?? null
+    : latestRun?.promptKind ?? null
   const outputs = (latestRun?.outputs ?? []).filter((output) => output.asset)
   const selected = workflow?.nodes?.find((node) => String(node.id) === String(selectedNode)) ?? null
 
@@ -789,11 +799,33 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError }) {
                 {latestRun ? <code title={latestRun.id}>{latestRun.id}</code> : null}
               </div>
               {latestRun?.error ? <div className="ccw-inline-error" role="alert">{latestRun.error}</div> : null}
-              {latestRun?.promptKind ? (
-                <div className="ccw-hint">{t(`run.promptSource.${latestRun.promptKind}`)}</div>
+              {multiPass ? (
+                <div className="ccw-hint">
+                  {t('run.region', {
+                    index: latestRun.passIndex ?? latestRun.passCount,
+                    count: latestRun.passCount,
+                  })}
+                </div>
+              ) : null}
+              {passKind ? (
+                <div className="ccw-hint">{t(`run.promptSource.${passKind}`)}</div>
               ) : null}
               {typeof latestRun?.maskDenoise === 'number' ? (
                 <div className="ccw-hint">{t('run.maskStrength', { percent: Math.round(latestRun.maskDenoise * 100) })}</div>
+              ) : null}
+              {multiPass ? (
+                <ol className="ccw-run-passes">
+                  {latestRun.passes.map((pass) => (
+                    <li key={pass.index} className={`is-${pass.status ?? 'queued'}`}>
+                      <span className="ccw-run-pass-index">{pass.index}</span>
+                      <span className="ccw-run-pass-text">
+                        {pass.promptKind === 'empty' || String(pass.prompt ?? '').trim() === ''
+                          ? t('run.emptyPrompt')
+                          : pass.prompt}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
               ) : null}
               {latestRun?.notes?.length > 0 ? <div className="ccw-hint">{latestRun.notes.join(' · ')}</div> : null}
             </Section>

@@ -179,12 +179,13 @@ batch, so a fix is never split across two releases.
   groups, descriptions, and English + Chinese aliases, so 「跑图」, 「刷新」, or 「批注」 finds the
   right feature without knowing its id.
 - `state` is the whole canvas in one call: prompt and negative prompt, size and image,
-  the layout items, workflow bindings, recent runs, every comment with its crop path, and the
-  painted mask's bbox in canvas pixels plus its asset paths and its mask prompt. Read it before
-  editing. A painted mask means the next edit is a local repaint of that region; never regenerate
+  the layout items, workflow bindings, recent runs with their per-pass progress, every comment
+  with its crop path, and the painted mask's regions (id, prompt, bbox) plus its union bbox,
+  asset paths and legacy prompt. Read it before
+  editing. A painted mask means the next edit is a local repaint of its regions; never regenerate
   the whole image while a mask is painted. An empty mask plus a full-image prompt is a new image.
-  Write the local repaint text with `set_prompt` target `mask`, not by overwriting the
-  whole-image prompt.
+  Write a region's repaint text with `set_prompt` target `mask` (pass `region` when several
+  exist), not by overwriting the whole-image prompt.
 - The whole-image description is the layout item with label `summary`; there is exactly one,
   and it is what a MOSS layout run reads. The agent may edit it only when the user asked for
   that text: never replace it with the agent's own wording, and never "fix" it to match the
@@ -226,13 +227,35 @@ batch, so a fix is never split across two releases.
   too low keeps the old content, too high invents a new object. The bindings must resolve
   through the crop nodes (they do, via the pass-through rule above); a workflow saved this way
   is listed and loaded like any other.
-- Mask prompt. `doc.mask.prompt` is the local repaint instruction the user edits in the mask
-  section; the agent writes it with `set_prompt` target `mask`, or `load_image`'s `mask_prompt`
-  when it brings a mask. While a mask is painted, a run sends it as the positive text instead
-  of `doc.prompt` (a MOSS layout run still sends the summary caption), and the run records the
-  source it used as `promptKind` (`mask` / `canvas` / `layout`). Loading a new image or
-  clearing the canvas resets it together with the mask. Keep the whole-image prompt describing
-  the image: a local edit belongs in the mask prompt.
+- Mask regions. Each independent painted area is a region with its own local repaint prompt:
+  `doc.mask.regions` is an ordered list (`id`, `prompt`, `promptSource`, `bbox`) and the order
+  is the run order. The browser derives a region from the connected components of the mask and
+  keeps identity across edits by overlap, so extending a blob keeps its prompt, a split
+  duplicates it, a bridge keeps the larger blob's prompt, and erasing a blob drops it. The
+  user edits a region by double-clicking it on the canvas (an in-place editor like the caption
+  and comment boxes); numbered badges mark the regions while a mask tool is armed, hollow when
+  the prompt is empty. The mask section only shows a count line — there is no single prompt box.
+- Mask prompts and the run. A mask run queues one pass per region, in paint order, chaining the
+  image: each pass's output is the next pass's input, and the run's outputs are the last pass's
+  images. Every mask pass sends its own region prompt as the positive text; **an empty region
+  prompt is an empty local repaint (the model invents content inside the selection) and never
+  falls back to the whole-image prompt** — a mask run is local by definition. A MOSS layout run
+  still sends the summary caption. The run records each pass (`passes[]` with
+  `promptKind`/`prompt`/`status`/`promptId`/outputs), `passCount`/`passIndex`, and keeps
+  `promptId` = first pass for older readers; `promptKind` (`mask`/`empty`/`canvas`/`layout`)
+  describes the first pass. Interrupt cancels the current pass and leaves the rest unqueued.
+  Keep the whole-image prompt describing the image: local edits belong to their regions.
+- Region assets. The browser uploads one canonical cutout per region, `mask-<id>.png`: white
+  where that region is painted, `alpha = 1 - painted`, feather and grow already applied, exactly
+  the format `composeMaskImage` produces for the union mask. A run validates every listed
+  region's asset before queueing anything and fails with a 409 naming the region when one is
+  missing. `mask.png` (the union, painted opaque) still drives the mask guard, the state bbox
+  and the implicit fallback pass used by documents written before regions existed
+  (`doc.mask.prompt`, one pass over the union mask). `load_image` clears the regions and deletes
+  their cutouts; its `mask_prompt` writes the legacy prompt, which the browser seeds onto the
+  first region it derives. `state` exposes `mask.regions` (id, 1-based index, prompt, bbox), and
+  `set_prompt` target `mask` takes `region` (id or index) — required when several regions exist,
+  optional for one, and the legacy prompt when none exist.
 - Mask strength and opacity are different things and the inspector keeps them apart.
   `doc.mask.denoise` is the repaint strength (A1111's denoising strength): while a mask is
   painted, a run writes it — or the `denoise` override — into the sampler node that
@@ -247,7 +270,7 @@ batch, so a fix is never split across two releases.
   slider is the only thing that softens it (a1111 has no brush hardness either).
 - The stage imports an image from the file picker, a drop on the stage, or a paste outside a
   text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
-  cleared mask prompt. Never let a text paste be swallowed: the paste handler ignores inputs,
+  cleared mask regions. Never let a text paste be swallowed: the paste handler ignores inputs,
   textareas, and contenteditable targets.
 - Model browsing is two levels on purpose: model folders first (with counts), then one folder's
   files, paged (default 200). The snapshot is rebuilt only by `refresh` (or the canvas Refresh
