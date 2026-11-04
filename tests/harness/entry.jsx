@@ -60,8 +60,6 @@ const doc = {
   mask: {
     feather: 8,
     grow: 0,
-    inverted: false,
-    visible: true,
     color: '#ff3b30',
     opacity: 0.45,
     denoise: 0.85,
@@ -401,6 +399,31 @@ function runSmoke() {
     await sleep(300)
   }
 
+  const evaluateMaskLayout = async () => {
+    const controls = document.querySelector('#canvas-root .ccw-mask-controls')
+    if (controls === null) return { found: false }
+    const groups = []
+    const sliders = []
+    const walk = (node) => {
+      for (const child of node.children) {
+        if (child.classList.contains('ccw-group-label')) groups.push(child.textContent.trim())
+        else if (child.classList.contains('ccw-range')) sliders.push((child.querySelector('.ccw-range-label')?.textContent ?? '').trim())
+        else if (child.classList.contains('ccw-toggle-row')) sliders.push(`toggle:${child.textContent.trim()}`)
+        else walk(child)
+      }
+    }
+    walk(controls)
+    return {
+      found: true,
+      groups,
+      sliders,
+      legacy: {
+        visible: 'visible' in (window.__ccwDoc?.mask ?? {}),
+        inverted: 'inverted' in (window.__ccwDoc?.mask ?? {}),
+      },
+    }
+  }
+
   const run = async () => {
     const report = { steps: [], calls, errors: [] }
     const wrap = await waitFor(() => q('.ccw-stage-wrap'))
@@ -437,9 +460,9 @@ function runSmoke() {
     await drag(wrap, [center[0] + 40, center[1] - 90], [center[0] + 170, center[1] + 40])
     report.steps.push({ step: 'ellipse', maskPixels: maskPixels() })
 
-    const featherLabel = Array.from(document.querySelectorAll('#canvas-root label'))
-      .find((element) => element.textContent.includes('羽化'))
-    const featherInput = featherLabel?.querySelector('input[type=range]')
+    const findRange = (text) => Array.from(document.querySelectorAll('#canvas-root .ccw-range'))
+      .find((element) => element.textContent.includes(text))
+    const featherInput = findRange('羽化')?.querySelector('input[type=range]')
     if (featherInput) {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
       setter.call(featherInput, '24')
@@ -451,10 +474,8 @@ function runSmoke() {
 
     // The mask strength is the repaint knob: it must reach the saved document
     // (and from there the sampler's denoise), while overlay opacity must not.
-    const sliderByLabel = (text) => Array.from(document.querySelectorAll('#canvas-root label'))
-      .find((element) => element.textContent.includes(text))
     const setRange = async (text, value) => {
-      const input = sliderByLabel(text)?.querySelector('input[type=range]')
+      const input = findRange(text)?.querySelector('input[type=range]')
       if (!input) return null
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
       setter.call(input, String(value))
@@ -463,6 +484,10 @@ function runSmoke() {
       await sleep(700)
       return input.value
     }
+    // The mask panel is down to brush size + overlay opacity and the repaint
+    // numbers: no hardness, no show/invert toggles.
+    const maskLayout = await evaluateMaskLayout()
+    report.steps.push({ step: 'mask-layout', ...maskLayout })
     const strengthValue = await setRange('重绘强度', 50)
     if (strengthValue !== null) {
       report.steps.push({ step: 'mask-strength', value: strengthValue, denoise: window.__ccwDoc?.mask?.denoise })

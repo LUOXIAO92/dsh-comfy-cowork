@@ -26,7 +26,7 @@ import {
 import { CanvasStage } from './CanvasStage.jsx'
 import { WorkflowView } from './WorkflowView.jsx'
 import { setNodeWidget } from './workflow-ui.js'
-import { Icon, IconButton, Section } from './ui.jsx'
+import { HelpTip, Icon, IconButton, Section } from './ui.jsx'
 import { ColorField } from './ColorField.jsx'
 import { embedPngText } from './png.js'
 
@@ -111,7 +111,7 @@ const TOOL_ICONS = {
  * A slider that also accepts a typed number: the value box is an input, so a
  * brush size or feather radius can be entered directly instead of dragged.
  */
-function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
+function Slider({ label, value, min, max, step = 1, onChange, suffix = '', help = '' }) {
   const [draft, setDraft] = useState(null)
   const span = max - min
   const ratio = span > 0 ? Math.min(1, Math.max(0, (value - min) / span)) : 0
@@ -122,9 +122,14 @@ function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
     onChange(Math.min(max, Math.max(min, Math.round(next / step) * step)))
   }
   return (
-    <label className="ccw-range">
+    <div className="ccw-range">
       <span className="ccw-range-head">
-        <span className="ccw-range-label">{label}</span>
+        {/* The tip hugs the label text: a "?" floating mid-row reads as if it
+            belonged to the number box. */}
+        <span className="ccw-range-title">
+          <span className="ccw-range-label">{label}</span>
+          {help === '' ? null : <HelpTip text={help} />}
+        </span>
         <span className="ccw-range-edit">
           <input
             className="ccw-range-number"
@@ -154,7 +159,7 @@ function Slider({ label, value, min, max, step = 1, onChange, suffix = '' }) {
         style={{ '--ccw-range-fill-pct': `${(ratio * 100).toFixed(2)}%` }}
         onChange={(event) => onChange(Number(event.target.value))}
       />
-    </label>
+    </div>
   )
 }
 
@@ -170,14 +175,17 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             min={1}
             max={400}
             onChange={(value) => setBrush((current) => ({ ...current, size: value }))}
+            help={t('help.brushSize')}
           />
+          {/* Display only: it tints the red overlay, never the mask or a run. */}
           <Slider
-            label={t('brush.hardness')}
-            value={Math.round(brush.hardness * 100)}
-            min={0}
+            label={t('brush.overlay')}
+            value={Math.round(mask.opacity * 100)}
+            min={10}
             max={100}
-            onChange={(value) => setBrush((current) => ({ ...current, hardness: value / 100 }))}
+            onChange={(value) => setMask((current) => ({ ...current, opacity: value / 100 }))}
             suffix="%"
+            help={t('help.overlay')}
           />
         </div>
       </div>
@@ -192,6 +200,7 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             max={100}
             onChange={(value) => setMask((current) => ({ ...current, denoise: value / 100 }))}
             suffix="%"
+            help={t('help.strength')}
           />
           <Slider
             label={t('mask.feather')}
@@ -200,6 +209,7 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             max={128}
             onChange={(value) => setMask((current) => ({ ...current, feather: value }))}
             suffix="px"
+            help={t('help.feather')}
           />
           <Slider
             label={t('mask.grow')}
@@ -208,37 +218,9 @@ function MaskSliders({ brush, setBrush, mask, setMask, t }) {
             max={128}
             onChange={(value) => setMask((current) => ({ ...current, grow: value }))}
             suffix="px"
+            help={t('help.grow')}
           />
         </div>
-        <div className="ccw-toggle-row">
-          <label className="ccw-check">
-            <input
-              type="checkbox"
-              checked={mask.inverted}
-              onChange={(event) => setMask((current) => ({ ...current, inverted: event.target.checked }))}
-            />
-            <span>{t('mask.invert')}</span>
-          </label>
-          <label className="ccw-check">
-            <input
-              type="checkbox"
-              checked={mask.visible}
-              onChange={(event) => setMask((current) => ({ ...current, visible: event.target.checked }))}
-            />
-            <span>{t('mask.visible')}</span>
-          </label>
-        </div>
-        {/* Display only, and deliberately below the toggles: it changes how the
-            red overlay looks, never the mask or the repaint. */}
-        <Slider
-          label={t('mask.opacity')}
-          value={Math.round(mask.opacity * 100)}
-          min={10}
-          max={100}
-          onChange={(value) => setMask((current) => ({ ...current, opacity: value / 100 }))}
-          suffix="%"
-        />
-        <p className="ccw-hint">{t('mask.strengthHint')}</p>
       </div>
     </div>
   )
@@ -271,16 +253,19 @@ function BoxEditor({ selected, summaryExists, updateSelected, removeSelected, t 
           </div>
         )}
       </div>
-      <label className="ccw-field">
-        <span>{isSummary ? t('layout.summary') : t('box.caption')}</span>
+      <div className="ccw-field">
+        <span className="ccw-field-head">
+          <span>{isSummary ? t('layout.summary') : t('box.caption')}</span>
+          {isSummary ? <HelpTip text={t('help.summary')} /> : null}
+        </span>
         <textarea
           rows={2}
           value={selected.caption}
+          aria-label={isSummary ? t('layout.summary') : t('box.caption')}
           placeholder={isSummary ? t('layout.summaryPlaceholder') : undefined}
           onChange={(event) => updateSelected({ caption: event.target.value })}
         />
-      </label>
-      {isSummary ? <p className="ccw-hint">{t('layout.summaryBoxHint')}</p> : null}
+      </div>
       {!isSummary && selected.label === 'text' ? (
         <label className="ccw-field">
           <span>{t('box.text')}</span>
@@ -430,8 +415,8 @@ export function CanvasTab(props) {
   // so the mask stays a 0/1 selection and the repaint strength is the only
   // knob (A1111 inpaint semantics). The red overlay's opacity is the mask's
   // display setting below.
-  const [brush, setBrush] = useState({ size: 64, hardness: 0.7 })
-  const [mask, setMask] = useState({ feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, denoise: 0.85, hasMask: false })
+  const [brush, setBrush] = useState({ size: 64 })
+  const [mask, setMask] = useState({ feather: 8, grow: 0, color: '#ff3b30', opacity: 0.45, denoise: 0.85, hasMask: false })
   // The local repaint prompt belongs to the mask, not to the whole image: while
   // a mask is painted a run sends it instead of the canvas prompt.
   const [maskPrompt, setMaskPrompt] = useState('')
@@ -639,8 +624,6 @@ export function CanvasTab(props) {
           mask: {
             feather: mask.feather,
             grow: mask.grow,
-            inverted: mask.inverted,
-            visible: mask.visible,
             color: mask.color,
             opacity: mask.opacity,
             denoise: mask.denoise,
@@ -656,7 +639,7 @@ export function CanvasTab(props) {
     return () => {
       if (maskSaveTimer.current !== null) clearTimeout(maskSaveTimer.current)
     }
-  }, [mask.feather, mask.grow, mask.inverted, mask.visible, mask.color, mask.opacity, mask.denoise, sessionId])
+  }, [mask.feather, mask.grow, mask.color, mask.opacity, mask.denoise, sessionId])
 
   /** A hand-written prompt also updates the text node, so the graph and the box agree. */
   async function pushPromptToNode(current, value) {
@@ -1170,7 +1153,7 @@ export function CanvasTab(props) {
         image: { asset: 'canvas.png', name: file.name, width: bitmap.width, height: bitmap.height, rev: Date.now() },
         // A new image starts a new edit; the old local repaint prompt does not
         // describe it, so it goes away with the old mask.
-        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, inverted: mask.inverted, prompt: '', promptSource: 'user' },
+        mask: { rev: Date.now(), hasMask: false, feather: mask.feather, grow: mask.grow, prompt: '', promptSource: 'user' },
       })
       setDoc(result.doc)
       setMaskPrompt('')
@@ -1682,11 +1665,15 @@ export function CanvasTab(props) {
         </section>
 
         <aside className="ccw-inspector" aria-label={t('inspector.label')}>
-          <Section title={t('canvasSize.title')} icon="maximize" className="ccw-section-canvas">
+          <Section
+            title={t('canvasSize.title')}
+            icon="maximize"
+            help={t('help.canvasSize')}
+            className="ccw-section-canvas"
+          >
             {image ? (
               <div className="ccw-size-readout">
                 <span className="ccw-size-value">{image.width} × {image.height}</span>
-                <span className="ccw-hint">{t('canvasSize.fromImage')}</span>
               </div>
             ) : (
               <>
@@ -1752,14 +1739,17 @@ export function CanvasTab(props) {
                     </label>
                   </div>
                 </div>
-                <p className="ccw-hint">{t('canvasSize.hint')}</p>
               </>
             )}
           </Section>
 
           {showMaskTools ? (
-            <Section title={t('mask.title')} icon="sliders" className="ccw-section-mask">
-              <p className="ccw-hint">{t('mask.tools')}</p>
+            <Section
+              title={t('mask.title')}
+              icon="sliders"
+              help={t('help.mask')}
+              className="ccw-section-mask"
+            >
               <MaskSliders
                 brush={brush}
                 setBrush={setBrush}
@@ -1796,9 +1786,9 @@ export function CanvasTab(props) {
             title={t('prompt.title')}
             icon="sparkles"
             count={hasBoxes ? items.length : undefined}
+            help={t('help.prompt')}
             className="ccw-section-prompt"
           >
-            <p className="ccw-hint">{t('prompt.hint')}</p>
             <textarea
               className="ccw-prompt"
               value={draft}
@@ -1809,8 +1799,11 @@ export function CanvasTab(props) {
               onFocus={() => setFocused(true)}
               onBlur={onPromptBlur}
             />
-            <label className="ccw-subfield">
-              <span>{t('prompt.negative')}</span>
+            <div className="ccw-subfield">
+              <span className="ccw-field-head">
+                <span>{t('prompt.negative')}</span>
+                <HelpTip text={t('help.negative')} />
+              </span>
               <textarea
                 className="ccw-negative"
                 value={negative}
@@ -1821,8 +1814,7 @@ export function CanvasTab(props) {
                 onFocus={() => setNegativeFocused(true)}
                 onBlur={onNegativeBlur}
               />
-            </label>
-            <p className="ccw-hint">{t('prompt.negativeHint')}</p>
+            </div>
             {doc?.promptError ? (
               <div className="ccw-inline-error" role="alert">{doc.promptError}</div>
             ) : null}
@@ -1834,7 +1826,6 @@ export function CanvasTab(props) {
                 </span>
               </div>
             ) : null}
-            {hasBoxes ? <p className="ccw-hint">{t('prompt.compileHint')}</p> : null}
             <div className="ccw-action-row">
               <button
                 type="button"
@@ -1861,16 +1852,12 @@ export function CanvasTab(props) {
             title={t('layout.title')}
             icon="layout"
             count={items.length}
+            help={t('help.layout')}
             className="ccw-section-layout"
             actions={(
               <IconButton icon="plus" label={t('layout.add')} onClick={addBox} />
             )}
           >
-            <p className="ccw-hint ccw-layout-hint">
-              <Icon name="info" size={13} />
-              <span>{t('layout.mossOnly')}</span>
-            </p>
-            <p className="ccw-hint">{t('layout.captionEdit')}</p>
             {hasWorkflowNodes && !hasMossNodes ? (
               <p className="ccw-hint ccw-warn-hint" role="status">
                 <Icon name="alert" size={13} />
@@ -1943,6 +1930,7 @@ export function CanvasTab(props) {
             title={t('comment.title')}
             icon="comment"
             count={comments.length}
+            help={t('help.comments')}
             className="ccw-section-comment"
             actions={(
               <IconButton
@@ -1955,7 +1943,6 @@ export function CanvasTab(props) {
               />
             )}
           >
-            <p className="ccw-hint">{t('comment.hint')}</p>
             {comments.length === 0 ? (
               <p className="ccw-hint">{t('comment.empty')}</p>
             ) : (
@@ -2009,7 +1996,12 @@ export function CanvasTab(props) {
             )}
           </Section>
 
-          <Section title={t('comfy.title')} icon="link" className="ccw-section-comfy">
+          <Section
+            title={t('comfy.title')}
+            icon="link"
+            help={t('help.comfy')}
+            className="ccw-section-comfy"
+          >
             <label className="ccw-field">
               <span>{t('comfy.url')}</span>
               <input
@@ -2038,16 +2030,16 @@ export function CanvasTab(props) {
                 {modelsRefreshing ? t('comfy.catalogRefreshing') : t('comfy.refreshCatalog')}
               </button>
             </div>
-            <p className="ccw-hint">{t('comfy.hint')}</p>
             {modelsNote === '' ? null : <p className="ccw-hint">{modelsNote}</p>}
           </Section>
 
-          <Section title={t('session.title')} icon="lock" className="ccw-section-session">
+          <Section
+            title={t('session.title')}
+            icon="lock"
+            help={t('help.session')}
+            className="ccw-section-session"
+          >
             <div className="ccw-danger-zone">
-              <p className="ccw-hint">
-                <Icon name="info" size={13} />
-                <span>{t('session.keepHint')}</span>
-              </p>
               <button type="button" className="ccw-btn ccw-btn-danger-ghost ccw-btn-small" onClick={() => setModal('unload')}>
                 <Icon name="unlink" size={13} />
                 <span>{t('session.unload')}</span>

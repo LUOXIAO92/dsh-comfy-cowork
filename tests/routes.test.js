@@ -165,7 +165,7 @@ test('accepts a document write whose session id is only in the body', async () =
     const res = await call(routes, makeReq('PUT', '/api/comfy-cowork/doc/canvas', {
       sessionId: session,
       mode: 'image',
-      mask: { feather: 12, grow: 2, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45, rev: 1, hasMask: true },
+      mask: { feather: 12, grow: 2, color: '#ff3b30', opacity: 0.45, rev: 1, hasMask: true },
       source: 'user',
     }))
     assert.equal(res.status, 200)

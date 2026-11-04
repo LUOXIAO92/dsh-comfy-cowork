@@ -22,7 +22,7 @@ Prompts go into the plugin's prompt box instead of staying in chat. The workflow
 
 ![Hand-painted brush mask](docs/media/mask.gif)
 
-Brush, eraser, rectangle, and ellipse all paint one mask. Feather, grow, and invert it, then export a PNG ComfyUI can use as-is.
+Brush, eraser, rectangle, and ellipse all paint one mask. Feather and grow it, then export a PNG ComfyUI can use as-is.
 
 ### Layout planning (MOSS-Image)
 
@@ -55,8 +55,8 @@ Open the canvas at the start of a chat. Turning the tools on later in a conversa
 ### Local image edits
 
 1. Load an image into the canvas: file picker, drag and drop, paste, or a ComfyUI result.
-2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust size and hardness. The mask is a stencil, so a stroke always paints full alpha and there is no brush opacity.
-3. Adjust repaint strength, feather, grow/shrink, and invert. The mask shows as a red overlay; **Overlay opacity** changes only how strong that red looks, never the mask or the repaint.
+2. Paint a mask with the brush, eraser, rectangle, or ellipse; adjust the brush size. The mask is a stencil, so a stroke always paints a hard, full-alpha edge and there is no brush hardness or opacity; feather is the only thing that softens it. **Overlay opacity** next to the brush only changes how strong the red tint looks.
+3. Adjust repaint strength, feather, and grow/shrink. The mask is always shown as a red overlay (there is no show/hide switch), and a small **?** next to each control explains it on hover.
 4. Write the **local repaint prompt** in the mask section. While a mask is painted, the run sends this text instead of the whole-image prompt, so the prompt box keeps describing the image and the mask section describes only the change. The agent writes it with `set_prompt` target `mask`; leaving it empty falls back to the whole-image prompt.
 5. On the Workflow page, load a workflow that contains `LoadImage` / `LoadImageMask`. Injection bindings are inferred from node types and links; to override one, set the injection binding in the node properties.
 6. Set the seed and click "Queue run". The run panel says which prompt drove it and, for a mask run, the repaint strength it used; the result appears below; use "Use as canvas" to keep iterating.

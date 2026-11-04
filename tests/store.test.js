@@ -482,6 +482,30 @@ test('stores the local repaint prompt on the mask without touching the canvas pr
   }
 })
 
+test('drops the mask invert and visibility fields older documents carry', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-mask-legacy-toggles'
+    const dir = await store.ensureDir(session)
+    await fs.writeFile(path.join(dir, 'document.json'), JSON.stringify({
+      rev: 3,
+      mask: { feather: 12, grow: 2, inverted: true, visible: false, opacity: 0.6, denoise: 0.7 },
+    }))
+    const doc = await store.snapshot(session)
+    // The mask is a plain selection: it is always shown and never inverted.
+    assert.equal('inverted' in doc.mask, false)
+    assert.equal('visible' in doc.mask, false)
+    assert.equal(doc.mask.opacity, 0.6)
+    assert.equal(doc.mask.denoise, 0.7)
+    const patch = await store.setCanvas(session, { mask: { feather: 4, inverted: true, visible: true, rev: 4 } })
+    assert.equal('inverted' in patch.mask, false)
+    assert.equal('visible' in patch.mask, false)
+    assert.equal(patch.mask.feather, 4)
+  } finally {
+    await cleanup()
+  }
+})
+
 test('normalizes a persisted mask prompt and its source', async () => {
   const { store, cleanup } = await makeStore()
   try {

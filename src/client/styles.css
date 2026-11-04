@@ -993,7 +993,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   height: 100%;
   padding: 0;
@@ -1019,6 +1019,91 @@
 
 .ccw-section-icon {
   color: var(--ccw-text-secondary);
+}
+
+/* A quiet circled question mark: the explanation lives in a hover bubble
+   instead of a paragraph under the control. */
+.ccw-help {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-inline-start: 2px;
+}
+
+.ccw-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--ccw-text-secondary);
+  cursor: help;
+}
+
+.ccw-help-btn:hover,
+.ccw-help-btn[aria-expanded='true'] {
+  color: var(--ccw-text);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);
+}
+
+.ccw-help-btn:focus-visible {
+  outline: none;
+  color: var(--ccw-text);
+  box-shadow: 0 0 0 1px var(--ccw-accent);
+}
+
+/* Portalled popovers leave the .ccw-root scope, so the local aliases have to
+   be re-declared for them (the DSH tokens live on :root and still inherit). */
+.ccw-help-pop,
+.ccw-colorpop {
+  --ccw-surface-overlay: var(--dsw-alias-bg-overlay);
+  --ccw-border-strong: color-mix(in srgb, var(--dsw-alias-label-primary) 24%, transparent);
+  --ccw-text: var(--dsw-alias-label-primary);
+  --ccw-radius-sm: 4px;
+  --ccw-text-ui: 12px;
+  --ccw-font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.ccw-help-pop {
+  position: fixed;
+  z-index: 90;
+  max-width: 250px;
+  padding: 7px 10px;
+  border: 1px solid var(--ccw-border-strong);
+  border-radius: var(--ccw-radius-sm, 4px);
+  background: var(--ccw-surface-overlay, var(--dsw-alias-bg-overlay));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.36);
+  color: var(--ccw-text, var(--dsw-alias-label-primary));
+  font-family: var(--ccw-font-ui, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ccw-text-ui, 12px);
+  line-height: 1.45;
+  pointer-events: none;
+  corner-shape: round;
+}
+
+.ccw-section-help {
+  margin-inline-start: 4px;
+  margin-inline-end: 2px;
+}
+
+/* Keeps the whole section bar clickable for collapsing without wrapping the
+   help button in the toggle button. */
+.ccw-section-fill {
+  flex: 1 1 auto;
+  align-self: stretch;
+  cursor: pointer;
+}
+
+.ccw-label-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
 }
 
 .ccw-section-title {
@@ -1164,6 +1249,13 @@
   min-width: 0;
   color: var(--ccw-text-secondary);
   font-size: var(--ccw-text-ui);
+}
+
+.ccw-range-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
 }
 
 .ccw-range-value {

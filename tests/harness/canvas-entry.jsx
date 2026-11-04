@@ -31,8 +31,8 @@ function Harness() {
         width: 512,
         height: 512,
         tool: 'brush',
-        brush: { size: 64, hardness: 0.8, opacity: 0.9 },
-        maskSettings: { feather: 8, grow: 0, inverted: false, visible: true, color: '#ff3b30', opacity: 0.45 },
+        brush: { size: 64 },
+        maskSettings: { feather: 8, grow: 0, color: '#ff3b30', opacity: 0.45 },
         boxes: [],
         selectedId: null,
         onMaskReady: (result) => {

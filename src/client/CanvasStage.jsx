@@ -517,7 +517,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     ctx.clearRect(0, 0, display.width, display.height)
     const tinted = tintedMask(source, maskSettings.color, maskSettings.opacity)
     ctx.drawImage(tinted.canvas, 0, 0)
-    display.style.opacity = maskSettings.visible ? String(maskSettings.opacity) : '0'
+    // The overlay is always drawn while a mask exists; its opacity is the only
+    // display knob, so the red tint can never hide the selection entirely.
+    display.style.opacity = String(maskSettings.opacity)
     ctx.globalCompositeOperation = 'source-over'
   }
 
@@ -780,7 +782,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   useEffect(() => {
     const timer = setTimeout(() => refreshProcessed(), 50)
     return () => clearTimeout(timer)
-  }, [maskSettings.feather, maskSettings.grow, maskSettings.inverted, maskSettings.color, maskSettings.opacity, maskSettings.visible])
+  }, [maskSettings.feather, maskSettings.grow, maskSettings.color, maskSettings.opacity])
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -1128,8 +1130,8 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       gestureRef.current = stroke
       drawDot(layer.getContext('2d'), point, {
         size: brush.size,
-        // The mask is a stencil: a stroke always paints full alpha, and the
-        // edges come from the brush hardness (the feather slider adds blur).
+        // The mask is a stencil: a stroke always paints full alpha and a hard
+        // edge; the feather slider is the only thing that softens it.
         opacity: 1,
         erase: stroke.erase,
       })
@@ -1224,7 +1226,6 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       if (layer === null) return
       drawStrokeSegment(layer.getContext('2d'), gesture.last, point, {
         size: brush.size,
-        hardness: brush.hardness,
         opacity: 1,
         erase: gesture.erase,
       })

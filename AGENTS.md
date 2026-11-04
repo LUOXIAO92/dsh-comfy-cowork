@@ -166,6 +166,10 @@ batch, so a fix is never split across two releases.
 - Text lives in `src/client/locales.js` — keep `en`, `zh`, and `ja` at identical key sets. The
   plugin registers Japanese with DSH's language catalog; any language it does not translate
   falls back to English.
+- Static explanations are not paragraphs under the controls. Put them in a `HelpTip` (the
+  circled `?` rendered right after the label or the section title, `help.*` text) so hovering or
+  focusing shows a one-line bubble; the bubble is portalled and closes on scroll. Keep inline
+  `ccw-hint` only for state that changes (counts, empty states, warnings, errors).
 - The workflow JSON is the single source of truth; never add plugin-private fields to nodes.
 
 ## Feature map (agent-relevant)
@@ -235,10 +239,12 @@ batch, so a fix is never split across two releases.
   `bindings.denoise` points at, so 0.5 keeps most of the old content and 0.9 invents it. The
   canvas posts that strength with its own run (`POST /run` `denoise`) so it never races the
   debounced mask save, and a run records it as `maskDenoise` (with `promptKind`) which `state`
-  repeats for the recent runs. The mask section's other slider, `doc.mask.opacity`, is display
-  only: it is the red overlay's opacity in the browser and never reaches the mask asset or a
-  workflow. The brush has no opacity at all — a stroke always writes full alpha because the
-  mask is a stencil, and the soft edge comes from the brush hardness and the feather slider.
+  repeats for the recent runs. The other display number, `doc.mask.opacity`, lives in the
+  brush group because it tints what the brush paints: it is the red overlay's opacity in the
+  browser and never reaches the mask asset or a workflow. The mask has no show/hide switch and
+  no invert; it exists only while it is shown. The brush has no hardness and no opacity — a
+  stroke always writes a hard, full-alpha edge because the mask is a stencil, and the feather
+  slider is the only thing that softens it (a1111 has no brush hardness either).
 - The stage imports an image from the file picker, a drop on the stage, or a paste outside a
   text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
   cleared mask prompt. Never let a text paste be swallowed: the paste handler ignores inputs,

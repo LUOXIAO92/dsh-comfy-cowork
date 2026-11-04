@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 
 /**
  * Small presentational primitives shared by the canvas and workflow panes.
@@ -204,6 +205,11 @@ const ICONS = {
   dot: [
     ['circle', { cx: 12, cy: 12, r: 3, fill: 'currentColor', stroke: 'none' }],
   ],
+  help: [
+    ['circle', { cx: 12, cy: 12, r: 9 }],
+    ['path', { d: 'M9.1 9a3 3 0 0 1 5.8 1.1c0 1.9-2.9 2.2-2.9 3.6' }],
+    ['path', { d: 'M12 17h.01' }],
+  ],
 }
 
 export function Icon({ name, size = 16, className = '', strokeWidth = 1.5 }) {
@@ -221,6 +227,88 @@ export function Icon({ name, size = 16, className = '', strokeWidth = 1.5 }) {
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
   }, children.map(([tag, attrs], index) => React.createElement(tag, { ...attrs, key: index })))
+}
+
+/**
+ * A circled question mark that explains a control on hover or keyboard focus.
+ *
+ * Long explanations used to sit under the controls as paragraphs and pushed the
+ * inspector apart; a tip keeps the short state lines and hides the prose. The
+ * bubble is portalled so a scrolling inspector can never clip it, and it is
+ * fixed-positioned next to the icon, flipping above when it would run past the
+ * bottom edge.
+ */
+export function HelpTip({ text, className = '' }) {
+  const [open, setOpen] = React.useState(false)
+  const [position, setPosition] = React.useState(null)
+  const anchorRef = React.useRef(null)
+  const popRef = React.useRef(null)
+
+  React.useLayoutEffect(() => {
+    if (!open) {
+      setPosition(null)
+      return
+    }
+    const anchor = anchorRef.current
+    const pop = popRef.current
+    if (anchor === null || pop === null) return
+    const a = anchor.getBoundingClientRect()
+    const p = pop.getBoundingClientRect()
+    const left = Math.min(Math.max(8, a.left + a.width / 2 - p.width / 2), Math.max(8, window.innerWidth - p.width - 8))
+    const top = a.bottom + 6 + p.height > window.innerHeight - 8
+      ? Math.max(8, a.top - p.height - 6)
+      : a.bottom + 6
+    setPosition({ left, top })
+  }, [open, text])
+
+  React.useEffect(() => {
+    if (!open) return undefined
+    const close = () => setOpen(false)
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    // A fixed bubble would drift away from its icon when the inspector scrolls.
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [open])
+
+  return React.createElement('span', { className: `ccw-help ${className}`.trim() }, [
+    React.createElement('button', {
+      key: 'anchor',
+      ref: anchorRef,
+      type: 'button',
+      className: 'ccw-help-btn',
+      'aria-label': text,
+      'aria-expanded': open,
+      onMouseEnter: () => setOpen(true),
+      onMouseLeave: () => setOpen(false),
+      onFocus: () => setOpen(true),
+      onBlur: () => setOpen(false),
+      onPointerUp: (event) => {
+        // Touch has no hover: a tap toggles the bubble.
+        if (event.pointerType === 'touch') setOpen((current) => !current)
+      },
+    }, React.createElement(Icon, { name: 'help', size: 13 })),
+    open
+      ? createPortal(React.createElement('span', {
+          key: 'pop',
+          ref: popRef,
+          role: 'tooltip',
+          className: 'ccw-help-pop',
+          style: {
+            left: `${position?.left ?? 0}px`,
+            top: `${position?.top ?? 0}px`,
+            visibility: position === null ? 'hidden' : 'visible',
+          },
+        }, text), document.body)
+      : null,
+  ])
 }
 
 export function IconButton({
@@ -248,6 +336,7 @@ export function Section({
   icon,
   count,
   actions,
+  help,
   children,
   defaultOpen = true,
   className = '',
@@ -269,6 +358,15 @@ export function Section({
       count !== undefined && count !== null
         ? React.createElement('span', { className: 'ccw-count' }, String(count))
         : null),
+      // The tip sits right after the title; the filler keeps the rest of the bar
+      // clickable for collapsing.
+      help ? React.createElement(HelpTip, { text: help, className: 'ccw-section-help' }) : null,
+      React.createElement('div', {
+        key: 'fill',
+        className: 'ccw-section-fill',
+        'aria-hidden': 'true',
+        onClick: () => setOpen((value) => !value),
+      }),
       actions ? React.createElement('div', { className: 'ccw-section-actions' }, actions) : null),
     open ? React.createElement('div', { className: `ccw-section-body ${bodyClassName}`.trim() }, children) : null)
 }

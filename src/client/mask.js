@@ -16,21 +16,6 @@ export function canvasToBlob(canvas) {
   })
 }
 
-function stamp(ctx, x, y, radius, hardness, opacity, erase) {
-  const solid = Math.max(0.01, Math.min(0.99, hardness))
-  const gradient = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.5, radius))
-  gradient.addColorStop(0, `rgba(255,255,255,${opacity})`)
-  gradient.addColorStop(solid, `rgba(255,255,255,${opacity})`)
-  gradient.addColorStop(1, 'rgba(255,255,255,0)')
-  ctx.save()
-  ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over'
-  ctx.fillStyle = gradient
-  ctx.beginPath()
-  ctx.arc(x, y, Math.max(0.5, radius), 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-}
-
 export function drawDot(ctx, point, { size, opacity, erase }) {
   ctx.save()
   ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over'
@@ -42,32 +27,24 @@ export function drawDot(ctx, point, { size, opacity, erase }) {
   ctx.restore()
 }
 
-export function drawStrokeSegment(ctx, from, to, { size, hardness, opacity, erase }) {
-  const radius = Math.max(0.5, size / 2)
-  if (hardness >= 0.97) {
-    ctx.save()
-    ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over'
-    ctx.globalAlpha = Math.max(0, Math.min(1, opacity))
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = Math.max(1, size)
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.beginPath()
-    ctx.moveTo(from.x, from.y)
-    ctx.lineTo(to.x, to.y)
-    ctx.stroke()
-    ctx.restore()
-    return
-  }
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const distance = Math.hypot(dx, dy)
-  const spacing = Math.max(0.75, size * 0.14)
-  const steps = Math.max(1, Math.ceil(distance / spacing))
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps
-    stamp(ctx, from.x + dx * t, from.y + dy * t, radius, hardness, opacity, erase)
-  }
+/**
+ * Paint one stroke segment. The mask is a stencil: every stroke is a hard,
+ * full-alpha line, and softness is the feather slider's job alone (a1111 has no
+ * brush hardness either, only Mask blur).
+ */
+export function drawStrokeSegment(ctx, from, to, { size, opacity, erase }) {
+  ctx.save()
+  ctx.globalCompositeOperation = erase ? 'destination-out' : 'source-over'
+  ctx.globalAlpha = Math.max(0, Math.min(1, opacity))
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = Math.max(1, size)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(from.x, from.y)
+  ctx.lineTo(to.x, to.y)
+  ctx.stroke()
+  ctx.restore()
 }
 
 /**
@@ -191,15 +168,13 @@ function dilate(source, radius) {
  * Apply grow/shrink, inversion, and feather to a raw white-on-transparent mask.
  * Returns a new canvas; the raw mask is never mutated.
  */
-export function processMask(raw, { feather = 0, grow = 0, inverted = false } = {}) {
+export function processMask(raw, { feather = 0, grow = 0 } = {}) {
   let current = createCanvas(raw.width, raw.height)
   current.getContext('2d').drawImage(raw, 0, 0)
 
   const amount = Math.round(Number(grow) || 0)
   if (amount > 0) current = dilate(current, amount)
   else if (amount < 0) current = invertCanvas(dilate(invertCanvas(current), -amount))
-
-  if (inverted) current = invertCanvas(current)
 
   const blur = Math.round(Number(feather) || 0)
   if (blur > 0) {
