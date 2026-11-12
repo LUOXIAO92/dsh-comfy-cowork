@@ -6,6 +6,7 @@ import {
   assignRegions,
   bboxScore,
   labelComponents,
+  regionSyncAction,
   sampleComponents,
   seedRegions,
 } from '../src/client/regions.js'
@@ -160,4 +161,14 @@ test('bboxScore reads overlap over the smaller box', () => {
   assert.equal(bboxScore([0, 0, 10, 10], [5, 0, 15, 10]), 0.5)
   assert.equal(bboxScore([0, 0, 10, 10], [20, 0, 30, 10]), 0)
   assert.equal(bboxScore(null, [0, 0, 1, 1]), 0)
+})
+
+test('a region sync waits for the mask before consuming the document prompts', () => {
+  // The first sync can see an empty composite while the mask asset is loading;
+  // seeding then would attach the document's prompts to nothing.
+  assert.equal(regionSyncAction({ seeded: false, maskLoaded: false, hasSeedData: true, componentCount: 0 }), 'wait')
+  assert.equal(regionSyncAction({ seeded: false, maskLoaded: false, hasSeedData: false, componentCount: 0 }), 'seed')
+  assert.equal(regionSyncAction({ seeded: false, maskLoaded: true, hasSeedData: true, componentCount: 0 }), 'seed')
+  assert.equal(regionSyncAction({ seeded: false, maskLoaded: false, hasSeedData: true, componentCount: 2 }), 'seed')
+  assert.equal(regionSyncAction({ seeded: true, maskLoaded: false, hasSeedData: true, componentCount: 0 }), 'assign')
 })

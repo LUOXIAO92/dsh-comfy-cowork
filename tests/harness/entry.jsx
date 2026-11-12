@@ -317,7 +317,9 @@ function mountApp() {
   )
 }
 
-mountApp()
+// A stored document is loaded before the app mounts, so the first render sees
+// the same document a real page would; otherwise the demo doc is enough.
+if (realSession === null) mountApp()
 
 // The mocked HTTP layer cannot answer browser <img> requests, so point the
 // stage image at the checked-in demo art after React mounts it.
@@ -651,6 +653,7 @@ if (realSession !== null) {
         window.dispatchEvent(new CustomEvent('ccw-realdoc', { detail: stored }))
       }
     } catch {}
+    mountApp()
   }
   boot()
 }

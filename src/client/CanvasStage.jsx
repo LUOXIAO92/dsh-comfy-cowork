@@ -15,6 +15,7 @@ import {
   assignRegions,
   bboxScore,
   labelComponents,
+  regionSyncAction,
   sampleComponents,
   seedRegions,
 } from './regions.js'
@@ -503,6 +504,9 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
   const regionLabelsRef = useRef(null)
   const regionKeyRef = useRef('')
   const regionSeededRef = useRef(false)
+  // The mask asset is fetched after mount; until it lands the composite is
+  // empty, which must not be mistaken for "the mask has no regions".
+  const maskLoadedRef = useRef(false)
   const docRegionsRef = useRef(Array.isArray(maskRegions) ? maskRegions : [])
   docRegionsRef.current = Array.isArray(maskRegions) ? maskRegions : []
   const legacyPromptRef = useRef(typeof legacyMaskPrompt === 'string' ? legacyMaskPrompt : '')
@@ -684,11 +688,19 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     if (!composite) return
     const w = composite.width
     const h = composite.height
+    const hasSeedData = docRegionsRef.current.length > 0 || String(legacyPromptRef.current ?? '').trim() !== ''
     const { labels, components } = labelComponents(compositeAlpha(composite), w, h)
+    const action = regionSyncAction({
+      seeded: regionSeededRef.current,
+      maskLoaded: maskLoadedRef.current,
+      hasSeedData,
+      componentCount: components.length,
+    })
+    if (action === 'wait') return
     const samples = sampleComponents(labels, components, w, h)
     regionLabelsRef.current = labels
     let next
-    if (!regionSeededRef.current) {
+    if (action === 'seed') {
       regionSeededRef.current = true
       next = seedRegions({
         components,
@@ -942,6 +954,7 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
       regionListRef.current = []
       regionLabelsRef.current = null
       regionKeyRef.current = ''
+      maskLoadedRef.current = false
     }
     paintRef.current = createCanvas(limit.width, limit.height)
     compositeRef.current = createCanvas(limit.width, limit.height)
@@ -956,6 +969,11 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
     buildComposite()
     drawMaskPreview(true)
     drawOverlay()
+    if (!imageUrl) {
+      // No asset to wait for: an empty composite is the truth right away.
+      maskLoadedRef.current = true
+      syncRegions()
+    }
     const key = `${imageUrl ?? ''}|${limit.width}x${limit.height}`
     if (loadedKeyRef.current !== key) {
       loadedKeyRef.current = key
@@ -970,13 +988,20 @@ export const CanvasStage = forwardRef(function CanvasStage(props, ref) {
             return { bitmap: blob === null && source.size === 0 ? null : await createImageBitmap(source), brushOnly }
           })
           .then(({ bitmap, brushOnly }) => {
-            if (cancelled || bitmap === null || paintRef.current === null) return
-            paintRef.current.getContext('2d').drawImage(bitmap, 0, 0, limit.width, limit.height)
-            if (!brushOnly) eraseShapesFromPaint()
+            if (cancelled || paintRef.current === null) return
+            if (bitmap !== null) {
+              paintRef.current.getContext('2d').drawImage(bitmap, 0, 0, limit.width, limit.height)
+              if (!brushOnly) eraseShapesFromPaint()
+            }
+            maskLoadedRef.current = true
             refreshProcessed()
             syncRegions()
           })
-          .catch(() => {})
+          .catch(() => {
+            // A failed asset read must not leave the stage waiting forever.
+            maskLoadedRef.current = true
+            syncRegions()
+          })
         return () => {
           cancelled = true
         }

@@ -161,6 +161,25 @@ function overlap(a, b) {
 }
 
 /**
+ * What a region sync should do right now.
+ *
+ * The mask asset is fetched after mount, so the first sync can see an empty
+ * composite even though the document already holds prompts. Seeding then would
+ * attach those prompts to nothing (and publishing the empty list would erase
+ * them), so that first sync waits for the mask instead. Once the mask is known,
+ * an empty composite is the truth and seeding yields no regions.
+ *
+ * @returns 'seed' to attach the document's prompts, 'assign' for the normal
+ *   overlap matching, or 'wait' while the mask asset is still loading.
+ */
+export function regionSyncAction({ seeded, maskLoaded, hasSeedData, componentCount }) {
+  if (seeded) return 'assign'
+  if (componentCount > 0) return 'seed'
+  if (!hasSeedData) return 'seed'
+  return maskLoaded ? 'seed' : 'wait'
+}
+
+/**
  * Keep region identity across mask edits.
  *
  * Every component takes the previous region it overlaps most (if enough): a
