@@ -1,7 +1,9 @@
 /** UI-side workflow inspection helpers (no ComfyUI API calls). */
 
 const WIDGET_TYPES = new Set(['INT', 'FLOAT', 'STRING', 'BOOLEAN', 'COMBO'])
-const CONTROL = new Set(['fixed', 'increment', 'decrement', 'randomize'])
+export const SEED_CONTROLS = ['fixed', 'increment', 'decrement', 'randomize']
+const CONTROL = new Set(SEED_CONTROLS)
+const SEED_NAMES = new Set(['seed', 'noise_seed'])
 
 export function inputSpecs(info) {
   const required = info?.input?.required ?? {}
@@ -33,19 +35,66 @@ export function comboOptions(spec) {
   return Array.isArray(options) ? options : []
 }
 
-export function widgetIndex(node, name) {
-  const values = Array.isArray(node.widgets_values) ? node.widgets_values : []
+/**
+ * Positional slots of one node: the value index of every widget input, plus the
+ * control token a seed widget carries after its value.
+ */
+export function widgetSlots(node) {
+  const raw = Array.isArray(node?.widgets_values) ? node.widgets_values : []
+  const slots = new Map()
   let index = 0
-  for (const input of node.inputs ?? []) {
+  for (const input of node?.inputs ?? []) {
     if (input?.widget === undefined) continue
-    const widgetName = input.widget.name ?? input.name
-    if (widgetName === name) return index
-    if (typeof values[index + 1] === 'string' && CONTROL.has(values[index + 1]) && (widgetName === 'seed' || widgetName === 'noise_seed')) {
+    const name = input.widget.name ?? input.name
+    if (index >= raw.length) break
+    const value = raw[index]
+    const slot = { index, value: undefined, control: null, controlIndex: -1 }
+    index += 1
+    if (typeof value === 'string' && CONTROL.has(value)) continue
+    slot.value = value
+    slots.set(name, slot)
+    if (SEED_NAMES.has(name) && typeof raw[index] === 'string' && CONTROL.has(raw[index])) {
+      slot.control = raw[index]
+      slot.controlIndex = index
       index += 1
     }
-    index += 1
   }
-  return -1
+  return slots
+}
+
+export function widgetIndex(node, name) {
+  const slot = widgetSlots(node).get(name)
+  return slot === undefined ? -1 : slot.index
+}
+
+/** A seed widget the graph actually drives (a linked input has no editable value). */
+export function isSeedWidget(node, name) {
+  if (!SEED_NAMES.has(name)) return false
+  const input = (node.inputs ?? []).find((entry) => (entry?.widget?.name ?? entry?.name) === name)
+  return input !== undefined && (input.link === null || input.link === undefined)
+}
+
+/** True when the seed's positional slot exists, so its control token can be written. */
+export function canSetSeedControl(node, name) {
+  return isSeedWidget(node, name) && widgetSlots(node).has(name)
+}
+
+/** The stored mode, with ComfyUI's own default when the file has no token yet. */
+export function seedControlOf(node, name) {
+  return widgetSlots(node).get(name)?.control ?? 'randomize'
+}
+
+/** Write one seed's control token into a cloned workflow. */
+export function setSeedControl(workflow, nodeId, name, control) {
+  const next = JSON.parse(JSON.stringify(workflow))
+  if (!CONTROL.has(control)) return next
+  const node = (next.nodes ?? []).find((entry) => String(entry.id) === String(nodeId))
+  if (node === undefined || !Array.isArray(node.widgets_values)) return next
+  const slot = widgetSlots(node).get(name)
+  if (slot === undefined) return next
+  if (slot.controlIndex >= 0) node.widgets_values[slot.controlIndex] = control
+  else node.widgets_values.splice(slot.index + 1, 0, control)
+  return next
 }
 
 export function nodeWidgets(node, info) {

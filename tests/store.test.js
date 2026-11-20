@@ -525,3 +525,35 @@ test('normalizes a persisted mask prompt and its source', async () => {
     await cleanup()
   }
 })
+
+test('a seed advance rewrites the loaded workflow and persists it', async () => {
+  const { store, cleanup } = await makeStore()
+  try {
+    const session = 'session-seed'
+    const workflow = {
+      nodes: [{
+        id: 6,
+        type: 'KSampler',
+        mode: 0,
+        inputs: [
+          { name: 'seed', type: 'INT', widget: { name: 'seed' }, link: null },
+          { name: 'steps', type: 'INT', widget: { name: 'steps' }, link: null },
+        ],
+        widgets_values: [123, 'increment', 20],
+        widgets_values_named: { seed: 123, steps: 20 },
+      }],
+      links: [],
+    }
+    const loaded = await store.setWorkflow(session, { name: 'w.json', json: workflow, bindings: {} }, { source: 'user' })
+    const updated = await store.applySeedAdvances(session, [{ nodeId: '6', name: 'seed', value: 124 }], { source: 'user' })
+    assert.ok(updated.rev > loaded.rev)
+    const node = updated.workflow.json.nodes[0]
+    assert.deepEqual(node.widgets_values, [124, 'increment', 20])
+    assert.equal(node.widgets_values_named.seed, 124)
+    assert.equal(node.widgets_values_named.steps, 20)
+    const reloaded = await store.snapshot(session)
+    assert.equal(reloaded.workflow.json.nodes[0].widgets_values[0], 124)
+  } finally {
+    await cleanup()
+  }
+})

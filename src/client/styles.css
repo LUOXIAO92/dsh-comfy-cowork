@@ -2490,6 +2490,18 @@
   gap: var(--ccw-space-1);
 }
 
+/* The seed's after-generate row belongs to the seed field above it. */
+.ccw-widget-field.ccw-seed-control {
+  margin-top: -2px;
+}
+
+.ccw-widget-label-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
 .ccw-widget-field,
 .ccw-widget-label {
   width: 100%;

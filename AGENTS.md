@@ -268,6 +268,19 @@ batch, so a fix is never split across two releases.
   no invert; it exists only while it is shown. The brush has no hardness and no opacity — a
   stroke always writes a hard, full-alpha edge because the mask is a stencil, and the feather
   slider is the only thing that softens it (a1111 has no brush hardness either).
+- Seeds follow the sampler's control-after-generate, not a plugin counter. ComfyUI stores a
+  seed widget's mode (`fixed`, `increment`, `decrement`, `randomize`) as a UI-only token right
+  after its value in `widgets_values`; `lib/seed.js` reads it, the node editor shows it under the
+  seed field as **After generate**, and a run uses the stored seed and then advances every
+  unlinked `seed`/`noise_seed` widget in the loaded UI workflow the way the ComfyUI front end
+  does (increment/decrement clamp to 0…2^50, randomize draws from it, fixed does nothing). The
+  new values are written back into the document's workflow JSON in both the positional and named
+  copies, so the next run continues the sequence; a missing token uses ComfyUI's own default
+  `randomize`. This is document state, not a plugin-private node field — never add one. API-format
+  workflows have no widget metadata, so their seed only changes through the run tool's `seed`
+  override; the override pins that run and does not change the workflow's sequence. `state`
+  reports each run's `seed` and `seedControl`. The mask runs share one seed across all passes: a
+  chained region run is one click, so the seed advances once per run.
 - The stage imports an image from the file picker, a drop on the stage, or a paste outside a
   text field; all three share `loadImage`, which starts a new edit — new image, cleared mask,
   cleared mask regions. Never let a text paste be swallowed: the paste handler ignores inputs,

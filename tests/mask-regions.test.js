@@ -174,6 +174,8 @@ test('state summarizes a multi-pass run', async () => {
       promptId: 'pid-1',
       promptKind: 'mask',
       maskDenoise: 0.8,
+      seed: 42,
+      seedControl: 'randomize',
       passCount: 2,
       passIndex: 2,
       passes: [
@@ -186,6 +188,8 @@ test('state summarizes a multi-pass run', async () => {
     const state = await execute('state', {})
     assert.equal(state.runs[0].passCount, 2)
     assert.equal(state.runs[0].passIndex, 2)
+    assert.equal(state.runs[0].seed, 42)
+    assert.equal(state.runs[0].seedControl, 'randomize')
     assert.deepEqual(state.runs[0].passes, [
       { index: 1, promptKind: 'mask', prompt: 'wing', status: 'completed', error: null },
       { index: 2, promptKind: 'empty', prompt: '', status: 'running', error: null },

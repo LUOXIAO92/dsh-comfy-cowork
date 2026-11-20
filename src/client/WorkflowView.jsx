@@ -15,15 +15,19 @@ import {
   uploadAsset,
 } from './api.js'
 import {
+  canSetSeedControl,
   comboOptions,
   nodeSize,
   nodeTitle,
   nodeWidgets,
+  seedControlOf,
+  SEED_CONTROLS,
   setNodeWidget,
+  setSeedControl,
   workflowBounds,
   workflowLinks,
 } from './workflow-ui.js'
-import { Icon, IconButton, Section } from './ui.jsx'
+import { HelpTip, Icon, IconButton, Section } from './ui.jsx'
 
 function formatValue(value) {
   if (value === null || value === undefined) return '—'
@@ -241,7 +245,7 @@ function Graph({ workflow, title, infos, selectedId, onSelect, t }) {
   )
 }
 
-function WidgetEditor({ node, info, onChange, t }) {
+function WidgetEditor({ node, info, onChange, onSeedControl, t }) {
   if (info === undefined) {
     return (
       <p className="ccw-hint ccw-widgets-nodinfo">
@@ -314,22 +318,47 @@ function WidgetEditor({ node, info, onChange, t }) {
         const lockedControl = locked && control !== null
           ? React.cloneElement(control, { disabled: true, title: t('workflow.defaultValue') })
           : control
-        return (
-          <label key={widget.name} className={`ccw-field ccw-widget-field ${locked ? 'is-default' : ''}`}>
+        // ComfyUI's seed widget carries a second, linked widget for what to do
+        // after generate. It is not part of object_info, so the panel adds it
+        // right under the seed field.
+        const seedControl = canSetSeedControl(node, widget.name) ? (
+          <label key={`${widget.name}-control`} className="ccw-field ccw-widget-field ccw-seed-control">
             <span className="ccw-widget-label">
-              <span>{widget.name}</span>
-              {locked ? <span className="ccw-widget-chip">{t('workflow.defaultValue')}</span> : null}
-              <em>{formatWidgetType(widget.type)}</em>
+              <span className="ccw-widget-label-text">
+                <span>{t('workflow.controlAfterGenerate')}</span>
+                <HelpTip text={t('help.seedControl')} />
+              </span>
             </span>
-            {lockedControl}
+            <select
+              value={seedControlOf(node, widget.name)}
+              aria-label={t('workflow.controlAfterGenerate')}
+              onChange={(event) => onSeedControl(widget.name, event.target.value)}
+            >
+              {SEED_CONTROLS.map((mode) => (
+                <option key={mode} value={mode}>{t(`run.seedMode.${mode}`)}</option>
+              ))}
+            </select>
           </label>
+        ) : null
+        return (
+          <React.Fragment key={widget.name}>
+            <label className={`ccw-field ccw-widget-field ${locked ? 'is-default' : ''}`}>
+              <span className="ccw-widget-label">
+                <span>{widget.name}</span>
+                {locked ? <span className="ccw-widget-chip">{t('workflow.defaultValue')}</span> : null}
+                <em>{formatWidgetType(widget.type)}</em>
+              </span>
+              {lockedControl}
+            </label>
+            {seedControl}
+          </React.Fragment>
         )
       })}
     </div>
   )
 }
 
-function NodeEditor({ node, info, onChange, onTitle, onToggleMode, t }) {
+function NodeEditor({ node, info, onChange, onSeedControl, onTitle, onToggleMode, t }) {
   return (
     <div className="ccw-node-editor">
       <div className="ccw-node-meta">
@@ -364,7 +393,7 @@ function NodeEditor({ node, info, onChange, onTitle, onToggleMode, t }) {
           <span>{t('workflow.mute')}</span>
         </button>
       </div>
-      <WidgetEditor node={node} info={info} onChange={onChange} t={t} />
+      <WidgetEditor node={node} info={info} onChange={onChange} onSeedControl={onSeedControl} t={t} />
     </div>
   )
 }
@@ -397,6 +426,15 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
   })
   const syncKey = useRef('')
   const commitTimer = useRef(null)
+  // The last body handed to the host, and whether a workbook save is in
+  // flight. A same-workflow doc update is accepted only when neither applies,
+  // so a run's seed advance cannot overwrite an edit the panel is still saving.
+  const pendingJsonRef = useRef(null)
+  const savingRef = useRef(false)
+  const savingCountRef = useRef(0)
+  const saveChainRef = useRef(Promise.resolve())
+  const workflowRef = useRef(workflow)
+  workflowRef.current = workflow
 
   useEffect(() => {
     listWorkflows().then((result) => setWorkflows(result.workflows ?? [])).catch((error) => setError(error.message))
@@ -405,18 +443,37 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
   useEffect(() => {
     const incoming = doc?.workflow?.json ?? null
     const key = doc?.workflow === null || doc?.workflow === undefined ? '' : `${doc.workflow.name}|${doc.workflow.loadedAt}`
-    if (incoming !== null && key !== '' && key !== syncKey.current) {
+    if (incoming === null) {
+      if (syncKey.current !== '') {
+        syncKey.current = ''
+        pendingJsonRef.current = null
+        setWorkflow(null)
+        setDirty(false)
+      }
+      return
+    }
+    if (key === '') return
+    if (key !== syncKey.current) {
       syncKey.current = key
+      pendingJsonRef.current = null
       setWorkflow(incoming)
       setSaveName(doc.workflow.name ?? '')
       setDirty(doc.workflow.dirty === true)
       setSelectedNode(null)
+      return
     }
-    if (incoming === null && syncKey.current !== '') {
-      syncKey.current = ''
-      setWorkflow(null)
-      setDirty(false)
+    // Same workflow, different body: a run advanced its seed widgets. Take it
+    // unless this panel has an edit in flight; ignore the echo of our own save.
+    if (savingRef.current || commitTimer.current !== null) return
+    if (pendingJsonRef.current !== null) {
+      if (JSON.stringify(incoming) === JSON.stringify(pendingJsonRef.current)) {
+        pendingJsonRef.current = null
+        return
+      }
+      pendingJsonRef.current = null
     }
+    if (JSON.stringify(incoming) === JSON.stringify(workflowRef.current)) return
+    setWorkflow(incoming)
   }, [doc])
 
   // The picker holds workflow ids; a workflow that arrived through the agent
@@ -452,19 +509,49 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
     commitLocal(next)
   }
 
-  function commitLocal(next) {
-    setWorkflow(next)
-    setDirty(true)
-    if (commitTimer.current !== null) clearTimeout(commitTimer.current)
-    commitTimer.current = setTimeout(async () => {
-      commitTimer.current = null
+  /**
+   * Persist one workflow body. Saves are chained so two quick edits cannot
+   * race, and a run flushes the chain before it reads the document.
+   */
+  function persistWorkflow(next) {
+    savingCountRef.current += 1
+    savingRef.current = true
+    pendingJsonRef.current = next
+    const task = saveChainRef.current.then(async () => {
       try {
         const result = await patchWorkflow(sessionId, { json: next, dirty: true })
         setDoc(result.doc)
       } catch (error) {
+        pendingJsonRef.current = null
         setError(error.message)
+      } finally {
+        savingCountRef.current -= 1
+        if (savingCountRef.current === 0) savingRef.current = false
       }
+    })
+    saveChainRef.current = task
+    return task
+  }
+
+  function commitLocal(next) {
+    setWorkflow(next)
+    setDirty(true)
+    if (commitTimer.current !== null) clearTimeout(commitTimer.current)
+    commitTimer.current = setTimeout(() => {
+      commitTimer.current = null
+      persistWorkflow(next)
     }, 650)
+  }
+
+  /** A run must read the node editor's latest widget values, not the debounce. */
+  async function flushWorkflow() {
+    if (commitTimer.current !== null) {
+      clearTimeout(commitTimer.current)
+      commitTimer.current = null
+      await persistWorkflow(workflowRef.current)
+    } else if (savingRef.current) {
+      await saveChainRef.current
+    }
   }
 
   async function load(id) {
@@ -556,6 +643,9 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
   async function run() {
     setBusy(true)
     try {
+      // A widget edit is saved after a debounce; the run reads the document, so
+      // flush it first (the seed mode must not lag one run behind).
+      await flushWorkflow()
       // The host reads the mask, its per-region cutouts and their prompts from
       // the document, so flush what the canvas is showing first: a click right
       // after a stroke must not race the debounced mask save.
@@ -762,6 +852,9 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
                       commitLocal(setNodeWidget(workflow, selected.id, name, value, infos[selected.type]))
                       syncCanvasText(selected, name, value)
                     }}
+                    onSeedControl={(name, control) => {
+                      commitLocal(setSeedControl(workflow, selected.id, name, control))
+                    }}
                   />
                 </>
               ) : (
@@ -812,6 +905,12 @@ export function WorkflowView({ sessionId, doc, setDoc, t, setError, beforeRun })
               ) : null}
               {typeof latestRun?.maskDenoise === 'number' ? (
                 <div className="ccw-hint">{t('run.maskStrength', { percent: Math.round(latestRun.maskDenoise * 100) })}</div>
+              ) : null}
+              {typeof latestRun?.seed === 'number' ? (
+                <div className="ccw-hint">
+                  {t('run.seedUsed', { seed: latestRun.seed })}
+                  {SEED_CONTROLS.includes(latestRun.seedControl) ? ` · ${t(`run.seedMode.${latestRun.seedControl}`)}` : ''}
+                </div>
               ) : null}
               {multiPass ? (
                 <ol className="ccw-run-passes">

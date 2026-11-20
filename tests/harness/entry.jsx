@@ -151,9 +151,13 @@ const infos = {
   KSampler: { input: { required: { model: ['MODEL'], positive: ['CONDITIONING'], negative: ['CONDITIONING'], latent_image: ['LATENT'], seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'], sampler_name: [['euler'], {}], scheduler: [['normal'], {}], denoise: ['FLOAT'] } }, input_order: { required: ['model', 'positive', 'negative', 'latent_image', 'seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'] } },
 }
 
+// Every stream stays reachable so a test can push a host-side document update
+// (a run's seed advance) through the same event path the real host uses.
+const mockSources = []
 class MockEventSource {
   constructor() {
     this.listeners = {}
+    mockSources.push(this)
     setTimeout(() => {
       this.listeners.open?.({})
       this.listeners.hello?.({ data: JSON.stringify({ doc }) })
@@ -247,6 +251,21 @@ window.fetch = async (url, options = {}) => {
   if (method === 'DELETE' && text.includes('/doc/comment/')) {
     const id = decodeURIComponent(text.split('/doc/comment/')[1].split('?')[0])
     current.comments = current.comments.filter((item) => item.id !== id)
+    return json({ doc: current })
+  }
+  if (method === 'PUT' && text.includes('/doc/workflow')) {
+    // The client posts { patch: { json, dirty } } to /doc/workflow/patch.
+    const body = bodyOf(options)
+    const patch = body.patch ?? body
+    if (patch.json === null) current.workflow = null
+    else if (current.workflow !== null && current.workflow !== undefined) {
+      current.workflow = {
+        ...current.workflow,
+        ...(patch.json !== undefined ? { json: patch.json } : {}),
+        ...(patch.dirty !== undefined ? { dirty: patch.dirty } : {}),
+        ...(patch.bindings !== undefined ? { bindings: patch.bindings } : {}),
+      }
+    }
     return json({ doc: current })
   }
   if (method === 'PUT' && text.includes('/doc/canvas')) {
@@ -547,6 +566,33 @@ function runSmoke() {
     await sleep(500)
     report.steps.push({ step: 'workflow', nodes: document.querySelectorAll('#canvas-root .ccw-gnode').length })
 
+    // The seed widget's after-generate mode: ComfyUI adds it as a linked
+    // widget, the panel renders it under the seed field, and the choice lands
+    // in the workflow's positional widgets_values token.
+    const samplerCard = Array.from(document.querySelectorAll('#canvas-root .ccw-gnode'))
+      .find((element) => element.textContent.includes('KSampler'))
+    samplerCard?.click()
+    await sleep(500)
+    const seedSelect = document.querySelector('#canvas-root .ccw-seed-control select')
+    const seedOptions = seedSelect ? Array.from(seedSelect.options).map((option) => option.value) : []
+    const seedBefore = seedSelect?.value ?? null
+    if (seedSelect) {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+      setter.call(seedSelect, 'randomize')
+      seedSelect.dispatchEvent(new Event('change', { bubbles: true }))
+      await sleep(900)
+    }
+    const samplerNode = (window.__ccwDoc?.workflow?.json?.nodes ?? []).find((node) => node.id === 6)
+    report.steps.push({
+      step: 'seed-control',
+      found: seedSelect !== null,
+      options: seedOptions,
+      before: seedBefore,
+      after: seedSelect?.value ?? null,
+      stored: samplerNode?.widgets_values?.[1] ?? null,
+      storedValue: samplerNode?.widgets_values?.[0] ?? null,
+    })
+
     report.error = q('.ccw-error')?.textContent ?? null
     report.calls = calls.filter((line) => !line.includes('/health'))
     return report
@@ -594,6 +640,48 @@ if (shapeMode === 'rect' || shapeMode === 'ellipse') {
     fire('pointermove', rect.left + 430, rect.top + 470)
   }
   runShape()
+}
+
+// ?seedtest=1 simulates a host seed advance after a run: the workflow body
+// changes under the open node editor, and the panel must take the new value.
+if (new URLSearchParams(location.search).get('seedtest') === '1') {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  const run = async () => {
+    for (let i = 0; i < 80 && !document.querySelector('#canvas-root .ccw-root'); i += 1) await sleep(100)
+    const tab = document.querySelectorAll('#canvas-root .ccw-viewtab')[1]
+    tab?.click()
+    for (let i = 0; i < 80 && document.querySelectorAll('#canvas-root .ccw-gnode').length === 0; i += 1) await sleep(100)
+    const card = Array.from(document.querySelectorAll('#canvas-root .ccw-gnode')).find((el) => el.textContent.includes('KSampler'))
+    card?.click()
+    await sleep(400)
+    const seedField = Array.from(document.querySelectorAll('#canvas-root .ccw-widget-field'))
+      .find((field) => (field.querySelector('.ccw-widget-label > span')?.textContent ?? '') === 'seed')
+    const before = seedField?.querySelector('input[type="number"]')?.value ?? null
+    const sampler = (current.workflow?.json?.nodes ?? []).find((node) => node.id === 6)
+    if (sampler !== undefined) {
+      sampler.widgets_values[0] = 999
+      if (sampler.widgets_values_named !== undefined) sampler.widgets_values_named.seed = 999
+    }
+    const payload = JSON.stringify({ doc: current })
+    for (const source of mockSources) source.listeners.doc?.({ data: payload })
+    await sleep(600)
+    const afterField = Array.from(document.querySelectorAll('#canvas-root .ccw-widget-field'))
+      .find((field) => (field.querySelector('.ccw-widget-label > span')?.textContent ?? '') === 'seed')
+    const report = {
+      found: seedField !== undefined,
+      before,
+      after: afterField?.querySelector('input[type="number"]')?.value ?? null,
+      stored: sampler?.widgets_values?.[0] ?? null,
+      select: afterField?.parentElement?.querySelector('.ccw-seed-control select')?.value ?? null,
+    }
+    const pre = document.createElement('pre')
+    pre.id = 'seedtest-report'
+    pre.textContent = JSON.stringify(report, null, 1)
+    pre.style.cssText = 'position:fixed;right:0;top:0;z-index:99999;background:#000;color:#0f0;font-size:11px'
+    document.body.appendChild(pre)
+    document.body.setAttribute('data-seedtest', 'done')
+  }
+  run().catch((error) => document.body.setAttribute('data-seedtest', `failed: ${error?.message ?? error}`))
 }
 
 // ?keytest=1 verifies Delete/Backspace removes the selected box.

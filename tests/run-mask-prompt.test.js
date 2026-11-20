@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs'
 import { RunManager } from '../lib/run.js'
 import { normalizeConfig } from '../lib/config.js'
 import { decodePng, encodePng } from '../lib/png.js'
+import { applySeedValues } from '../lib/seed.js'
 
 const info = {
   CheckpointLoaderSimple: {
@@ -145,7 +146,7 @@ async function makeRunManager(overrides = {}) {
   const doc = {
     workflow: {
       name: 'inpaint.json',
-      json: inpaintWorkflow(overrides.workflowBindings?.mask === '2' ? 2 : 9),
+      json: overrides.workflowJson ?? inpaintWorkflow(overrides.workflowBindings?.mask === '2' ? 2 : 9),
       bindings: overrides.workflowBindings ?? {},
     },
     layout: { items: [] },
@@ -169,6 +170,7 @@ async function makeRunManager(overrides = {}) {
     },
     saveAsset: async (_sessionId, name, data) => { saved.set(name, data) },
     addRun: async (_sessionId, run) => { runs.unshift(run) },
+    applySeedAdvances: async (_sessionId, updates) => { applySeedValues(doc.workflow.json, updates) },
     updateRun: async (_sessionId, id, patch) => {
       const run = runs.find((entry) => entry.id === id)
       if (run !== undefined) Object.assign(run, patch)
@@ -431,6 +433,33 @@ test('interrupt cancels the running pass and leaves the rest unqueued', async ()
     assert.deepEqual(stopped.passes.map((pass) => pass.status), ['cancelled', 'cancelled'])
     assert.equal(queueCalls.length, 1)
     assert.equal(manager.pollers.size, 0)
+  } finally {
+    manager.dispose()
+  }
+})
+
+test('a multi-pass mask run uses one seed and advances the workflow seed once', async () => {
+  const workflow = inpaintWorkflow(9)
+  const sampler = workflow.nodes.find((node) => node.id === 6)
+  sampler.widgets_values[1] = 'increment'
+  const regions = [region('mr-a', 'white feather wing'), region('mr-b', 'black leather glove', [400, 400, 600, 600])]
+  const regionAssets = [
+    ['mask-mr-a.png', regionCutout({ x1: 100, y1: 100, x2: 300, y2: 300 })],
+    ['mask-mr-b.png', regionCutout({ x1: 400, y1: 400, x2: 600, y2: 600 })],
+  ]
+  const { manager, doc, queueCalls, runs } = await makeRunManager({ mask: { regions }, regionAssets, workflowJson: workflow })
+  try {
+    await manager.start('session-run', {}, { agent: false })
+    const run = await settle(runs)
+    assert.equal(run.status, 'completed')
+    // Both passes carry the seed the run started with; the chain is one click.
+    assert.equal(queueCalls.length, 2)
+    assert.equal(queueCalls[0]['6'].inputs.seed, 42)
+    assert.equal(queueCalls[1]['6'].inputs.seed, 42)
+    assert.equal(run.seed, 42)
+    assert.equal(run.seedControl, 'increment')
+    // The next run starts from the advanced value.
+    assert.equal(doc.workflow.json.nodes.find((node) => node.id === 6).widgets_values[0], 43)
   } finally {
     manager.dispose()
   }
