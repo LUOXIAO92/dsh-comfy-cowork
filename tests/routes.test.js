@@ -44,13 +44,13 @@ function makeRes() {
   }
 }
 
-async function makeRoutes(admission = { peer: { id: 'peer-1' } }) {
+async function makeRoutes(admission = { peer: { id: 'peer-1' } }, connection = null) {
   const root = await fs.mkdtemp(path.join(process.cwd(), 'tests/.tmp-routes-'))
   const ctx = {
     logger: { warn() {} },
     sessions: { get: () => undefined },
     workingDirectory: { defaultDirectory: root },
-    connection: { admit: () => admission },
+    connection: connection ?? { admit: () => admission },
   }
   const config = normalizeConfig({})
   const store = new DocStore(ctx, config)
@@ -82,9 +82,9 @@ async function makeRoutes(admission = { peer: { id: 'peer-1' } }) {
   return { routes, store, runCalls, cleanup: () => fs.rm(root, { recursive: true, force: true }) }
 }
 
-async function call(routes, req) {
+async function call(routes, req, peer = undefined) {
   const res = makeRes()
-  await routes.handle(req, res)
+  await routes.handle(req, res, peer)
   return res
 }
 
@@ -467,6 +467,23 @@ test('stores the local repaint prompt on the mask route', async () => {
     assert.equal(doc.mask.promptSource, 'user')
     assert.equal(doc.prompt, 'a whole-image description')
     assert.equal((await store.snapshot(session)).mask.prompt, 'yellow hair, single ponytail')
+  } finally {
+    await cleanup()
+  }
+})
+
+test('a request the WebServer already admitted is not re-admitted', async () => {
+  // The live Host hands each routed request the Peer it selected. Calling
+  // connection.admit again would repeat admission and, on current DSH, trips
+  // a service guard; the peer must be enough.
+  const { routes, cleanup } = await makeRoutes(undefined, {
+    admit() {
+      throw new Error('cannot get property "connection.authentication" without inject')
+    },
+  })
+  try {
+    const res = await call(routes, makeReq('GET', '/api/comfy-cowork/health'), { id: 'peer-1' })
+    assert.equal(res.status, 200)
   } finally {
     await cleanup()
   }
